@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Course extends Model
+{
+    protected $fillable = [
+        'title',
+        'description',
+    ];
+
+    public function contents()
+    {
+        return $this->hasMany(Content::class);
+    }
+
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    public function enrolledUsers()
+    {
+        return $this->belongsToMany(User::class, 'enrollments', 'course_id', 'user_id')
+            ->withPivot('enrolled_by', 'deadline', 'enrolled_at')
+            ->withTimestamps();
+    }
+
+    public function feedback()
+    {
+        return $this->hasMany(Feedback::class);
+    }
+}
