@@ -1,0 +1,19 @@
+{
+    "agents": [
+        "opencode"
+    ],
+    "guidelines": true,
+    "herd_mcp": false,
+    "mcp": true,
+    "nightwatch_mcp": false,
+    "packages": [
+        "laravel/fortify"
+    ],
+    "sail": false,
+    "skills": [
+        "fluxui-development",
+        "livewire-development",
+        "pest-testing",
+        "developing-with-fortify"
+    ]
+}
