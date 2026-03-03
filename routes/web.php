@@ -26,7 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('faculty')->name('faculty.')->group(function () {
         Route::get('dashboard', Dashboard::class)->name('dashboard');
         Route::get('courses', Courses::class)->name('courses');
-        Route::get('course-player', CoursePlayer::class)->name('course-player');
+        Route::get('course-player/{course?}', CoursePlayer::class)->name('course-player');
         Route::get('streaks', Streaks::class)->name('streaks');
         Route::get('certificates', Certificates::class)->name('certificates');
         Route::get('notifications', Notifications::class)->name('notifications');

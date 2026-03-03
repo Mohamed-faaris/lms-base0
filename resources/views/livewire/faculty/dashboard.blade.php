@@ -166,7 +166,7 @@
                         @endif
                     </div>
 
-                    <flux:button size="sm" :variant="$isCompleted ? 'outline' : 'primary'" class="shrink-0" href="{{ route('faculty.course-player') }}" wire:navigate>
+                    <flux:button size="sm" :variant="$isCompleted ? 'outline' : 'primary'" class="shrink-0" href="{{ route('faculty.course-player', ['course' => $course->id]) }}" wire:navigate>
                         {{ $isCompleted ? 'Review' : ($course->progress > 0 ? 'Continue' : 'Start') }}
                     </flux:button>
                 </div>
