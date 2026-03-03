@@ -15,6 +15,21 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+                    
+                    @if(auth()->user()->role->value === 'faculty')
+                        <flux:sidebar.item icon="book-open" :href="route('faculty.courses')" :current="request()->routeIs('faculty.courses') || request()->routeIs('faculty.course-player')" wire:navigate>
+                            {{ __('My Courses') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="academic-cap" :href="route('faculty.certificates')" :current="request()->routeIs('faculty.certificates')" wire:navigate>
+                            {{ __('Certificates') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="fire" :href="route('faculty.streaks')" :current="request()->routeIs('faculty.streaks')" wire:navigate>
+                            {{ __('Streaks') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="cog-6-tooth" :href="route('faculty.suggestions')" :current="request()->routeIs('faculty.suggestions')" wire:navigate>
+                            {{ __('Suggestions') }}
+                        </flux:sidebar.item>
+                    @endif
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
@@ -34,6 +49,30 @@
                     {{ __('Documentation') }}
                 </flux:sidebar.item> -->
             </flux:sidebar.nav>
+
+            @if(auth()->user()->role->value === 'faculty')
+                @php
+                    $xpRecord = \App\Models\Xp::find(auth()->id());
+                    $streakRecord = \App\Models\Streak::where('user_id', auth()->id())->orderBy('date', 'desc')->first();
+                    $xp = $xpRecord?->xp ?? 0;
+                    $streak = $streakRecord?->count ?? 0;
+                    $level = (int) floor($xp / 500) + 1;
+                    $progress = ($xp % 500) / 5;
+                @endphp
+                <div class="px-4 py-3 mx-2 mb-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/50 hidden lg:block">
+                    <div class="flex items-center gap-2 mb-2">
+                        <flux:icon.fire class="h-4 w-4 text-orange-500" />
+                        <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $streak }} Day Streak</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                        <span>{{ $xp }} XP</span>
+                        <span>Level {{ $level }}</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-500 rounded-full" style="width: {{ $progress }}%"></div>
+                    </div>
+                </div>
+            @endif
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
