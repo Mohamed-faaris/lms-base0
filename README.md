@@ -24,6 +24,12 @@ docker compose up -d
 php artisan migrate
 ```
 
+Or migrate with seeding:
+
+```bash
+php artisan migrate:fresh --seed
+```
+
 ### 3. Start the Development Server
 
 ```bash
