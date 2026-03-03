@@ -1,0 +1,15 @@
+--- resources/views/layouts/app/sidebar.blade.php
++++ resources/views/layouts/app/sidebar.blade.php
+@@ -23,9 +23,9 @@
+                     {{ __('Repository') }}
+                 </flux:sidebar.item>
+ 
+-                <flux:sidebar.item icon="moon" x-data x-on:click="window.Flux.applyAppearance(document.documentElement.classList.contains('dark') ? 'light' : 'dark')" class="cursor-pointer">
+-                    <span x-show="document.documentElement.classList.contains('dark') === false">{{ __('Dark mode') }}</span>
+-                    <span x-show="document.documentElement.classList.contains('dark') === true">{{ __('Light mode') }}</span>
++                <flux:sidebar.item icon="moon" x-data x-on:click="window.Flux.applyAppearance($flux.appearance === 'dark' ? 'light' : 'dark')" class="cursor-pointer">
++                    <span x-show="$flux.appearance !== 'dark'">{{ __('Dark mode') }}</span>
++                    <span x-show="$flux.appearance === 'dark'">{{ __('Light mode') }}</span>
+                 </flux:sidebar.item>
+ 
+                 <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">

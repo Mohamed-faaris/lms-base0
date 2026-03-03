@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Xp extends Model
 {
+    public $table = 'xp';
+
     public $incrementing = false;
+
     protected $primaryKey = 'user_id';
+
     public $timestamps = false;
 
     protected $fillable = [
