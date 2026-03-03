@@ -25,8 +25,8 @@
                     {{ __('Repository') }}
                 </flux:sidebar.item>
 
-                <flux:sidebar.item icon="moon" x-data x-on:click="window.Flux.applyAppearance($flux.appearance === 'dark' ? 'light' : 'dark')" class="cursor-pointer">
-                    <span x-show="$flux.appearance !== 'dark'">{{ __('Dark mode') }}</span>
+                <flux:sidebar.item icon="moon" x-data x-on:click="$flux.appearance = $flux.appearance === 'dark' ? 'light' : 'dark'" class="cursor-pointer">
+                    <span x-show="$flux.appearance === 'light' || $flux.appearance === 'system'">{{ __('Dark mode') }}</span>
                     <span x-show="$flux.appearance === 'dark'">{{ __('Light mode') }}</span>
                 </flux:sidebar.item>
 
