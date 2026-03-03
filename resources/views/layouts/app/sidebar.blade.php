@@ -21,18 +21,18 @@
             <flux:spacer />
 
             <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
+                <!-- <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
                     {{ __('Repository') }}
-                </flux:sidebar.item>
+                </flux:sidebar.item> -->
 
                 <flux:sidebar.item icon="moon" x-data x-on:click="$flux.appearance = $flux.appearance === 'dark' ? 'light' : 'dark'" class="cursor-pointer">
                     <span x-show="$flux.appearance === 'light' || $flux.appearance === 'system'">{{ __('Dark mode') }}</span>
                     <span x-show="$flux.appearance === 'dark'">{{ __('Light mode') }}</span>
                 </flux:sidebar.item>
 
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
+                <!-- <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
                     {{ __('Documentation') }}
-                </flux:sidebar.item>
+                </flux:sidebar.item> -->
             </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
