@@ -7,7 +7,7 @@
             </h2>
             <p class="text-zinc-500 dark:text-zinc-400">Continue your learning journey</p>
         </div>
-        <flux:button>
+        <flux:button href="{{ route('faculty.courses') }}" wire:navigate>
             <flux:icon.play variant="mini" class="mr-2" />
             Resume Learning
         </flux:button>
@@ -66,7 +66,7 @@
                 </div>
                 <p class="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{{ $streak }}</p>
                 <p class="text-sm text-zinc-500 dark:text-zinc-400">Day Streak</p>
-                <flux:button variant="ghost" size="xs" class="mt-2">
+                <flux:button variant="ghost" size="xs" class="mt-2" href="{{ route('faculty.streaks') }}" wire:navigate>
                     View Details
                 </flux:button>
             </div>
@@ -103,7 +103,7 @@
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
         <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
             <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">My Courses</h3>
-            <flux:button variant="ghost" size="sm">
+            <flux:button variant="ghost" size="sm" href="{{ route('faculty.courses') }}" wire:navigate>
                 View All
                 <flux:icon.chevron-right class="ml-1 h-4 w-4" />
             </flux:button>
@@ -166,7 +166,7 @@
                         @endif
                     </div>
 
-                    <flux:button size="sm" :variant="$isCompleted ? 'outline' : 'primary'" class="shrink-0">
+                    <flux:button size="sm" :variant="$isCompleted ? 'outline' : 'primary'" class="shrink-0" href="{{ route('faculty.course-player', ['course' => $course->id]) }}" wire:navigate>
                         {{ $isCompleted ? 'Review' : ($course->progress > 0 ? 'Continue' : 'Start') }}
                     </flux:button>
                 </div>
