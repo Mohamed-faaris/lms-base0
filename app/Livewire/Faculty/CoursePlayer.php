@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Faculty;
 
-use App\Models\Course;
 use App\Models\Content;
+use App\Models\Course;
 use App\Models\Progress;
 use Illuminate\Support\Collection;
 use Livewire\Component;
@@ -11,22 +11,31 @@ use Livewire\Component;
 class CoursePlayer extends Component
 {
     public Course $course;
+
     public Content $currentModule;
+
     public Collection $modules;
-    
+
     public int $totalModules = 0;
+
     public int $completedModules = 0;
+
     public int $courseProgress = 0;
-    
+
     public bool $sidebarOpen = true;
+
     public bool $mobileDrawerOpen = false;
-    
+
     public bool $showQuiz = false;
+
     public bool $quizSubmitted = false;
+
     public ?int $quizScore = null;
+
     public array $quizAnswers = [];
-    
+
     public bool $showFeedback = false;
+
     public bool $showPuzzle = false;
 
     public array $quizQuestions = [
@@ -65,11 +74,11 @@ class CoursePlayer extends Component
         ],
     ];
 
-    public function mount(Course $course = null)
+    public function mount(?Course $course = null)
     {
         $user = auth()->user();
-        
-        if (!$course || !$course->exists) {
+
+        if (! $course || ! $course->exists) {
             $this->course = Course::whereHas('enrollments', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })->firstOrFail();
@@ -83,49 +92,50 @@ class CoursePlayer extends Component
     protected function loadCourseData()
     {
         $user = auth()->user();
-        
+
         $this->modules = Content::where('course_id', $this->course->id)
-                               ->orderBy('order')
-                               ->get();
-                               
+            ->orderBy('order')
+            ->get();
+
         $this->totalModules = $this->modules->count();
-        
+
         if ($this->totalModules === 0) {
             return;
         }
 
         $completedContentIds = Progress::where('user_id', $user->id)
-                                     ->whereIn('content_id', $this->modules->pluck('id'))
-                                     ->whereNotNull('completed_at')
-                                     ->pluck('content_id')
-                                     ->toArray();
+            ->whereIn('content_id', $this->modules->pluck('id'))
+            ->whereNotNull('completed_at')
+            ->pluck('content_id')
+            ->toArray();
 
         $this->completedModules = count($completedContentIds);
         $this->courseProgress = (int) round(($this->completedModules / $this->totalModules) * 100);
 
         // Find current module (first incomplete, or last if all complete)
-        $firstIncomplete = $this->modules->first(fn($module) => !in_array($module->id, $completedContentIds));
+        $firstIncomplete = $this->modules->first(fn ($module) => ! in_array($module->id, $completedContentIds));
         $this->currentModule = $firstIncomplete ?? $this->modules->last();
-        
+
         // Format modules for UI
         $this->modules->transform(function ($module, $key) use ($completedContentIds) {
             $status = in_array($module->id, $completedContentIds) ? 'completed' : 'locked';
-            
+
             // Allow clicking if it's completed, or if it's the current one being worked on
             if ($module->id === $this->currentModule->id) {
                 $status = 'in-progress';
             }
-            
+
             // Allow sequential unlocking
-            $previousCompleted = $key === 0 || in_array($this->modules[$key-1]->id, $completedContentIds);
+            $previousCompleted = $key === 0 || in_array($this->modules[$key - 1]->id, $completedContentIds);
             if ($status === 'locked' && $previousCompleted) {
-                 $status = 'unlocked'; // Or treat as in-progress for accessibility
+                $status = 'unlocked'; // Or treat as in-progress for accessibility
             }
 
             $module->status = $status;
             // Mock data for UI
             $module->duration = '15:00';
             $module->videoId = 'dQw4w9WgXcQ';
+
             return $module;
         });
     }
@@ -142,12 +152,12 @@ class CoursePlayer extends Component
 
     public function toggleSidebar()
     {
-        $this->sidebarOpen = !$this->sidebarOpen;
+        $this->sidebarOpen = ! $this->sidebarOpen;
     }
 
     public function toggleMobileDrawer()
     {
-        $this->mobileDrawerOpen = !$this->mobileDrawerOpen;
+        $this->mobileDrawerOpen = ! $this->mobileDrawerOpen;
     }
 
     public function startQuiz()
@@ -178,12 +188,12 @@ class CoursePlayer extends Component
         }
         $this->quizScore = (int) round(($correct / count($this->quizQuestions)) * 100);
         $this->quizSubmitted = true;
-        
+
         if ($this->quizScore >= 80) {
             $this->markCurrentModuleComplete();
         }
     }
-    
+
     public function markCurrentModuleComplete()
     {
         $user = auth()->user();
@@ -193,7 +203,7 @@ class CoursePlayer extends Component
         );
         $this->loadCourseData();
     }
-    
+
     public function retakeQuiz()
     {
         $this->quizSubmitted = false;
@@ -203,12 +213,12 @@ class CoursePlayer extends Component
 
     public function toggleFeedback()
     {
-        $this->showFeedback = !$this->showFeedback;
+        $this->showFeedback = ! $this->showFeedback;
     }
 
     public function togglePuzzle()
     {
-        $this->showPuzzle = !$this->showPuzzle;
+        $this->showPuzzle = ! $this->showPuzzle;
     }
 
     public function render()

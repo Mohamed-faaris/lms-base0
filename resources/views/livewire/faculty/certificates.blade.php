@@ -1,4 +1,9 @@
 <div class="space-y-8 pb-10">
+    @php
+        use Endroid\QrCode\ErrorCorrectionLevel;
+        use Endroid\QrCode\QrCode;
+        use Endroid\QrCode\Writer\SvgWriter;
+    @endphp
     {{-- Page Header --}}
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -34,61 +39,94 @@
 
         {{-- Certificates Tab Content --}}
         @if($activeTab === 'certificates')
-            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div class="grid gap-8 md:grid-cols-2">
                 @forelse($completedCourses as $course)
-                    <div class="group flex flex-col rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 hover:-translate-y-1 relative">
+                    @php
+                        $verificationUrl = route('certificates.verify', ['certificate_id' => $course['certificateId']]);
+                        $qrCode = new \Endroid\QrCode\QrCode(
+                            data: $verificationUrl,
+                            size: 80,
+                            margin: 3
+                        );
+                        $writer = new \Endroid\QrCode\Writer\SvgWriter();
+                        $qrSvg = $writer->write($qrCode)->getString();
+                    @endphp
+                    <div class="group flex flex-col rounded-3xl border border-amber-200/80 dark:border-amber-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 relative">
                         
-                        {{-- Certificate Thumbnail --}}
-                        <div class="aspect-[4/3] bg-gradient-to-br from-slate-100 to-blue-50 dark:from-slate-800/80 dark:to-blue-900/20 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                            {{-- Decorative Background pattern --}}
-                            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-400/20 rounded-full blur-3xl transition-transform group-hover:scale-150 duration-500"></div>
-
-                            <div class="absolute top-4 right-4 z-10">
-                                <flux:badge color="emerald" class="shadow-sm font-bold tracking-wide">
-                                    {{ $course['score'] }}%
-                                </flux:badge>
-                            </div>
-
-                            <div class="h-20 w-20 rounded-2xl bg-white/60 dark:bg-zinc-900/60 backdrop-blur-sm border border-white/50 dark:border-zinc-700/50 flex items-center justify-center mb-4 shadow-sm relative z-10 transition-transform group-hover:scale-110 duration-300">
-                                <flux:icon.academic-cap class="h-10 w-10 text-blue-600 dark:text-blue-400" />
-                            </div>
+                        {{-- Full Certificate Preview in Card --}}
+                        <div class="aspect-[1.414] bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800 p-4 md:p-6 relative overflow-hidden">
+                            {{-- Corner Ornaments --}}
+                            <div class="absolute top-2 left-2 w-12 h-12 border-t-2 border-l-2 border-amber-400/50 rounded-tl-lg"></div>
+                            <div class="absolute top-2 right-2 w-12 h-12 border-t-2 border-r-2 border-amber-400/50 rounded-tr-lg"></div>
+                            <div class="absolute bottom-2 left-2 w-12 h-12 border-b-2 border-l-2 border-amber-400/50 rounded-bl-lg"></div>
+                            <div class="absolute bottom-2 right-2 w-12 h-12 border-b-2 border-r-2 border-amber-400/50 rounded-br-lg"></div>
                             
-                            <h3 class="font-bold text-zinc-900 dark:text-zinc-100 text-lg leading-tight relative z-10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors px-4">
-                                {{ $course['name'] }}
-                            </h3>
-                            <p class="text-sm font-medium text-blue-600/80 dark:text-blue-400/80 mt-2 tracking-wide uppercase relative z-10">
-                                Certificate of Completion
-                            </p>
+                            {{-- Inner Border --}}
+                            <div class="absolute inset-2 border border-amber-300/40 dark:border-amber-700/40 rounded-lg pointer-events-none"></div>
                             
-                            <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md py-2 px-3 rounded-lg border border-white/20 dark:border-zinc-700/50 z-10">
-                                <span class="font-mono">{{ $course['certificateId'] }}</span>
-                                <span class="text-blue-600 dark:text-blue-400 font-bold">KR Learn</span>
+                            <div class="w-full h-full flex flex-col items-center justify-between text-center py-2 relative z-10">
+                                {{-- Header --}}
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <div class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
+                                            <flux:icon.academic-cap class="h-5 w-5 text-white" />
+                                        </div>
+                                        <span class="text-lg font-black tracking-widest text-blue-900 dark:text-blue-500 uppercase">KR Learn</span>
+                                    </div>
+                                    <h3 class="text-2xl md:text-3xl font-black text-slate-800 dark:text-slate-100 tracking-[0.15em]" style="font-family: serif;">
+                                        CERTIFICATE
+                                    </h3>
+                                    <p class="text-[10px] font-bold tracking-[0.2em] text-slate-500 dark:text-slate-400 uppercase">Of Completion</p>
+                                </div>
+
+                                {{-- Body --}}
+                                <div class="space-y-2 w-full">
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 italic" style="font-family: serif;">This is to certify that</p>
+                                    
+                                    <h4 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-50 border-b border-slate-300 dark:border-slate-700 pb-1 inline-block w-[90%] text-center" style="font-family: serif;">
+                                        {{ $recipientName }}
+                                    </h4>
+                                    
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 italic" style="font-family: serif;">has successfully completed</p>
+                                    
+                                    <h5 class="text-base md:text-lg font-black text-blue-900 dark:text-blue-400 tracking-wide px-2 leading-tight">
+                                        {{ $course['name'] }}
+                                    </h5>
+                                </div>
+
+                                {{-- Footer --}}
+                                <div class="w-full flex justify-between items-end text-[10px] md:text-xs px-2">
+                                    <div class="text-left">
+                                        <p class="font-bold text-slate-900 dark:text-slate-100">{{ $course['completedDate'] }}</p>
+                                        <p class="text-[8px] uppercase tracking-wider text-slate-500">Date</p>
+                                    </div>
+                                    
+                                    <div class="bg-white p-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                        {!! $qrSvg !!}
+                                    </div>
+                                    
+                                    <div class="text-right">
+                                        <p class="font-mono text-[9px] md:text-[10px] text-slate-900 dark:text-slate-100">{{ $course['certificateId'] }}</p>
+                                        <p class="text-[8px] uppercase tracking-wider text-slate-500">Certificate ID</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {{-- Details & Actions --}}
-                        <div class="p-6 flex-1 flex flex-col bg-gradient-to-b from-transparent to-zinc-50/50 dark:to-zinc-900/50">
-                            <div class="flex items-center justify-between text-sm font-medium mb-6 px-1">
-                                <div class="flex items-center gap-2 text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800/50 px-3 py-1.5 rounded-md">
-                                    <flux:icon.calendar class="h-4 w-4 text-zinc-400" />
-                                    {{ $course['completedDate'] }}
-                                </div>
-                                <div class="flex items-center gap-2 text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800/50 px-3 py-1.5 rounded-md">
-                                    <flux:icon.clock class="h-4 w-4 text-zinc-400" />
-                                    {{ $course['duration'] }}
-                                </div>
-                            </div>
-                            <div class="flex gap-3 mt-auto">
-                                <flux:button variant="outline" class="flex-1 font-semibold group-hover:border-blue-200 dark:group-hover:border-blue-800 transition-colors" wire:click="viewCertificate({{ $course['id'] }})">
-                                    <flux:icon.eye class="mr-2 h-4 w-4 text-zinc-400 group-hover:text-blue-500" />
-                                    View
-                                </flux:button>
-                                <flux:button variant="primary" class="flex-1 font-semibold shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40" wire:click="viewCertificate({{ $course['id'] }})">
+                        {{-- Actions --}}
+                        <div class="p-4 flex gap-3 bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-200 dark:border-zinc-700">
+                            <a href="{{ route('certificates.download', ['certificate_id' => $course['certificateId'], 'format' => 'png']) }}" class="flex-1">
+                                <flux:button variant="outline" class="w-full font-semibold">
                                     <flux:icon.arrow-down-tray class="mr-2 h-4 w-4" />
                                     Download
                                 </flux:button>
-                            </div>
+                            </a>
+                            <a href="{{ route('certificates.verify', ['certificate_id' => $course['certificateId']]) }}" target="_blank" class="flex-1">
+                                <flux:button variant="primary" class="w-full font-semibold shadow-lg shadow-blue-500/20">
+                                    <flux:icon.share class="mr-2 h-4 w-4" />
+                                    Verify
+                                </flux:button>
+                            </a>
                         </div>
                     </div>
                 @empty
@@ -148,8 +186,19 @@
     </div>
 
     {{-- Certificate Modal --}}
-    <flux:modal wire:model.live="selectedCourse">
+    <flux:modal wire:model.live="showModal" class="max-h-[90vh] overflow-y-auto">
         @if($selectedCourse)
+            @php
+                $verificationUrl = route('certificates.verify', ['certificate_id' => $selectedCourse['certificateId']]);
+                $qrCode = new \Endroid\QrCode\QrCode(
+                    data: $verificationUrl,
+                    size: 120,
+                    margin: 5,
+                    errorCorrectionLevel: \Endroid\QrCode\ErrorCorrectionLevel::Medium
+                );
+                $writer = new \Endroid\QrCode\Writer\SvgWriter();
+                $qrSvg = $writer->write($qrCode)->getString();
+            @endphp
             <div class="w-[900px] max-w-full space-y-6">
                 <div class="flex items-center justify-between pb-2">
                     <div>
@@ -210,38 +259,58 @@
                         </div>
 
                         {{-- Body --}}
-                        <div class="space-y-6 w-full max-w-2xl mx-auto py-8">
-                            <p class="text-slate-500 dark:text-slate-400 italic text-lg" style="font-family: serif;">This is to certify that</p>
+                        <div class="space-y-5 w-full max-w-2xl mx-auto py-6">
+                            <p class="text-slate-500 dark:text-slate-400 italic text-base" style="font-family: serif;">This is to certify that</p>
                             
                             <h3 class="text-3xl md:text-5xl font-bold text-slate-900 dark:text-slate-50 border-b border-slate-300 dark:border-slate-700 pb-4 px-8 inline-block w-[80%] text-center" style="font-family: serif;">
                                 {{ $recipientName }}
                             </h3>
                             
-                            <p class="text-slate-500 dark:text-slate-400 italic text-lg" style="font-family: serif;">has successfully completed the course</p>
+                            <p class="text-slate-500 dark:text-slate-400 italic text-base" style="font-family: serif;">has successfully completed the course</p>
                             
                             <h4 class="text-2xl md:text-3xl font-black text-blue-900 dark:text-blue-400 tracking-wide uppercase px-4 leading-tight">
                                 {{ $selectedCourse['name'] }}
                             </h4>
                             
-                            <div class="inline-block mt-4 px-6 py-2 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
-                                <span class="font-bold text-slate-700 dark:text-slate-300">Completion Score: <span class="text-emerald-600 dark:text-emerald-400">{{ $selectedCourse['score'] }}%</span></span>
+                            @if(!empty($selectedCourse['description']))
+                                <p class="text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                                    {{ $selectedCourse['description'] }}
+                                </p>
+                            @endif
+                            
+                            <div class="flex flex-wrap justify-center gap-3 mt-4">
+                                <div class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
+                                    <flux:icon.clock class="h-4 w-4 text-slate-500" />
+                                    <span class="font-semibold text-slate-700 dark:text-slate-300">{{ $selectedCourse['duration'] }}</span>
+                                </div>
+                                <div class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-full border border-emerald-200 dark:border-emerald-800">
+                                    <flux:icon.check-circle class="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                    <span class="font-semibold text-emerald-700 dark:text-emerald-300">Score: {{ $selectedCourse['score'] }}%</span>
+                                </div>
+                                @if(!empty($selectedCourse['instructorName']))
+                                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-full border border-blue-200 dark:border-blue-800">
+                                        <flux:icon.user class="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                        <span class="font-semibold text-blue-700 dark:text-blue-300">Instructor: {{ $selectedCourse['instructorName'] }}</span>
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
                         {{-- Footer --}}
                         <div class="w-full flex justify-between items-end text-sm text-slate-600 dark:text-slate-400 px-8 pb-4">
-                            <div class="text-left space-y-2 w-48">
-                                <p class="font-bold text-slate-900 dark:text-slate-100 text-lg border-b border-slate-400 dark:border-slate-600 pb-1">{{ $selectedCourse['completedDate'] }}</p>
-                                <p class="text-xs uppercase tracking-wider font-semibold">Date of Issuance</p>
+                            <div class="text-left space-y-2 w-40">
+                                <p class="font-bold text-slate-900 dark:text-slate-100 text-lg border-b border-slate-400 dark:border-slate-600 pb-1">{{ $selectedCourse['issueDate'] }}</p>
+                                <p class="text-xs uppercase tracking-wider font-semibold">Date of Issue</p>
                             </div>
                             
-                            <div class="text-center w-32 relative">
-                                <div class="absolute -top-16 left-1/2 -translate-x-1/2 opacity-20 pointer-events-none">
-                                    <flux:icon.check-badge class="w-24 h-24 text-blue-900 dark:text-blue-500" />
+                            <div class="text-center flex flex-col items-center">
+                                <div class="bg-white p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    {!! $qrSvg !!}
                                 </div>
+                                <p class="text-[10px] uppercase tracking-wider mt-1">Verify</p>
                             </div>
 
-                            <div class="text-right space-y-2 w-48">
+                            <div class="text-right space-y-2 w-40">
                                 <p class="font-mono text-xs text-slate-900 dark:text-slate-100 border-b border-slate-400 dark:border-slate-600 pb-1">{{ $selectedCourse['certificateId'] }}</p>
                                 <p class="text-xs uppercase tracking-wider font-semibold">Certificate ID</p>
                             </div>
@@ -251,14 +320,18 @@
 
                 {{-- Action Buttons --}}
                 <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                    <flux:button variant="outline" size="lg" class="flex-1 font-semibold border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800" onclick="alert('Downloading Image...')">
-                        <flux:icon.photo class="mr-2.5 h-5 w-5" />
-                        Download Image (PNG)
-                    </flux:button>
-                    <flux:button variant="primary" size="lg" class="flex-1 font-semibold shadow-lg shadow-blue-500/20" onclick="alert('Downloading PDF...')">
-                        <flux:icon.document-text class="mr-2.5 h-5 w-5" />
-                        Download PDF Document
-                    </flux:button>
+                    <a href="{{ route('certificates.download', ['certificate_id' => $selectedCourse['certificateId'], 'format' => 'png']) }}" class="flex-1">
+                        <flux:button variant="outline" class="w-full font-semibold border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                            <flux:icon.photo class="mr-2.5 h-5 w-5" />
+                            Download Image (PNG)
+                        </flux:button>
+                    </a>
+                    <a href="{{ route('certificates.download', ['certificate_id' => $selectedCourse['certificateId'], 'format' => 'pdf']) }}" class="flex-1">
+                        <flux:button variant="primary" class="w-full font-semibold shadow-lg shadow-blue-500/20">
+                            <flux:icon.document-text class="mr-2.5 h-5 w-5" />
+                            Download PDF Document
+                        </flux:button>
+                    </a>
                 </div>
             </div>
         @endif

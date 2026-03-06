@@ -22,8 +22,8 @@ class ProgressObserver
     {
         $userId = $progress->user_id;
         $content = Content::find($progress->content_id);
-        
-        if (!$content) {
+
+        if (! $content) {
             return;
         }
 

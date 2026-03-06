@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Enums\College;
+use App\Enums\Department;
+use App\Enums\Role;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Enums\Role;
-use App\Enums\College;
-use App\Enums\Department;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Enums\ContentType;
+use Illuminate\Database\Eloquent\Model;
 
 class Content extends Model
 {

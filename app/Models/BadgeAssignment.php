@@ -9,7 +9,9 @@ class BadgeAssignment extends Model
     protected $table = 'badge_assignments';
 
     public $incrementing = false;
+
     protected $primaryKey = ['user_id', 'badge_id'];
+
     public $timestamps = false;
 
     protected $fillable = [

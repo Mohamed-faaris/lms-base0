@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Enums\NotificationStatus;
+use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
