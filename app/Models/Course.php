@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Course extends Model
 {
@@ -11,12 +12,12 @@ class Course extends Model
         'description',
     ];
 
-    public function contents()
+    public function contents(): HasMany
     {
         return $this->hasMany(Content::class);
     }
 
-    public function enrollments()
+    public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
     }
@@ -28,8 +29,13 @@ class Course extends Model
             ->withTimestamps();
     }
 
-    public function feedback()
+    public function feedback(): HasMany
     {
         return $this->hasMany(Feedback::class);
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Faculty;
 
+use App\Models\Certificate;
+use App\Models\Progress;
 use Livewire\Component;
 
 class Certificates extends Component
@@ -18,48 +20,60 @@ class Certificates extends Component
     {
         $user = auth()->user();
         $this->recipientName = $user->name ?? '';
+        $this->loadCertificates();
+        $this->loadProgressHistory();
+    }
 
-        // Mock data matching the sample
-        $this->completedCourses = [
-            [
-                'id' => 1,
-                'name' => 'Teaching Methodologies',
-                'completedDate' => 'Jan 15, 2026',
-                'score' => 92,
-                'duration' => '4 hours',
-                'certificateId' => 'CERT-TM-2026-001',
-                'hasCertificate' => true,
-            ],
-            [
-                'id' => 2,
-                'name' => 'Research Ethics',
-                'completedDate' => 'Jan 10, 2026',
-                'score' => 88,
-                'duration' => '3 hours',
-                'certificateId' => 'CERT-RE-2026-002',
-                'hasCertificate' => true,
-            ],
-            [
-                'id' => 3,
-                'name' => 'Lab Safety Standards',
-                'completedDate' => 'Dec 28, 2025',
-                'score' => 95,
-                'duration' => '2 hours',
-                'certificateId' => 'CERT-LS-2025-003',
-                'hasCertificate' => true,
-            ],
-        ];
+    protected function loadCertificates(): void
+    {
+        $user = auth()->user();
+        
+        $certificates = Certificate::with('course')
+            ->where('user_id', $user->id)
+            ->orderBy('completed_at', 'desc')
+            ->get();
 
-        $this->progressHistory = [
-            ['date' => 'Jan 29, 2026', 'action' => 'Completed Module 6', 'course' => 'Digital Pedagogy', 'xp' => 100],
-            ['date' => 'Jan 28, 2026', 'action' => 'Passed Quiz', 'course' => 'Digital Pedagogy', 'xp' => 75],
-            ['date' => 'Jan 27, 2026', 'action' => 'Started Course', 'course' => 'Assessment Design', 'xp' => 25],
-            ['date' => 'Jan 25, 2026', 'action' => 'Earned Certificate', 'course' => 'Research Ethics', 'xp' => 200],
-            ['date' => 'Jan 24, 2026', 'action' => 'Completed Module 5', 'course' => 'Research Ethics', 'xp' => 100],
-            ['date' => 'Jan 22, 2026', 'action' => 'Passed Quiz', 'course' => 'Research Ethics', 'xp' => 75],
-            ['date' => 'Jan 20, 2026', 'action' => 'Completed Module 4', 'course' => 'Research Ethics', 'xp' => 100],
-            ['date' => 'Jan 15, 2026', 'action' => 'Earned Certificate', 'course' => 'Teaching Methodologies', 'xp' => 200],
-        ];
+        $this->completedCourses = $certificates->map(function ($cert) {
+            $course = $cert->course;
+            $contents = $course?->contents ?? collect();
+            
+            return [
+                'id' => $cert->course_id,
+                'name' => $course?->title ?? 'Unknown Course',
+                'completedDate' => $cert->completed_at->format('M d, Y'),
+                'score' => 100,
+                'duration' => $this->calculateDuration($contents->count()),
+                'certificateId' => $cert->certificate_id,
+                'hasCertificate' => true,
+            ];
+        })->toArray();
+    }
+
+    protected function loadProgressHistory(): void
+    {
+        $user = auth()->user();
+        
+        $progressRecords = Progress::where('user_id', $user->id)
+            ->whereNotNull('completed_at')
+            ->with('content.course')
+            ->orderBy('completed_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        $this->progressHistory = $progressRecords->map(function ($progress) {
+            return [
+                'date' => $progress->completed_at->format('M d, Y'),
+                'action' => 'Completed Module',
+                'course' => $progress->content?->course?->title ?? 'Unknown',
+                'xp' => 100,
+            ];
+        })->toArray();
+    }
+
+    protected function calculateDuration(int $moduleCount): string
+    {
+        $hours = max(1, (int) ceil($moduleCount / 2));
+        return $hours . ' hour' . ($hours > 1 ? 's' : '');
     }
 
     public function viewCertificate($courseId)

@@ -7,6 +7,7 @@ use App\Enums\Department;
 use App\Enums\Role;
 use App\Models\Badge;
 use App\Models\BadgeAssignment;
+use App\Models\Certificate;
 use App\Models\Content;
 use App\Models\Course;
 use App\Models\Enrollment;
@@ -20,7 +21,6 @@ class LmsDataSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create faculty users
         $faculty1 = User::factory()->create([
             'name' => 'Dr. Sarah Johnson',
             'email' => 'sarah@example.com',
@@ -45,14 +45,12 @@ class LmsDataSeeder extends Seeder
             'department' => Department::AI,
         ]);
 
-        // Create admin user
         $admin = User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
             'role' => Role::Admin,
         ]);
 
-        // Create courses (matching lms-sample)
         $coursesData = [
             [
                 'title' => 'Teaching Methodologies',
@@ -122,7 +120,6 @@ class LmsDataSeeder extends Seeder
                 'description' => $courseItem['description'],
             ]);
 
-            // Create contents (modules)
             foreach ($contents as $index => $contentTitle) {
                 Content::create([
                     'course_id' => $course->id,
@@ -133,7 +130,6 @@ class LmsDataSeeder extends Seeder
                 ]);
             }
 
-            // Enroll faculty users in this course
             $users = [
                 ['user' => $faculty1, 'progress' => $courseIdx === 0 ? 75 : ($courseIdx === 1 ? 100 : ($courseIdx === 2 ? 30 : 0))],
                 ['user' => $faculty2, 'progress' => $courseIdx === 0 ? 100 : ($courseIdx === 1 ? 60 : ($courseIdx === 2 ? 80 : 50))],
@@ -158,24 +154,39 @@ class LmsDataSeeder extends Seeder
                 $courseContents = $course->contents;
                 $completedCount = (int) round(($progressPercent / 100) * $courseContents->count());
 
+                $lastCompletedAt = null;
                 for ($i = 0; $i < $completedCount; $i++) {
                     if (isset($courseContents[$i])) {
+                        $completedAt = now()->subDays(rand(1, 20));
+                        $lastCompletedAt = $completedAt;
                         Progress::create([
                             'user_id' => $user->id,
                             'content_id' => $courseContents[$i]->id,
-                            'completed_at' => now()->subDays(rand(1, 20)),
+                            'completed_at' => $completedAt,
                         ]);
                     }
+                }
+
+                if ($progressPercent === 100 && $lastCompletedAt) {
+                    Certificate::firstOrCreate(
+                        [
+                            'user_id' => $user->id,
+                            'course_id' => $course->id,
+                        ],
+                        [
+                            'certificate_id' => Certificate::generateCertificateId($user->id, $course->id, $lastCompletedAt),
+                            'completed_at' => $lastCompletedAt,
+                            'issued_at' => now(),
+                        ]
+                    );
                 }
             }
         }
 
-        // Create XP records for faculty
         Xp::create(['user_id' => $faculty1->id, 'xp' => 2450]);
         Xp::create(['user_id' => $faculty2->id, 'xp' => 1800]);
         Xp::create(['user_id' => $faculty3->id, 'xp' => 950]);
 
-        // Create Streak records
         $streakCounts = [
             $faculty1->id => 15,
             $faculty2->id => 7,
@@ -202,7 +213,6 @@ class LmsDataSeeder extends Seeder
             }
         }
 
-        // Create Badges
         $badges = [
             [
                 'title' => 'Novice',
@@ -240,7 +250,6 @@ class LmsDataSeeder extends Seeder
             Badge::create($badgeData);
         }
 
-        // Assign badges to faculty based on their XP
         $allBadges = Badge::all();
 
         BadgeAssignment::create([
