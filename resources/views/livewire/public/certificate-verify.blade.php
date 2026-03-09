@@ -1,5 +1,5 @@
 @php
-    use Endroid\QrCode\ErrorCorrectionLevel;
+    use Endroid\QrCode\Color\Color;
     use Endroid\QrCode\QrCode;
     use Endroid\QrCode\Writer\SvgWriter;
     
@@ -7,10 +7,11 @@
     $qrSvg = null;
     if ($certificate) {
         $verificationUrl = route('certificates.verify', ['certificate_id' => $certificate->certificate_id]);
-        $qrCode = QrCode::create($verificationUrl)
-            ->setSize(200)
-            ->setMargin(10)
-            ->setErrorCorrectionLevel(ErrorCorrectionLevel::High);
+        $qrCode = new QrCode($verificationUrl);
+        $qrCode->setSize(200);
+        $qrCode->setMargin(10);
+        $qrCode->setForegroundColor(new Color(0, 0, 0));
+        $qrCode->setBackgroundColor(new Color(255, 255, 255));
         $writer = new SvgWriter();
         $qrSvg = $writer->write($qrCode)->getString();
     }

@@ -192,7 +192,7 @@
                                     variant="primary" 
                                     class="w-full" 
                                     wire:click="submitQuiz"
-                                    @disabled(count($quizAnswers) < count($quizQuestions))
+                                    :disabled="count($quizAnswers) < count($quizQuestions)"
                                 >
                                     Submit Quiz
                                 </flux:button>
