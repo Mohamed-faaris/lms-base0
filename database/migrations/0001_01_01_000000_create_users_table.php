@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('college')->nullable();
             $table->string('department')->nullable();
-            $table->string('role')->nullable();
+            $table->string('role')->default('faculty');
             $table->string('image')->nullable();
             $table->rememberToken();
             $table->timestamps();
