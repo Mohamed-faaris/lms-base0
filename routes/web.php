@@ -1,13 +1,8 @@
 <?php
 
-use App\Livewire\Faculty\Certificates;
-use App\Livewire\Faculty\CoursePlayer;
-use App\Livewire\Faculty\Courses;
-use App\Livewire\Faculty\Dashboard;
-use App\Livewire\Faculty\Notifications;
-use App\Livewire\Faculty\Profile;
-use App\Livewire\Faculty\Streaks;
-use App\Livewire\Faculty\Suggestions;
+use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Settings;
+use App\Livewire\Admin\Users;
 use App\Livewire\Public\CertificateVerify;
 use App\Models\Certificate;
 use Endroid\QrCode\QrCode;
@@ -55,25 +50,10 @@ Route::get('certificates/download/{certificate_id}', function ($certificate_id, 
 })->name('certificates.download');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        $user = auth()->user();
-
-        if ($user->role->value === 'faculty') {
-            return redirect()->route('faculty.dashboard');
-        }
-
-        return redirect()->route('faculty.dashboard');
-    })->name('dashboard');
-
-    Route::prefix('faculty')->name('faculty.')->group(function () {
-        Route::get('dashboard', Dashboard::class)->name('dashboard');
-        Route::get('courses', Courses::class)->name('courses');
-        Route::get('course-player/{course?}', CoursePlayer::class)->name('course-player');
-        Route::get('streaks', Streaks::class)->name('streaks');
-        Route::get('certificates', Certificates::class)->name('certificates');
-        Route::get('notifications', Notifications::class)->name('notifications');
-        Route::get('profile', Profile::class)->name('profile');
-        Route::get('suggestions', Suggestions::class)->name('suggestions');
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('dashboard', AdminDashboard::class)->name('dashboard');
+        Route::get('users', Users::class)->name('users');
+        Route::get('settings', Settings::class)->name('settings');
     });
 });
 
