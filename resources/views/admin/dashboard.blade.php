@@ -14,7 +14,7 @@
         @forelse($colleges as $index => $college)
         <div style="background: white; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h4 style="font-size: 18px; font-weight: 600; color: #1f2937;">{{ $college->name }}</h4>
+                <h4 style="font-size: 18px; font-weight: 600; color: #1f2937;">{{ $college->college_name }}</h4>
                 <span style="background: #dbeafe; color: #2563eb; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500;">Active</span>
             </div>
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">

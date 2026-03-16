@@ -33,20 +33,21 @@ class DashboardController extends Controller
                 ->leftJoin('departments', 'colleges.id', '=', 'departments.college_id')
                 ->leftJoin('faculties', 'colleges.id', '=', 'faculties.college_id')
                 ->leftJoin('users', function ($join) {
-                    $join->on('colleges.code', '=', 'users.college');
+                    $join->on('colleges.college_code', '=', 'users.college');
                 })
                 ->select(
                     'colleges.id',
-                    'colleges.name',
+                    'colleges.college_name',
                     DB::raw('COUNT(DISTINCT departments.id) as total_departments'),
-                    DB::raw('COUNT(DISTINCT faculties.user_id) as total_faculties'),
+                    DB::raw('COUNT(DISTINCT faculties.id) as total_faculties'),
                     DB::raw('COUNT(DISTINCT users.id) as total_users')
                 )
-                ->groupBy('colleges.id', 'colleges.name')
+                ->groupBy('colleges.id', 'colleges.college_name')
                 ->get()
                 ->map(function ($college) {
                     // Calculate progress (placeholder - would come from progress_tracking table)
                     $college->progress = rand(50, 85);
+
                     return $college;
                 });
         }
@@ -97,7 +98,7 @@ class DashboardController extends Controller
         foreach ($courses as $course) {
             $activities->push((object) [
                 'type' => 'course',
-                'title' => 'New course "' . $course->title . '" was uploaded',
+                'title' => 'New course "'.$course->title.'" was uploaded',
                 'description' => 'By Admin',
                 'icon' => 'course',
                 'created_at' => $course->created_at,
@@ -109,8 +110,8 @@ class DashboardController extends Controller
         foreach ($enrollments as $enrollment) {
             $activities->push((object) [
                 'type' => 'module',
-                'title' => 'New enrollment in "' . ($enrollment->course->title ?? 'Course') . '"',
-                'description' => 'By ' . ($enrollment->enrolledBy->name ?? 'Admin'),
+                'title' => 'New enrollment in "'.($enrollment->course->title ?? 'Course').'"',
+                'description' => 'By '.($enrollment->enrolledBy->name ?? 'Admin'),
                 'icon' => 'module',
                 'created_at' => $enrollment->enrolled_at,
             ]);
@@ -121,8 +122,8 @@ class DashboardController extends Controller
         foreach ($quizAttempts as $attempt) {
             $activities->push((object) [
                 'type' => 'quiz',
-                'title' => 'Quiz completed by ' . ($attempt->user->name ?? 'User'),
-                'description' => 'Score: ' . $attempt->score . '%',
+                'title' => 'Quiz completed by '.($attempt->user->name ?? 'User'),
+                'description' => 'Score: '.$attempt->score.'%',
                 'icon' => 'quiz',
                 'created_at' => $attempt->attempted_at,
             ]);
@@ -134,8 +135,8 @@ class DashboardController extends Controller
             $contentType = is_object($content->type) ? $content->type->value : $content->type;
             $activities->push((object) [
                 'type' => 'video',
-                'title' => 'New content "' . $content->title . '" was added',
-                'description' => 'Type: ' . $contentType,
+                'title' => 'New content "'.$content->title.'" was added',
+                'description' => 'Type: '.$contentType,
                 'icon' => 'video',
                 'created_at' => $content->created_at,
             ]);
@@ -163,7 +164,7 @@ class DashboardController extends Controller
         // College Progress Data
         $collegeProgress = $this->getColleges()->map(function ($college) {
             return [
-                'name' => $college->name,
+                'name' => $college->college_name,
                 'progress' => $college->progress,
             ];
         });
@@ -182,6 +183,7 @@ class DashboardController extends Controller
                 } else {
                     $completion = rand(40, 90);
                 }
+
                 return [
                     'name' => $course->title,
                     'completion' => $completion,

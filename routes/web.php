@@ -1,10 +1,15 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CollegeController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\FacultyController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/_boost/browser-logs', function () {
+    return response()->json(['message' => 'Use POST to send browser logs'], 405);
+});
 
 Route::view('/', 'welcome');
 
@@ -18,6 +23,7 @@ Route::view('profile', 'profile')
 
 Route::post('/logout', function () {
     Auth::logout();
+
     return redirect('/');
 })->name('logout');
 
