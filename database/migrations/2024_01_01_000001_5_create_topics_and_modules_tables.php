@@ -10,26 +10,20 @@ return new class extends Migration
     {
         Schema::create('topics', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('course_id');
+            $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->text('name');
             $table->text('description')->nullable();
             $table->integer('order');
             $table->timestamps();
-
-            $table->foreign('course_id')->references('id')->on('courses')->onDelete('cascade');
-            $table->index('course_id');
         });
 
         Schema::create('modules', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('topic_id');
+            $table->foreignId('topic_id')->constrained()->onDelete('cascade');
             $table->text('title');
             $table->text('description')->nullable();
             $table->integer('order');
             $table->timestamps();
-
-            $table->foreign('topic_id')->references('id')->on('topics')->onDelete('cascade');
-            $table->index('topic_id');
         });
     }
 
