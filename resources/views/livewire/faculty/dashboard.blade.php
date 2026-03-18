@@ -155,29 +155,66 @@
         <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
             @forelse($courseProgress as $course)
                 <div class="p-4">
-                    <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-2">
                             <flux:icon.book-open class="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
                             <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ $course['name'] }}</p>
-                            @if($course['isCompleted'])
-                                <flux:badge color="emerald" size="sm">Completed</flux:badge>
-                            @endif
                         </div>
-                        <div class="flex items-center gap-4 text-sm">
-                            <span class="text-zinc-500 dark:text-zinc-400">
-                                {{ $course['completedModules'] }}/{{ $course['totalModules'] }} modules
-                            </span>
-                            <span class="flex items-center gap-1 text-zinc-500 dark:text-zinc-400">
-                                <flux:icon.academic-cap class="h-3 w-3" />
-                                Avg: {{ $course['avgScore'] }}%
-                            </span>
+                        <div class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+                            <flux:icon.users class="h-4 w-4" />
+                            <span>{{ $course['enrolledCount'] }}/{{ $course['totalModules'] }} modules</span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-blue-600 rounded-full" style="width: {{ $course['progress'] }}%"></div>
+
+                    @if($course['topLearner'])
+                        <div class="mb-3 p-3 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-900/20 dark:to-transparent rounded-lg border border-amber-200 dark:border-amber-800/50">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <flux:icon.trophy class="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                    <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        Top Learner: {{ $course['topLearner']['userName'] }}
+                                        @if($course['topLearner']['isCurrentUser'])
+                                            <span class="text-amber-600 dark:text-amber-400">(You)</span>
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                                        {{ $course['topLearner']['completedModules'] }}/{{ $course['totalModules'] }} modules
+                                    </span>
+                                    <span class="text-sm font-bold text-amber-600 dark:text-amber-400">
+                                        {{ $course['topLearner']['progress'] }}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mt-2 h-2 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full" style="width: {{ $course['topLearner']['progress'] }}%"></div>
+                            </div>
                         </div>
-                        <span class="text-sm font-medium w-12 text-right">{{ $course['progress'] }}%</span>
+                    @endif
+
+                    <div class="space-y-2">
+                        @foreach($course['allFaculties'] as $faculty)
+                            <div class="flex items-center justify-between text-sm {{ $faculty['isCurrentUser'] ? 'bg-blue-50 dark:bg-blue-900/20 -mx-2 px-2 py-1.5 rounded' : '' }}">
+                                <span class="text-zinc-700 dark:text-zinc-300 {{ $faculty['isCurrentUser'] ? 'font-medium' : '' }}">
+                                    {{ $faculty['userName'] }}
+                                    @if($faculty['isCurrentUser'])
+                                        <span class="text-blue-600 dark:text-blue-400">(You)</span>
+                                    @endif
+                                </span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                                        {{ $faculty['completedModules'] }}/{{ $course['totalModules'] }}
+                                    </span>
+                                    <div class="w-24 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                                        <div class="h-full {{ $faculty['isCurrentUser'] ? 'bg-blue-600' : 'bg-zinc-400 dark:bg-zinc-500' }} rounded-full" style="width: {{ $faculty['progress'] }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-medium w-10 text-right {{ $faculty['isCurrentUser'] ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-600 dark:text-zinc-400' }}">
+                                        {{ $faculty['progress'] }}%
+                                    </span>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             @empty

@@ -3,7 +3,6 @@
 namespace App\Livewire\Faculty;
 
 use App\Models\Badge;
-use App\Models\EndQuiz;
 use App\Models\Enrollment;
 use App\Models\Progress;
 use App\Models\QuizAttempt;
@@ -175,77 +174,70 @@ class Dashboard extends Component
 
     protected function loadCourseProgress(): void
     {
-        $user = auth()->user();
-
-        if (! $user) {
-            return;
-        }
-
-        // Eager load course.contents for all enrollments
-        $enrollments = Enrollment::with(['course.contents'])
-            ->where('user_id', $user->id)
+        // Get all courses that have enrollments
+        $courses = \App\Models\Course::with('contents')
+            ->whereHas('enrollments')
             ->get();
 
-        // Pre-fetch all content IDs and progress in bulk
-        $allContentIds = $enrollments->flatMap(fn ($e) => $e->course?->contents ?? collect())->pluck('id')->unique()->toArray();
+        // Get all enrollments with user data
+        $allEnrollments = Enrollment::with('user')
+            ->whereIn('course_id', $courses->pluck('id'))
+            ->get()
+            ->groupBy('course_id');
 
-        $progressCounts = [];
-        if (! empty($allContentIds)) {
-            $progressCounts = Progress::where('user_id', $user->id)
+        // Get all faculty IDs
+        $facultyIds = $allEnrollments->flatten()->pluck('user_id')->unique()->toArray();
+
+        // Pre-fetch all content IDs
+        $allContentIds = $courses->flatMap(fn ($c) => $c->contents)->pluck('id')->unique()->toArray();
+
+        // Pre-fetch all progress for all faculties
+        $allProgress = [];
+        if (! empty($allContentIds) && ! empty($facultyIds)) {
+            $allProgress = Progress::whereIn('user_id', $facultyIds)
                 ->whereIn('content_id', $allContentIds)
                 ->whereNotNull('completed_at')
                 ->get()
-                ->groupBy(fn ($p) => $p->content_id)
-                ->map(fn ($group) => $group->count())
-                ->toArray();
+                ->groupBy(function ($p) {
+                    return $p->user_id.'_'.$p->content_id;
+                });
         }
 
-        // Pre-fetch quiz attempts for all content
-        $allQuizIds = [];
-        foreach ($enrollments as $enrollment) {
-            $contents = $enrollment->course?->contents ?? collect();
-            $quizIds = EndQuiz::whereIn('content_id', $contents->pluck('id'))->pluck('id')->toArray();
-            $allQuizIds = array_merge($allQuizIds, $quizIds);
-        }
+        $this->courseProgress = $courses->map(function ($course) use ($allEnrollments, $allProgress) {
+            $enrollments = $allEnrollments[$course->id] ?? collect();
+            $contents = $course->contents ?? collect();
+            $totalModules = $contents->count();
+            $contentIds = $contents->pluck('id');
 
-        $quizScores = [];
-        if (! empty($allQuizIds)) {
-            $quizScores = QuizAttempt::where('user_id', $user->id)
-                ->whereIn('quiz_id', $allQuizIds)
-                ->get()
-                ->groupBy(fn ($a) => $a->quiz_id)
-                ->map(fn ($group) => $group->avg('score'))
-                ->toArray();
-        }
+            // Calculate progress for each enrolled faculty
+            $facultyProgress = $enrollments->map(function ($enrollment) use ($contentIds, $allProgress, $totalModules) {
+                $completedCount = $contentIds->filter(function ($contentId) use ($enrollment, $allProgress) {
+                    return $allProgress->has($enrollment->user_id.'_'.$contentId);
+                })->count();
 
-        // Pre-fetch EndQuiz content_id mapping
-        $quizContentMap = EndQuiz::whereIn('id', $allQuizIds ?? [])->pluck('content_id', 'id')->toArray();
+                $progressPercent = $totalModules > 0
+                    ? (int) round(($completedCount / $totalModules) * 100)
+                    : 0;
 
-        $this->courseProgress = $enrollments->map(function ($enrollment) use ($progressCounts, $quizScores, $quizContentMap) {
-            $course = $enrollment->course;
-            $contents = $course?->contents ?? collect();
-            $totalContents = $contents->count();
+                return [
+                    'userId' => $enrollment->user_id,
+                    'userName' => $enrollment->user?->name ?? 'Unknown',
+                    'completedModules' => $completedCount,
+                    'progress' => $progressPercent,
+                    'isCurrentUser' => $enrollment->user_id === auth()->id(),
+                ];
+            })->sortByDesc('progress')->values();
 
-            $completedContents = $contents->reduce(fn ($carry, $content) => $carry + ($progressCounts[$content->id] ?? 0), 0);
-
-            $progressPercent = $totalContents > 0
-                ? (int) round(($completedContents / $totalContents) * 100)
-                : 0;
-
-            // Calculate average score from pre-fetched data
-            $contentIds = $contents->pluck('id')->toArray();
-            $relevantQuizIds = array_keys(array_intersect($quizContentMap, $contentIds));
-            $scores = array_intersect_key($quizScores, array_flip($relevantQuizIds));
-            $avgScore = ! empty($scores) ? array_sum($scores) / count($scores) : 0;
+            // Get top learner
+            $topLearner = $facultyProgress->first();
 
             return [
-                'id' => $course?->id,
-                'name' => $course?->title ?? 'Unknown Course',
-                'totalModules' => $totalContents,
-                'completedModules' => $completedContents,
-                'progress' => $progressPercent,
-                'avgScore' => (int) $avgScore,
-                'isCompleted' => $progressPercent === 100,
+                'id' => $course->id,
+                'name' => $course->title ?? 'Unknown Course',
+                'totalModules' => $totalModules,
+                'enrolledCount' => $enrollments->count(),
+                'topLearner' => $topLearner,
+                'allFaculties' => $facultyProgress->toArray(),
             ];
         })->toArray();
     }
