@@ -99,7 +99,143 @@
         </div>
     </div>
 
-    {{-- Assigned Courses --}}
+    {{-- Learning Performance Section --}}
+    <div class="grid gap-4 md:grid-cols-2">
+        {{-- Average Score Card --}}
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Average Score</h3>
+                <flux:icon.chart-bar class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div class="flex items-end gap-2">
+                <span class="text-4xl font-bold text-zinc-900 dark:text-zinc-100">{{ number_format($averageScore, 1) }}%</span>
+                <span class="text-sm text-zinc-500 dark:text-zinc-400 mb-1">overall</span>
+            </div>
+            <div class="mt-4">
+                @if($averageScore >= 80)
+                    <flux:badge color="emerald" size="sm">Excellent</flux:badge>
+                @elseif($averageScore >= 60)
+                    <flux:badge color="blue" size="sm">Good</flux:badge>
+                @else
+                    <flux:badge color="amber" size="sm">Needs Improvement</flux:badge>
+                @endif
+            </div>
+        </div>
+
+        {{-- Score Trend Card --}}
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Score Trend</h3>
+                <flux:icon.trending-up class="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            @if(count($scoreTrend) > 0)
+                <div class="flex items-end gap-1 h-20">
+                    @foreach($scoreTrend as $trend)
+                        <div class="flex-1 flex flex-col items-center gap-1">
+                            <div class="w-full bg-blue-500 rounded-t" style="height: {{ $trend['score'] }}%"></div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="flex justify-between mt-2">
+                    @foreach($scoreTrend as $trend)
+                        <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $trend['date'] }}</span>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-zinc-500 dark:text-zinc-400 text-sm">No quiz data yet</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- Course-wise Progress --}}
+    <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
+        <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
+            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Course-wise Progress</h3>
+        </div>
+        <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
+            @forelse($courseProgress as $course)
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <flux:icon.book-open class="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ $course['name'] }}</p>
+                            @if($course['isCompleted'])
+                                <flux:badge color="emerald" size="sm">Completed</flux:badge>
+                            @endif
+                        </div>
+                        <div class="flex items-center gap-4 text-sm">
+                            <span class="text-zinc-500 dark:text-zinc-400">
+                                {{ $course['completedModules'] }}/{{ $course['totalModules'] }} modules
+                            </span>
+                            <span class="flex items-center gap-1 text-zinc-500 dark:text-zinc-400">
+                                <flux:icon.academic-cap class="h-3 w-3" />
+                                Avg: {{ $course['avgScore'] }}%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-blue-600 rounded-full" style="width: {{ $course['progress'] }}%"></div>
+                        </div>
+                        <span class="text-sm font-medium w-12 text-right">{{ $course['progress'] }}%</span>
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-zinc-500 dark:text-zinc-400">
+                    No course progress data yet.
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    {{-- Leaderboard --}}
+    <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
+        <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
+            <div class="flex items-center gap-2">
+                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Leaderboard</h3>
+                <flux:badge color="amber" variant="subtle" size="sm">Rank #{{ $userRank }}</flux:badge>
+            </div>
+            <flux:icon.trophy class="h-5 w-5 text-amber-500" />
+        </div>
+        <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
+            @forelse($leaderboard as $index => $entry)
+                <div class="flex items-center gap-4 p-4 {{ $entry['isCurrentUser'] ? 'bg-blue-50 dark:bg-blue-900/20' : '' }}">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+                        {{ $index === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : ($index === 1 ? 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300' : ($index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400')) }}">
+                        {{ $index + 1 }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-zinc-900 dark:text-zinc-100 {{ $entry['isCurrentUser'] ? 'text-blue-700 dark:text-blue-300' : '' }}">
+                            {{ $entry['name'] }}
+                            @if($entry['isCurrentUser'])
+                                <span class="text-xs text-blue-600 dark:text-blue-400">(You)</span>
+                            @endif
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-6 text-sm">
+                        <div class="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                            <flux:icon.bolt class="h-4 w-4" />
+                            <span class="font-medium">{{ $entry['xp'] }}</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                            <flux:icon.academic-cap class="h-4 w-4" />
+                            <span>{{ $entry['avgScore'] }}%</span>
+                        </div>
+                        <div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                            <flux:icon.check-circle class="h-4 w-4" />
+                            <span>{{ $entry['completedCourses'] }}</span>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-zinc-500 dark:text-zinc-400">
+                    No leaderboard data yet.
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    {{-- My Courses --}}
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
         <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
             <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">My Courses</h3>
