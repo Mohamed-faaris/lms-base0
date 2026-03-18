@@ -10,7 +10,7 @@ class EndQuiz extends Model
 
     protected $fillable = [
         'content_id',
-        'question_id',
+        'quiz_id',
     ];
 
     public function content()
@@ -18,13 +18,13 @@ class EndQuiz extends Model
         return $this->belongsTo(Content::class);
     }
 
-    public function question()
+    public function quiz()
     {
-        return $this->belongsTo(Question::class);
+        return $this->belongsTo(Quiz::class);
     }
 
     public function attempts()
     {
-        return $this->hasMany(QuizAttempt::class, 'quiz_id');
+        return $this->hasMany(QuizAttempt::class);
     }
 }

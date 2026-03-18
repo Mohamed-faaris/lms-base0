@@ -28,6 +28,6 @@ class QuizAttempt extends Model
 
     public function quiz()
     {
-        return $this->belongsTo(EndQuiz::class, 'quiz_id');
+        return $this->belongsTo(Quiz::class);
     }
 }
