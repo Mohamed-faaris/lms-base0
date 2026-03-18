@@ -13,7 +13,17 @@ class Course extends Model
 
     public function contents()
     {
-        return $this->hasMany(Content::class);
+        return $this->hasManyThrough(Content::class, Module::class);
+    }
+
+    public function topics()
+    {
+        return $this->hasMany(Topic::class);
+    }
+
+    public function courseMeta()
+    {
+        return $this->hasOne(CourseMeta::class);
     }
 
     public function enrollments()

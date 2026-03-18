@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Enums\ContentType;
+use Illuminate\Database\Eloquent\Model;
 
 class Content extends Model
 {
@@ -48,6 +48,16 @@ class Content extends Model
     public function modelQuiz()
     {
         return $this->hasMany(ModelQuiz::class);
+    }
+
+    public function quizzes()
+    {
+        return $this->hasMany(Quiz::class);
+    }
+
+    public function timestampedQuizzes()
+    {
+        return $this->hasMany(TimestampedQuiz::class);
     }
 
     public function progress()
