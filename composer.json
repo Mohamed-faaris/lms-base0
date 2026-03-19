@@ -10,8 +10,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "endroid/qr-code": "^6.1",
-        "laravel/fortify": "^1.30",
+        "laravel/fortify": "^1.36",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "livewire/blaze": "^1.0",
@@ -45,6 +44,7 @@
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
             "npm install",

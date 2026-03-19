@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class EndQuiz extends Model
+class TimestampedQuiz extends Model
 {
-    protected $table = 'end_quiz';
+    protected $table = 'timestamped_quiz';
 
     protected $fillable = [
         'content_id',
+        'timestamp',
         'quiz_id',
     ];
 
@@ -31,10 +32,5 @@ class EndQuiz extends Model
     public function module()
     {
         return $this->hasOneThrough(Module::class, Content::class);
-    }
-
-    public function attempts()
-    {
-        return $this->hasMany(QuizAttempt::class);
     }
 }

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Content extends Model
 {
     protected $fillable = [
-        'course_id',
+        'module_id',
         'order',
         'title',
         'body',
@@ -25,9 +25,14 @@ class Content extends Model
         ];
     }
 
+    public function module()
+    {
+        return $this->belongsTo(Module::class);
+    }
+
     public function course()
     {
-        return $this->belongsTo(Course::class);
+        return $this->hasOneThrough(Course::class, Module::class);
     }
 
     public function comments()
@@ -40,9 +45,14 @@ class Content extends Model
         return $this->hasMany(EndQuiz::class);
     }
 
-    public function modelQuiz()
+    public function quizzes()
     {
-        return $this->hasMany(ModelQuiz::class);
+        return $this->hasMany(Quiz::class);
+    }
+
+    public function timestampedQuizzes()
+    {
+        return $this->hasMany(TimestampedQuiz::class);
     }
 
     public function progress()

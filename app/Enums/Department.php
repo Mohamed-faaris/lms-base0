@@ -9,6 +9,11 @@ enum Department: string
     case ECE = 'ECE';
     case AI = 'AI';
     case AIDS = 'AIDS';
+    case CIVIL = 'CIVIL';
+    case MECH = 'MECH';
+    case IT = 'IT';
+    case SH = 'S&H';
+
 
     public function label(): string
     {
@@ -18,6 +23,10 @@ enum Department: string
             self::ECE => 'Electronics & Communication Engineering',
             self::AI => 'Artificial Intelligence',
             self::AIDS => 'AI & Data Science',
+            self::CIVIL => 'Civil Engineering',
+            self::MECH => 'Mechanical Engineering',
+            self::IT => 'Information Technology',
+            self::SH => 'Science & Humanities',
         };
     }
 }
