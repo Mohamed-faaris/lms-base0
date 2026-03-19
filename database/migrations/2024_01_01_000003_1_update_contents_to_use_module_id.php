@@ -31,7 +31,8 @@ return new class extends Migration
 
         Schema::create('contents', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('course_id')->constrained()->onDelete('cascade');
+            $table->foreignId('course_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('module_id')->nullable()->constrained()->onDelete('cascade');
             $table->integer('order');
             $table->string('title');
             $table->text('body')->nullable();
@@ -40,7 +41,7 @@ return new class extends Migration
             $table->json('content_meta')->nullable();
             $table->timestamps();
 
-            $table->unique(['course_id', 'order']);
+            $table->unique(['module_id', 'order']);
         });
     }
 };
