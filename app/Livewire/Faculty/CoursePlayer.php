@@ -93,7 +93,11 @@ class CoursePlayer extends Component
     {
         $user = auth()->user();
 
-        $this->modules = Content::where('course_id', $this->course->id)
+        $this->modules = Content::whereHas('module', function ($query) {
+            $query->whereHas('topic', function ($query) {
+                $query->where('course_id', $this->course->id);
+            });
+        })
             ->orderBy('order')
             ->get();
 

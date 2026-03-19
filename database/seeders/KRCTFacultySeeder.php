@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
-use App\Enums\Role;
 use App\Enums\College;
 use App\Enums\Department;
+use App\Enums\Role;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class KRCTFacultySeeder extends Seeder
@@ -41,7 +41,7 @@ class KRCTFacultySeeder extends Seeder
         foreach ($eeeFaculty as $index => $faculty) {
             User::create([
                 'name' => $faculty['name'],
-                'email' => 'eeefaculty' . str_pad($index + 1, 2, '0', STR_PAD_LEFT) . '@krct.ac.in',
+                'email' => 'eeefaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
                 'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::EEE->value,
@@ -89,7 +89,7 @@ class KRCTFacultySeeder extends Seeder
         foreach ($eceFaculty as $index => $faculty) {
             User::create([
                 'name' => $faculty['name'],
-                'email' => 'ecefaculty' . str_pad($index + 1, 2, '0', STR_PAD_LEFT) . '@krct.ac.in',
+                'email' => 'ecefaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
                 'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::ECE->value,
@@ -123,7 +123,7 @@ class KRCTFacultySeeder extends Seeder
         foreach ($civilFaculty as $index => $faculty) {
             User::create([
                 'name' => $faculty['name'],
-                'email' => 'civilfaculty' . str_pad($index + 1, 2, '0', STR_PAD_LEFT) . '@krct.ac.in',
+                'email' => 'civilfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
                 'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::CIVIL->value,
@@ -173,7 +173,7 @@ class KRCTFacultySeeder extends Seeder
         foreach ($cseFaculty as $index => $faculty) {
             User::create([
                 'name' => $faculty['name'],
-                'email' => 'csefaculty' . str_pad($index + 1, 2, '0', STR_PAD_LEFT) . '@krct.ac.in',
+                'email' => 'csefaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
                 'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::CSE->value,
@@ -210,7 +210,7 @@ class KRCTFacultySeeder extends Seeder
         foreach ($mechFaculty as $index => $faculty) {
             User::create([
                 'name' => $faculty['name'],
-                'email' => 'mechfaculty' . str_pad($index + 1, 2, '0', STR_PAD_LEFT) . '@krct.ac.in',
+                'email' => 'mechfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
                 'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::MECH->value,
@@ -234,7 +234,7 @@ class KRCTFacultySeeder extends Seeder
         foreach ($itFaculty as $index => $faculty) {
             User::create([
                 'name' => $faculty['name'],
-                'email' => 'itfaculty' . str_pad($index + 1, 2, '0', STR_PAD_LEFT) . '@krct.ac.in',
+                'email' => 'itfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
                 'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::IT->value,
@@ -276,7 +276,7 @@ class KRCTFacultySeeder extends Seeder
         foreach ($aiFaculty as $index => $faculty) {
             User::create([
                 'name' => $faculty['name'],
-                'email' => 'aifaculty' . str_pad($index + 1, 2, '0', STR_PAD_LEFT) . '@krct.ac.in',
+                'email' => 'aifaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
                 'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::AI->value,
@@ -331,7 +331,7 @@ class KRCTFacultySeeder extends Seeder
         foreach ($shFaculty as $index => $faculty) {
             User::create([
                 'name' => $faculty['name'],
-                'email' => 'shfaculty' . str_pad($index + 1, 2, '0', STR_PAD_LEFT) . '@krct.ac.in',
+                'email' => 'shfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
                 'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::SH->value,
@@ -425,16 +425,16 @@ class KRCTFacultySeeder extends Seeder
         $this->command->info('✅ KRCT College Faculty Seeder Completed Successfully!');
         $this->command->info('========================================');
         $this->command->info('📊 DEPARTMENT WISE FACULTY COUNT:');
-        $this->command->info('   EEE: ' . count($eeeFaculty) . ' faculty');
-        $this->command->info('   ECE: ' . count($eceFaculty) . ' faculty');
-        $this->command->info('   CIVIL: ' . count($civilFaculty) . ' faculty');
-        $this->command->info('   CSE: ' . count($cseFaculty) . ' faculty');
-        $this->command->info('   MECH: ' . count($mechFaculty) . ' faculty');
-        $this->command->info('   IT: ' . count($itFaculty) . ' faculty');
-        $this->command->info('   AI: ' . count($aiFaculty) . ' faculty');
-        $this->command->info('   S&H: ' . count($shFaculty) . ' faculty');
+        $this->command->info('   EEE: '.count($eeeFaculty).' faculty');
+        $this->command->info('   ECE: '.count($eceFaculty).' faculty');
+        $this->command->info('   CIVIL: '.count($civilFaculty).' faculty');
+        $this->command->info('   CSE: '.count($cseFaculty).' faculty');
+        $this->command->info('   MECH: '.count($mechFaculty).' faculty');
+        $this->command->info('   IT: '.count($itFaculty).' faculty');
+        $this->command->info('   AI: '.count($aiFaculty).' faculty');
+        $this->command->info('   S&H: '.count($shFaculty).' faculty');
         $this->command->info('----------------------------------------');
-        $this->command->info('   TOTAL FACULTY: ' . (count($eeeFaculty) + count($eceFaculty) + count($civilFaculty) + count($cseFaculty) + count($mechFaculty) + count($itFaculty) + count($aiFaculty) + count($shFaculty)) . ' faculty');
+        $this->command->info('   TOTAL FACULTY: '.(count($eeeFaculty) + count($eceFaculty) + count($civilFaculty) + count($cseFaculty) + count($mechFaculty) + count($itFaculty) + count($aiFaculty) + count($shFaculty)).' faculty');
         $this->command->info('   ADMIN/SUPERADMIN: 3 users');
         $this->command->info('   HOD/MANAGER: 8 users');
         $this->command->info('   STAFF: 5 users');
