@@ -9,12 +9,13 @@ use App\Models\Badge;
 use App\Models\BadgeAssignment;
 use App\Models\Content;
 use App\Models\Course;
-use App\Models\Enrollment;
 use App\Models\EndQuiz;
-use App\Models\ModelQuiz;
+use App\Models\Enrollment;
 use App\Models\Module;
+use App\Models\ModuleQuiz;
 use App\Models\Progress;
 use App\Models\Question;
+use App\Models\Quiz;
 use App\Models\Streak;
 use App\Models\Topic;
 use App\Models\User;
@@ -28,7 +29,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // Create Faculty Users (5 members)
         // ============================================
-        
+
         // Faculty 1: Dr. Sarah Johnson (CSE department, KRCE college)
         $faculty1 = User::firstOrCreate(
             ['email' => 'sarah@example.com'],
@@ -102,7 +103,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // Create React JS Full Course
         // ============================================
-        
+
         $reactCourse = Course::create([
             'title' => 'React JS Full Course 2024 - Bro Code',
             'description' => 'Complete React JS tutorial from beginners to advanced. Learn React hooks, components, state management, routing, and build real-world applications.',
@@ -111,7 +112,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // MODULE 1: React Fundamentals
         // ============================================
-        
+
         $topic1 = Topic::create([
             'course_id' => $reactCourse->id,
             'name' => 'Module 1: React Fundamentals',
@@ -137,7 +138,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '15:24',
-                'youtube_id' => 'Ke90Tje7VS0'
+                'youtube_id' => 'Ke90Tje7VS0',
             ]),
         ]);
 
@@ -152,7 +153,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '12:18',
-                'youtube_id' => '4UZrsTqkcW4'
+                'youtube_id' => '4UZrsTqkcW4',
             ]),
         ]);
 
@@ -167,7 +168,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '18:45',
-                'youtube_id' => '7fPXI_MnBOY'
+                'youtube_id' => '7fPXI_MnBOY',
             ]),
         ]);
 
@@ -182,7 +183,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '22:10',
-                'youtube_id' => 'N3AkSS5hXMA'
+                'youtube_id' => 'N3AkSS5hXMA',
             ]),
         ]);
 
@@ -192,7 +193,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // MODULE 2: React Hooks
         // ============================================
-        
+
         $topic2 = Topic::create([
             'course_id' => $reactCourse->id,
             'name' => 'Module 2: React Hooks',
@@ -218,7 +219,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '24:30',
-                'youtube_id' => 'O6P86uwfdR0'
+                'youtube_id' => 'O6P86uwfdR0',
             ]),
         ]);
 
@@ -233,7 +234,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '28:15',
-                'youtube_id' => '0ZJgIjIuY7U'
+                'youtube_id' => '0ZJgIjIuY7U',
             ]),
         ]);
 
@@ -248,7 +249,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '20:45',
-                'youtube_id' => '5LrDIWkK_Bc'
+                'youtube_id' => '5LrDIWkK_Bc',
             ]),
         ]);
 
@@ -263,7 +264,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '26:20',
-                'youtube_id' => 'kK_Wqx3RnHk'
+                'youtube_id' => 'kK_Wqx3RnHk',
             ]),
         ]);
 
@@ -278,7 +279,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '19:55',
-                'youtube_id' => '6ThXsUwLWvc'
+                'youtube_id' => '6ThXsUwLWvc',
             ]),
         ]);
 
@@ -288,7 +289,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // MODULE 3: React Router
         // ============================================
-        
+
         $topic3 = Topic::create([
             'course_id' => $reactCourse->id,
             'name' => 'Module 3: React Router',
@@ -314,7 +315,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '18:30',
-                'youtube_id' => 'Law7wfdg_ls'
+                'youtube_id' => 'Law7wfdg_ls',
             ]),
         ]);
 
@@ -329,7 +330,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '21:15',
-                'youtube_id' => '2k9Q0U0K6qY'
+                'youtube_id' => '2k9Q0U0K6qY',
             ]),
         ]);
 
@@ -344,7 +345,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '23:40',
-                'youtube_id' => 'JPPoK7R5u5M'
+                'youtube_id' => 'JPPoK7R5u5M',
             ]),
         ]);
 
@@ -359,7 +360,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '16:55',
-                'youtube_id' => 'zEQiNFAwDGo'
+                'youtube_id' => 'zEQiNFAwDGo',
             ]),
         ]);
 
@@ -369,7 +370,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // MODULE 4: Redux State Management
         // ============================================
-        
+
         $topic4 = Topic::create([
             'course_id' => $reactCourse->id,
             'name' => 'Module 4: Redux State Management',
@@ -395,7 +396,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '32:10',
-                'youtube_id' => '9boMnm5X9ak'
+                'youtube_id' => '9boMnm5X9ak',
             ]),
         ]);
 
@@ -410,7 +411,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '28:45',
-                'youtube_id' => '9f8QOb9sVbU'
+                'youtube_id' => '9f8QOb9sVbU',
             ]),
         ]);
 
@@ -425,7 +426,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => true,
                 'duration' => '35:20',
-                'youtube_id' => 'bbkBuqC1rU4'
+                'youtube_id' => 'bbkBuqC1rU4',
             ]),
         ]);
 
@@ -435,7 +436,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // MODULE 5: Real-World Project
         // ============================================
-        
+
         $topic5 = Topic::create([
             'course_id' => $reactCourse->id,
             'name' => 'Module 5: Real-World Project',
@@ -461,7 +462,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => false,
                 'duration' => '22:15',
-                'youtube_id' => 'w7ejDZ8SWv8'
+                'youtube_id' => 'w7ejDZ8SWv8',
             ]),
         ]);
 
@@ -476,7 +477,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => false,
                 'duration' => '31:40',
-                'youtube_id' => 'S66r8py5g1M'
+                'youtube_id' => 'S66r8py5g1M',
             ]),
         ]);
 
@@ -491,7 +492,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => false,
                 'duration' => '27:50',
-                'youtube_id' => 'O5PTSY7f2vM'
+                'youtube_id' => 'O5PTSY7f2vM',
             ]),
         ]);
 
@@ -506,7 +507,7 @@ class LmsDataSeeder extends Seeder
             'content_meta' => json_encode([
                 'has_quiz' => false,
                 'duration' => '24:30',
-                'youtube_id' => 'l8DCPJ7pG7M'
+                'youtube_id' => 'l8DCPJ7pG7M',
             ]),
         ]);
 
@@ -516,7 +517,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // FINAL COURSE QUIZ
         // ============================================
-        
+
         $finalQuizModule = Module::create([
             'topic_id' => $topic5->id,
             'title' => 'Final Assessment',
@@ -548,7 +549,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'It\'s a direct copy of the real DOM that updates in real-time',
                     'B' => 'It\'s a lightweight JavaScript representation of the DOM that batches updates',
                     'C' => 'It\'s a database for storing DOM elements',
-                    'D' => 'It\'s a new HTML specification'
+                    'D' => 'It\'s a new HTML specification',
                 ],
                 'correct' => 'B',
             ],
@@ -558,7 +559,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'useState',
                     'B' => 'useEffect',
                     'C' => 'useLayoutEffect',
-                    'D' => 'useMemo'
+                    'D' => 'useMemo',
                 ],
                 'correct' => 'B',
             ],
@@ -568,7 +569,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'To style list items',
                     'B' => 'To help React identify which items have changed',
                     'C' => 'To order list items',
-                    'D' => 'To add event listeners'
+                    'D' => 'To add event listeners',
                 ],
                 'correct' => 'B',
             ],
@@ -578,7 +579,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'A function that returns the new state based on the action',
                     'B' => 'A component that reduces state',
                     'C' => 'A middleware for async actions',
-                    'D' => 'A selector for getting state'
+                    'D' => 'A selector for getting state',
                 ],
                 'correct' => 'A',
             ],
@@ -588,7 +589,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'setCount(count + 1)',
                     'B' => 'setCount(prevCount => prevCount + 1)',
                     'C' => 'count = count + 1',
-                    'D' => 'this.state.count++'
+                    'D' => 'this.state.count++',
                 ],
                 'correct' => 'B',
             ],
@@ -601,18 +602,22 @@ class LmsDataSeeder extends Seeder
                 'options' => json_encode($qData['options']),
                 'correct_answer' => $qData['correct'],
             ]);
-            
-            // Use EndQuiz for final course quiz with correct Content ID
-            EndQuiz::create([
+
+            $quiz = Quiz::create([
                 'content_id' => $finalQuizContent->id,
                 'question_id' => $question->id,
+            ]);
+
+            EndQuiz::create([
+                'content_id' => $finalQuizContent->id,
+                'quiz_id' => $quiz->id,
             ]);
         }
 
         // ============================================
         // ENROLLMENT DATA
         // ============================================
-        
+
         $faculties = [
             ['user' => $faculty1, 'progress' => 85, 'xp' => 2450, 'streak' => 15],
             ['user' => $faculty2, 'progress' => 62, 'xp' => 1800, 'streak' => 7],
@@ -659,7 +664,7 @@ class LmsDataSeeder extends Seeder
                 if (isset($allContent[$i])) {
                     $contentItem = $allContent[$i];
                     $contentId = $contentItem instanceof Module ? $contentItem->id : $contentItem->id;
-                    
+
                     Progress::firstOrCreate(
                         ['user_id' => $user->id, 'content_id' => $contentId],
                         ['completed_at' => now()->subDays(rand(1, 25))]
@@ -686,7 +691,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // PHP COURSE - PHP Full Course 2024 - Bro Code
         // ============================================
-        
+
         $phpCourse = Course::firstOrCreate(
             ['title' => 'PHP Full Course 2024 - Bro Code'],
             [
@@ -913,7 +918,7 @@ class LmsDataSeeder extends Seeder
                 if (isset($phpAllContent[$i])) {
                     $contentItem = $phpAllContent[$i];
                     $contentId = $contentItem instanceof Module ? $contentItem->id : $contentItem->id;
-                    
+
                     Progress::firstOrCreate(
                         ['user_id' => $user->id, 'content_id' => $contentId],
                         ['completed_at' => now()->subDays(rand(1, 20))]
@@ -934,7 +939,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // PHP COURSE BADGES
         // ============================================
-        
+
         $phpBadges = [
             ['title' => 'PHP Novice', 'description' => 'For beginners starting their PHP journey', 'image' => 'badge-php-novice.png'],
             ['title' => 'PHP Loop Master', 'description' => 'For completing control structures module', 'image' => 'badge-php-loop-master.png'],
@@ -977,7 +982,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // CREATE BADGES
         // ============================================
-        
+
         $badges = [
             [
                 'title' => 'React Novice',
@@ -1023,7 +1028,7 @@ class LmsDataSeeder extends Seeder
         // ============================================
         // ASSIGN BADGES BASED ON PROGRESS
         // ============================================
-        
+
         // Faculty 1 (85% progress): React Novice + React Hooks Master + React Router Expert
         BadgeAssignment::firstOrCreate([
             'badge_id' => $createdBadges['React Novice']->id,
@@ -1113,7 +1118,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'Server-side programming',
                     'B' => 'Building user interfaces',
                     'C' => 'Database management',
-                    'D' => 'Mobile app development only'
+                    'D' => 'Mobile app development only',
                 ],
                 'correct' => 'B',
             ],
@@ -1123,7 +1128,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'Write SQL queries in JavaScript',
                     'B' => 'Write HTML-like syntax in JavaScript',
                     'C' => 'Style components directly',
-                    'D' => 'Create CSS files'
+                    'D' => 'Create CSS files',
                 ],
                 'correct' => 'B',
             ],
@@ -1133,7 +1138,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'function App() { return <h1>Hello</h1>; }',
                     'B' => 'class App { render() { return "Hello"; } }',
                     'C' => 'const App = () => { return "Hello"; }',
-                    'D' => 'All of the above are valid'
+                    'D' => 'All of the above are valid',
                 ],
                 'correct' => 'D',
             ],
@@ -1143,7 +1148,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'A copy of the actual DOM for better performance',
                     'B' => 'A database for storing DOM elements',
                     'C' => 'A new version of HTML',
-                    'D' => 'A React component'
+                    'D' => 'A React component',
                 ],
                 'correct' => 'A',
             ],
@@ -1153,7 +1158,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'Using state',
                     'B' => 'Using props',
                     'C' => 'Using context',
-                    'D' => 'Using refs'
+                    'D' => 'Using refs',
                 ],
                 'correct' => 'B',
             ],
@@ -1166,12 +1171,15 @@ class LmsDataSeeder extends Seeder
                 'options' => json_encode($qData['options']),
                 'correct_answer' => $qData['correct'],
             ]);
-            
-            // Link question to module
-            ModelQuiz::create([
-                'content_id' => $module->id,
+
+            $quiz = Quiz::create([
+                'content_id' => $module->contents->first()?->id ?? 0,
                 'question_id' => $question->id,
-                'timestamp' => 0,
+            ]);
+
+            ModuleQuiz::create([
+                'module_id' => $module->id,
+                'quiz_id' => $quiz->id,
             ]);
         }
     }
@@ -1188,7 +1196,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'useState',
                     'B' => 'useEffect',
                     'C' => 'useContext',
-                    'D' => 'useReducer'
+                    'D' => 'useReducer',
                 ],
                 'correct' => 'B',
             ],
@@ -1198,7 +1206,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'When the effect runs',
                     'B' => 'The return value of the effect',
                     'C' => 'The state of the component',
-                    'D' => 'The props passed to child components'
+                    'D' => 'The props passed to child components',
                 ],
                 'correct' => 'A',
             ],
@@ -1208,7 +1216,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'useState',
                     'B' => 'useEffect',
                     'C' => 'useReducer',
-                    'D' => 'useCallback'
+                    'D' => 'useCallback',
                 ],
                 'correct' => 'C',
             ],
@@ -1218,7 +1226,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'To create context',
                     'B' => 'To consume context values',
                     'C' => 'To update context',
-                    'D' => 'To delete context'
+                    'D' => 'To delete context',
                 ],
                 'correct' => 'B',
             ],
@@ -1228,7 +1236,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'hook',
                     'B' => 'use',
                     'C' => 'custom',
-                    'D' => 'react'
+                    'D' => 'react',
                 ],
                 'correct' => 'B',
             ],
@@ -1241,11 +1249,15 @@ class LmsDataSeeder extends Seeder
                 'options' => json_encode($qData['options']),
                 'correct_answer' => $qData['correct'],
             ]);
-            
-            ModelQuiz::create([
-                'content_id' => $module->id,
+
+            $quiz = Quiz::create([
+                'content_id' => $module->contents->first()?->id ?? 0,
                 'question_id' => $question->id,
-                'timestamp' => 0,
+            ]);
+
+            ModuleQuiz::create([
+                'module_id' => $module->id,
+                'quiz_id' => $quiz->id,
             ]);
         }
     }
@@ -1262,7 +1274,7 @@ class LmsDataSeeder extends Seeder
                     'A' => '<Router>',
                     'B' => '<Route>',
                     'C' => '<Routes>',
-                    'D' => '<Switch>'
+                    'D' => '<Switch>',
                 ],
                 'correct' => 'B',
             ],
@@ -1272,7 +1284,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'this.params',
                     'B' => 'useParams() hook',
                     'C' => 'params prop',
-                    'D' => 'router.params'
+                    'D' => 'router.params',
                 ],
                 'correct' => 'B',
             ],
@@ -1282,7 +1294,7 @@ class LmsDataSeeder extends Seeder
                     'A' => '<Link>',
                     'B' => '<NavLink>',
                     'C' => 'useNavigate hook',
-                    'D' => '<Redirect>'
+                    'D' => '<Redirect>',
                 ],
                 'correct' => 'C',
             ],
@@ -1292,7 +1304,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'To create multiple pages',
                     'B' => 'To create hierarchical page structures',
                     'C' => 'To optimize performance',
-                    'D' => 'To handle errors'
+                    'D' => 'To handle errors',
                 ],
                 'correct' => 'B',
             ],
@@ -1305,11 +1317,15 @@ class LmsDataSeeder extends Seeder
                 'options' => json_encode($qData['options']),
                 'correct_answer' => $qData['correct'],
             ]);
-            
-            ModelQuiz::create([
-                'content_id' => $module->id,
+
+            $quiz = Quiz::create([
+                'content_id' => $module->contents->first()?->id ?? 0,
                 'question_id' => $question->id,
-                'timestamp' => 0,
+            ]);
+
+            ModuleQuiz::create([
+                'module_id' => $module->id,
+                'quiz_id' => $quiz->id,
             ]);
         }
     }
@@ -1326,7 +1342,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'A component that displays data',
                     'B' => 'A single source of truth for application state',
                     'C' => 'A database connection',
-                    'D' => 'A routing library'
+                    'D' => 'A routing library',
                 ],
                 'correct' => 'B',
             ],
@@ -1336,7 +1352,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'Functions that modify state directly',
                     'B' => 'Plain objects that describe what happened',
                     'C' => 'React components',
-                    'D' => 'Database queries'
+                    'D' => 'Database queries',
                 ],
                 'correct' => 'B',
             ],
@@ -1346,7 +1362,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'To connect components to the store',
                     'B' => 'To return the new state based on the action',
                     'C' => 'To create actions',
-                    'D' => 'To dispatch actions'
+                    'D' => 'To dispatch actions',
                 ],
                 'correct' => 'B',
             ],
@@ -1356,7 +1372,7 @@ class LmsDataSeeder extends Seeder
                     'A' => 'It replaces React',
                     'B' => 'It simplifies Redux setup and reduces boilerplate',
                     'C' => 'It adds more complexity',
-                    'D' => 'It removes the need for state management'
+                    'D' => 'It removes the need for state management',
                 ],
                 'correct' => 'B',
             ],
@@ -1369,11 +1385,15 @@ class LmsDataSeeder extends Seeder
                 'options' => json_encode($qData['options']),
                 'correct_answer' => $qData['correct'],
             ]);
-            
-            ModelQuiz::create([
-                'content_id' => $module->id,
+
+            $quiz = Quiz::create([
+                'content_id' => $module->contents->first()?->id ?? 0,
                 'question_id' => $question->id,
-                'timestamp' => 0,
+            ]);
+
+            ModuleQuiz::create([
+                'module_id' => $module->id,
+                'quiz_id' => $quiz->id,
             ]);
         }
     }
@@ -1393,9 +1413,9 @@ class LmsDataSeeder extends Seeder
         ];
         foreach ($videos as $v) {
             Content::create([
-                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about ' . strtolower($v['title']),
+                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about '.strtolower($v['title']),
                 'type' => 'video', 'content_url' => $v['url'],
-                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']])
+                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']]),
             ]);
         }
     }
@@ -1423,9 +1443,9 @@ class LmsDataSeeder extends Seeder
         ];
         foreach ($videos as $v) {
             Content::create([
-                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about ' . strtolower($v['title']),
+                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about '.strtolower($v['title']),
                 'type' => 'video', 'content_url' => $v['url'],
-                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']])
+                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']]),
             ]);
         }
     }
@@ -1453,9 +1473,9 @@ class LmsDataSeeder extends Seeder
         ];
         foreach ($videos as $v) {
             Content::create([
-                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about ' . strtolower($v['title']),
+                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about '.strtolower($v['title']),
                 'type' => 'video', 'content_url' => $v['url'],
-                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']])
+                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']]),
             ]);
         }
     }
@@ -1481,9 +1501,9 @@ class LmsDataSeeder extends Seeder
         ];
         foreach ($videos as $v) {
             Content::create([
-                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about ' . strtolower($v['title']),
+                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about '.strtolower($v['title']),
                 'type' => 'video', 'content_url' => $v['url'],
-                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']])
+                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']]),
             ]);
         }
     }
@@ -1510,9 +1530,9 @@ class LmsDataSeeder extends Seeder
         ];
         foreach ($videos as $v) {
             Content::create([
-                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about ' . strtolower($v['title']),
+                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about '.strtolower($v['title']),
                 'type' => 'video', 'content_url' => $v['url'],
-                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']])
+                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']]),
             ]);
         }
     }
@@ -1539,9 +1559,9 @@ class LmsDataSeeder extends Seeder
         ];
         foreach ($videos as $v) {
             Content::create([
-                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about ' . strtolower($v['title']),
+                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about '.strtolower($v['title']),
                 'type' => 'video', 'content_url' => $v['url'],
-                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']])
+                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']]),
             ]);
         }
     }
@@ -1568,9 +1588,9 @@ class LmsDataSeeder extends Seeder
         ];
         foreach ($videos as $v) {
             Content::create([
-                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about ' . strtolower($v['title']),
+                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about '.strtolower($v['title']),
                 'type' => 'video', 'content_url' => $v['url'],
-                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']])
+                'content_meta' => json_encode(['has_quiz' => true, 'duration' => $v['dur'], 'youtube_id' => $v['yt']]),
             ]);
         }
     }
@@ -1599,9 +1619,9 @@ class LmsDataSeeder extends Seeder
         ];
         foreach ($videos as $v) {
             Content::create([
-                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about ' . strtolower($v['title']),
+                'module_id' => $module->id, 'order' => $v['order'], 'title' => $v['title'], 'body' => 'Learn about '.strtolower($v['title']),
                 'type' => 'video', 'content_url' => $v['url'],
-                'content_meta' => json_encode(['has_quiz' => false, 'duration' => $v['dur'], 'youtube_id' => $v['yt']])
+                'content_meta' => json_encode(['has_quiz' => false, 'duration' => $v['dur'], 'youtube_id' => $v['yt']]),
             ]);
         }
     }
@@ -1620,7 +1640,7 @@ class LmsDataSeeder extends Seeder
             ['text' => 'What is encapsulation?', 'opts' => ['A' => 'Hiding internal details', 'B' => 'Inheriting properties', 'C' => 'Creating objects', 'D' => 'None'], 'correct' => 'A'],
             ['text' => 'Which superglobal contains uploaded files?', 'opts' => ['A' => '$_FILES', 'B' => '$_UPLOAD', 'C' => '$_FILE', 'D' => '$FILES'], 'correct' => 'A'],
         ];
-        
+
         foreach ($questions as $q) {
             $question = Question::create([
                 'type' => 'multiple_choice',
@@ -1628,10 +1648,13 @@ class LmsDataSeeder extends Seeder
                 'options' => json_encode($q['opts']),
                 'correct_answer' => $q['correct'],
             ]);
-            // Use EndQuiz for final course quiz with correct Content ID
-            EndQuiz::create([
+            $quiz = Quiz::create([
                 'content_id' => $finalQuizContent->id,
                 'question_id' => $question->id,
+            ]);
+            EndQuiz::create([
+                'content_id' => $finalQuizContent->id,
+                'quiz_id' => $quiz->id,
             ]);
         }
     }
@@ -1645,10 +1668,13 @@ class LmsDataSeeder extends Seeder
                 'options' => json_encode($q['opts']),
                 'correct_answer' => $q['correct'],
             ]);
-            ModelQuiz::create([
-                'content_id' => $module->id,
+            $quiz = Quiz::create([
+                'content_id' => $module->contents->first()?->id ?? 0,
                 'question_id' => $question->id,
-                'timestamp' => 0,
+            ]);
+            ModuleQuiz::create([
+                'module_id' => $module->id,
+                'quiz_id' => $quiz->id,
             ]);
         }
     }

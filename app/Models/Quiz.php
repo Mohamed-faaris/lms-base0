@@ -23,6 +23,16 @@ class Quiz extends Model
         return $this->belongsTo(Question::class);
     }
 
+    public function module()
+    {
+        return $this->hasOneThrough(Module::class, Content::class);
+    }
+
+    public function endQuizzes()
+    {
+        return $this->hasMany(EndQuiz::class);
+    }
+
     public function moduleQuizzes()
     {
         return $this->hasMany(ModuleQuiz::class);
@@ -31,5 +41,20 @@ class Quiz extends Model
     public function timestampedQuizzes()
     {
         return $this->hasMany(TimestampedQuiz::class);
+    }
+
+    public function isEndQuiz(): bool
+    {
+        return $this->endQuizzes()->exists();
+    }
+
+    public function isModuleQuiz(): bool
+    {
+        return $this->moduleQuizzes()->exists();
+    }
+
+    public function isTimestampedQuiz(): bool
+    {
+        return $this->timestampedQuizzes()->exists();
     }
 }

@@ -45,11 +45,6 @@ class Content extends Model
         return $this->hasMany(EndQuiz::class);
     }
 
-    public function modelQuiz()
-    {
-        return $this->hasMany(ModelQuiz::class);
-    }
-
     public function quizzes()
     {
         return $this->hasMany(Quiz::class);

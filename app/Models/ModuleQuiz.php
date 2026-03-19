@@ -22,4 +22,14 @@ class ModuleQuiz extends Model
     {
         return $this->belongsTo(Quiz::class);
     }
+
+    public function question()
+    {
+        return $this->hasOneThrough(Question::class, Quiz::class);
+    }
+
+    public function content()
+    {
+        return $this->hasOneThrough(Content::class, Module::class);
+    }
 }

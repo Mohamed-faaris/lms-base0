@@ -23,6 +23,16 @@ class EndQuiz extends Model
         return $this->belongsTo(Quiz::class);
     }
 
+    public function question()
+    {
+        return $this->hasOneThrough(Question::class, Quiz::class);
+    }
+
+    public function module()
+    {
+        return $this->hasOneThrough(Module::class, Content::class);
+    }
+
     public function attempts()
     {
         return $this->hasMany(QuizAttempt::class);
