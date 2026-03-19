@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Course extends Model
 {
@@ -12,7 +13,7 @@ class Course extends Model
         'description',
     ];
 
-    public function contents(): HasMany
+    public function contents(): HasManyThrough
     {
         return $this->hasManyThrough(Content::class, Module::class);
     }
