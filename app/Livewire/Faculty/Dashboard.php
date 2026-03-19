@@ -86,14 +86,23 @@ class Dashboard extends Component
         $this->currentBadge = $badges->first(fn ($b) => ($b->conditions['min_xp'] ?? 0) <= $this->totalXp);
         $this->nextBadge = $badges->first(fn ($b) => ($b->conditions['min_xp'] ?? 0) > $this->totalXp);
 
-        // Get enrolled courses with progress - eager load everything needed
-        $enrollments = Enrollment::with(['course.contents'])
+        // Get enrolled courses
+        $enrollments = Enrollment::with('course')
             ->where('user_id', $user->id)
             ->get();
 
-        // Pre-fetch all progress records for these enrollments in one query
-        $allContentIds = $enrollments->flatMap(fn ($e) => $e->course?->contents ?? collect())->pluck('id')->unique()->toArray();
+        // Get all course IDs
+        $courseIds = $enrollments->pluck('course_id')->filter()->unique()->toArray();
 
+        // Pre-fetch all content IDs for these courses
+        $allContentIds = [];
+        if (! empty($courseIds)) {
+            $allContentIds = \App\Models\Content::whereHas('module.topic', function ($query) use ($courseIds) {
+                $query->whereIn('course_id', $courseIds);
+            })->pluck('id')->toArray();
+        }
+
+        // Pre-fetch all progress records for these contents
         $progressCounts = [];
         if (! empty($allContentIds)) {
             $progressCounts = Progress::where('user_id', $user->id)
@@ -107,10 +116,19 @@ class Dashboard extends Component
 
         $this->enrolledCourses = $enrollments->map(function ($enrollment) use ($progressCounts) {
             $course = $enrollment->course;
-            $contents = $course?->contents ?? collect();
-            $totalModules = $contents->count();
+            if (! $course) {
+                return null;
+            }
 
-            $completedModules = $contents->reduce(fn ($carry, $content) => $carry + ($progressCounts[$content->id] ?? 0), 0);
+            // Get content IDs for this course
+            $contentIds = \App\Models\Content::whereHas('module.topic', function ($query) use ($course) {
+                $query->where('course_id', $course->id);
+            })->pluck('id')->toArray();
+
+            $totalModules = count($contentIds);
+
+            // Count completed contents for this course
+            $completedModules = collect($contentIds)->filter(fn ($id) => isset($progressCounts[$id]))->count();
 
             $progress = $totalModules > 0
                 ? (int) round(($completedModules / $totalModules) * 100)
@@ -119,8 +137,8 @@ class Dashboard extends Component
             $status = $progress === 100 ? 'completed' : ($progress > 0 ? 'in-progress' : 'not-started');
 
             return (object) [
-                'id' => $course?->id,
-                'name' => $course?->title ?? 'Unknown Course',
+                'id' => $course->id,
+                'name' => $course->title ?? 'Unknown Course',
                 'modules' => $totalModules,
                 'completedModules' => $completedModules,
                 'progress' => $progress,
@@ -128,7 +146,7 @@ class Dashboard extends Component
                 'xpReward' => $enrollment->xp_reward ?? 500,
                 'status' => $status,
             ];
-        });
+        })->filter();
     }
 
     protected function loadWeekDays(): void
@@ -175,21 +193,24 @@ class Dashboard extends Component
     protected function loadCourseProgress(): void
     {
         // Get all courses that have enrollments
-        $courses = \App\Models\Course::with('contents')
-            ->whereHas('enrollments')
-            ->get();
+        $courses = \App\Models\Course::whereHas('enrollments')->get();
+
+        // Get all course IDs
+        $courseIds = $courses->pluck('id')->toArray();
+
+        // Pre-fetch all content IDs for all courses
+        $allContentIds = \App\Models\Content::whereHas('module.topic', function ($query) use ($courseIds) {
+            $query->whereIn('course_id', $courseIds);
+        })->pluck('id')->toArray();
 
         // Get all enrollments with user data
         $allEnrollments = Enrollment::with('user')
-            ->whereIn('course_id', $courses->pluck('id'))
+            ->whereIn('course_id', $courseIds)
             ->get()
             ->groupBy('course_id');
 
         // Get all faculty IDs
         $facultyIds = $allEnrollments->flatten()->pluck('user_id')->unique()->toArray();
-
-        // Pre-fetch all content IDs
-        $allContentIds = $courses->flatMap(fn ($c) => $c->contents)->pluck('id')->unique()->toArray();
 
         // Pre-fetch all progress for all faculties
         $allProgress = [];
@@ -205,15 +226,17 @@ class Dashboard extends Component
 
         $this->courseProgress = $courses->map(function ($course) use ($allEnrollments, $allProgress) {
             $enrollments = $allEnrollments[$course->id] ?? collect();
-            $contents = $course->contents ?? collect();
-            $totalModules = $contents->count();
-            $contentIds = $contents->pluck('id');
+
+            // Get content IDs for this course
+            $contentIds = \App\Models\Content::whereHas('module.topic', function ($query) use ($course) {
+                $query->where('course_id', $course->id);
+            })->pluck('id')->toArray();
+
+            $totalModules = count($contentIds);
 
             // Calculate progress for each enrolled faculty
             $facultyProgress = $enrollments->map(function ($enrollment) use ($contentIds, $allProgress, $totalModules) {
-                $completedCount = $contentIds->filter(function ($contentId) use ($enrollment, $allProgress) {
-                    return $allProgress->has($enrollment->user_id.'_'.$contentId);
-                })->count();
+                $completedCount = collect($contentIds)->filter(fn ($contentId) => $allProgress->has($enrollment->user_id.'_'.$contentId))->count();
 
                 $progressPercent = $totalModules > 0
                     ? (int) round(($completedCount / $totalModules) * 100)
@@ -253,14 +276,19 @@ class Dashboard extends Component
         $facultyIds = $faculties->pluck('id')->toArray();
         $xpRecords = Xp::whereIn('user_id', $facultyIds)->get()->keyBy('user_id');
 
-        // Pre-fetch all enrollments in one query
+        // Get all enrollments with course
         $enrollments = Enrollment::whereIn('user_id', $facultyIds)
-            ->with('course.contents')
+            ->with('course')
             ->get()
             ->groupBy('user_id');
 
-        // Pre-fetch all progress in one query
-        $allContentIds = $enrollments->flatMap(fn ($group) => $group->flatMap(fn ($e) => $e->course?->contents ?? collect()))->pluck('id')->unique()->toArray();
+        // Get all course IDs from enrollments
+        $allCourseIds = $enrollments->flatMap(fn ($group) => $group->pluck('course_id'))->unique()->toArray();
+
+        // Pre-fetch all content IDs for all courses
+        $allContentIds = \App\Models\Content::whereHas('module.topic', function ($query) use ($allCourseIds) {
+            $query->whereIn('course_id', $allCourseIds);
+        })->pluck('id')->toArray();
 
         $allProgress = [];
         if (! empty($allContentIds)) {
@@ -281,9 +309,13 @@ class Dashboard extends Component
 
             $userEnrollments = $enrollments[$faculty->id] ?? collect();
 
+            // Calculate completed courses
             $completedCourses = $userEnrollments->filter(function ($e) use ($allProgress) {
-                $contents = $e->course?->contents ?? collect();
-                $totalContents = $contents->count();
+                $contentIds = \App\Models\Content::whereHas('module.topic', function ($query) use ($e) {
+                    $query->where('course_id', $e->course_id);
+                })->pluck('id')->toArray();
+
+                $totalContents = count($contentIds);
                 $completedContents = $allProgress[$e->user_id] ?? 0;
 
                 return $totalContents > 0 && $completedContents === $totalContents;

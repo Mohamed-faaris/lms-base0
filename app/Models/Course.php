@@ -13,14 +13,14 @@ class Course extends Model
         'description',
     ];
 
-    public function contents(): HasManyThrough
-    {
-        return $this->hasManyThrough(Content::class, Module::class);
-    }
-
-    public function topics()
+    public function topics(): HasMany
     {
         return $this->hasMany(Topic::class);
+    }
+
+    public function modules(): HasManyThrough
+    {
+        return $this->hasManyThrough(Module::class, Topic::class);
     }
 
     public function courseMeta()

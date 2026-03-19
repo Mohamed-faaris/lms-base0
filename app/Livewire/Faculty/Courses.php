@@ -19,37 +19,43 @@ class Courses extends Component
             return;
         }
 
-        // Get enrolled courses with progress
-        $this->enrolledCourses = Enrollment::with(['course.contents'])
+        // Get enrolled courses
+        $enrollments = Enrollment::with('course')
             ->where('user_id', $user->id)
-            ->get()
-            ->map(function ($enrollment) {
-                $course = $enrollment->course;
-                $contents = $course?->contents ?? collect();
-                $totalModules = $contents->count();
-                $completedModules = Progress::where('user_id', $enrollment->user_id)
-                    ->whereIn('content_id', $contents->pluck('id'))
-                    ->whereNotNull('completed_at')
-                    ->count();
+            ->get();
 
-                $progress = $totalModules > 0
-                    ? (int) round(($completedModules / $totalModules) * 100)
-                    : 0;
+        $this->enrolledCourses = $enrollments->map(function ($enrollment) {
+            $course = $enrollment->course;
+            if (! $course) {
+                return null;
+            }
 
-                $status = $progress === 100 ? 'completed' : ($progress > 0 ? 'in-progress' : 'not-started');
+            $contentIds = \App\Models\Content::whereHas('module.topic', fn ($q) => $q->where('course_id', $course->id))->pluck('id')->toArray();
+            $totalModules = count($contentIds);
 
-                return (object) [
-                    'id' => $course?->id,
-                    'name' => $course?->title ?? 'Unknown Course',
-                    'description' => $course?->description,
-                    'modules' => $totalModules,
-                    'completedModules' => $completedModules,
-                    'progress' => $progress,
-                    'deadline' => $enrollment->deadline,
-                    'xpReward' => $enrollment->xp_reward ?? 500,
-                    'status' => $status,
-                ];
-            });
+            $completedModules = Progress::where('user_id', $enrollment->user_id)
+                ->whereIn('content_id', $contentIds)
+                ->whereNotNull('completed_at')
+                ->count();
+
+            $progress = $totalModules > 0
+                ? (int) round(($completedModules / $totalModules) * 100)
+                : 0;
+
+            $status = $progress === 100 ? 'completed' : ($progress > 0 ? 'in-progress' : 'not-started');
+
+            return (object) [
+                'id' => $course->id,
+                'name' => $course->title ?? 'Unknown Course',
+                'description' => $course->description,
+                'modules' => $totalModules,
+                'completedModules' => $completedModules,
+                'progress' => $progress,
+                'deadline' => $enrollment->deadline,
+                'xpReward' => $enrollment->xp_reward ?? 500,
+                'status' => $status,
+            ];
+        })->filter();
     }
 
     public function render()

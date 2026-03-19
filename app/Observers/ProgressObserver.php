@@ -21,13 +21,13 @@ class ProgressObserver
     protected function checkAndGenerateCertificate(Progress $progress): void
     {
         $userId = $progress->user_id;
-        $content = Content::find($progress->content_id);
+        $content = Content::with('module.topic')->find($progress->content_id);
 
-        if (! $content) {
+        if (! $content || ! $content->module?->topic) {
             return;
         }
 
-        $courseId = $content->course_id;
+        $courseId = $content->module->topic->course_id;
 
         $alreadyHasCertificate = Certificate::where('user_id', $userId)
             ->where('course_id', $courseId)
@@ -37,7 +37,12 @@ class ProgressObserver
             return;
         }
 
-        $courseContents = Content::where('course_id', $courseId)->get();
+        $courseContents = Content::whereHas('module', function ($query) use ($courseId) {
+            $query->whereHas('topic', function ($query) use ($courseId) {
+                $query->where('course_id', $courseId);
+            });
+        })->get();
+
         $totalContents = $courseContents->count();
 
         $completedContents = Progress::where('user_id', $userId)

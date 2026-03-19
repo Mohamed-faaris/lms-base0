@@ -45,8 +45,9 @@ class Certificates extends Component
 
         $this->completedCourses = $certificates->map(function ($cert) {
             $course = $cert->course;
-            $contents = $course?->contents ?? collect();
-            $moduleCount = $contents->count();
+            $moduleCount = $course
+                ? \App\Models\Content::whereHas('module.topic', fn ($q) => $q->where('course_id', $course->id))->count()
+                : 0;
 
             $enrollment = Enrollment::where('user_id', $cert->user_id)
                 ->where('course_id', $cert->course_id)

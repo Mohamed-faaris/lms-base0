@@ -6,7 +6,7 @@
             <p class="text-zinc-500 dark:text-zinc-400 mt-2 text-lg">Track your progress and continue mastering your courses.</p>
         </div>
         <div class="flex items-center gap-2">
-            <flux:badge color="blue" size="lg" class="shadow-sm">
+            <flux:badge color="blue" class="shadow-sm">
                 <flux:icon.book-open class="h-4 w-4 mr-2" />
                 {{ $enrolledCourses->count() }} Enrolled
             </flux:badge>
@@ -121,7 +121,7 @@
                 <p class="text-zinc-500 dark:text-zinc-400 max-w-md mx-auto text-lg leading-relaxed">
                     You haven't been assigned to any learning paths. When you are enrolled in a course, your journey will begin here.
                 </p>
-                <flux:button variant="outline" size="lg" class="mt-8 font-semibold" href="{{ route('faculty.dashboard') }}" wire:navigate>
+                <flux:button variant="outline" class="mt-8 font-semibold" href="{{ route('faculty.dashboard') }}" wire:navigate>
                     <flux:icon.arrow-left class="w-4 h-4 mr-2" />
                     Return to Dashboard
                 </flux:button>
