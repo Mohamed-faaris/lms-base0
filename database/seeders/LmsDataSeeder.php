@@ -106,6 +106,7 @@ class LmsDataSeeder extends Seeder
 
         $reactCourse = Course::create([
             'title' => 'React JS Full Course 2024 - Bro Code',
+            'slug' => 'react-js-full-course-2024-bro-code',
             'description' => 'Complete React JS tutorial from beginners to advanced. Learn React hooks, components, state management, routing, and build real-world applications.',
         ]);
 
@@ -695,6 +696,7 @@ class LmsDataSeeder extends Seeder
         $phpCourse = Course::firstOrCreate(
             ['title' => 'PHP Full Course 2024 - Bro Code'],
             [
+                'slug' => 'php-full-course-2024-bro-code',
                 'description' => 'Complete PHP tutorial from beginners to advanced. Learn PHP programming, MySQL database integration, form handling, sessions, and build dynamic web applications.',
             ]
         );

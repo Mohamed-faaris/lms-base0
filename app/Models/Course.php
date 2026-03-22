@@ -3,13 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 class Course extends Model
 {
+    use HasSlug;
+
     protected $fillable = [
         'title',
+        'slug',
         'description',
     ];
+
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom('title')
+            ->saveSlugsTo('slug');
+    }
 
     public function contents()
     {
@@ -41,5 +53,15 @@ class Course extends Model
     public function feedback()
     {
         return $this->hasMany(Feedback::class);
+    }
+
+    public function quizzes()
+    {
+        return $this->hasManyThrough(Quiz::class, [Module::class, Content::class]);
+    }
+
+    public function endQuizzes()
+    {
+        return $this->hasManyThrough(EndQuiz::class, [Module::class, Content::class]);
     }
 }
