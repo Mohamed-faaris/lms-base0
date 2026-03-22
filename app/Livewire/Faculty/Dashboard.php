@@ -10,9 +10,12 @@ use App\Models\Streak;
 use App\Models\Xp;
 use Illuminate\Support\Collection;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class Dashboard extends Component
 {
+    use WithPagination;
+
     public Collection $enrolledCourses;
 
     public int $totalXp = 0;
@@ -37,8 +40,6 @@ class Dashboard extends Component
 
     public array $courseProgress = [];
 
-    public array $leaderboard = [];
-
     public int $userRank = 0;
 
     public function mount(): void
@@ -47,7 +48,7 @@ class Dashboard extends Component
         $this->loadWeekDays();
         $this->loadPerformanceData();
         $this->loadCourseProgress();
-        $this->loadLeaderboard();
+        $this->calculateUserRank();
     }
 
     protected function loadUserData(): void
@@ -265,12 +266,32 @@ class Dashboard extends Component
         })->toArray();
     }
 
-    protected function loadLeaderboard(): void
+    protected function calculateUserRank(): void
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return;
+        }
+
+        // Get all faculty XP records sorted by XP desc to calculate rank
+        $xpRecords = Xp::whereHas('user', function ($query) {
+            $query->where('role', 'faculty');
+        })->orderByDesc('xp')->get();
+
+        foreach ($xpRecords as $index => $xpRecord) {
+            if ($xpRecord->user_id === $user->id) {
+                $this->userRank = $index + 1;
+                break;
+            }
+        }
+    }
+
+    public function getLeaderboardProperty()
     {
         // Get all faculty with their XP records in one query
         $faculties = \App\Models\User::where('role', 'faculty')
             ->with('enrollments')
-            ->get();
+            ->paginate(10);
 
         // Pre-fetch all XP records for faculty in one query
         $facultyIds = $faculties->pluck('id')->toArray();
@@ -304,7 +325,8 @@ class Dashboard extends Component
         // Pre-fetch all quiz attempts in one query
         $allQuizAttempts = QuizAttempt::whereIn('user_id', $facultyIds)->get()->groupBy('user_id');
 
-        $leaderboardData = $faculties->map(function ($faculty) use ($xpRecords, $enrollments, $allProgress, $allQuizAttempts) {
+        // Transform faculty data for leaderboard
+        $leaderboardData = collect($faculties->items())->map(function ($faculty) use ($xpRecords, $enrollments, $allProgress, $allQuizAttempts) {
             $xp = $xpRecords[$faculty->id]?->xp ?? 0;
 
             $userEnrollments = $enrollments[$faculty->id] ?? collect();
@@ -334,14 +356,14 @@ class Dashboard extends Component
             ];
         })->sortByDesc('xp')->values();
 
-        $this->leaderboard = $leaderboardData->toArray();
-
-        foreach ($this->leaderboard as $index => $entry) {
-            if ($entry['isCurrentUser']) {
-                $this->userRank = $index + 1;
-                break;
-            }
-        }
+        // Create a new paginator with the transformed data
+        return new \Illuminate\Pagination\LengthAwarePaginator(
+            $leaderboardData->toArray(),
+            $faculties->total(),
+            $faculties->perPage(),
+            $faculties->currentPage(),
+            ['path' => request()->url()]
+        );
     }
 
     public function render()

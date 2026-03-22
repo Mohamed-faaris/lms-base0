@@ -235,11 +235,11 @@
             <flux:icon.trophy class="h-5 w-5 text-amber-500" />
         </div>
         <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
-            @forelse($leaderboard as $index => $entry)
+            @forelse($this->leaderboard as $index => $entry)
                 <div class="flex items-center gap-4 p-4 {{ $entry['isCurrentUser'] ? 'bg-blue-50 dark:bg-blue-900/20' : '' }}">
                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                        {{ $index === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : ($index === 1 ? 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300' : ($index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400')) }}">
-                        {{ $index + 1 }}
+                        {{ ($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : (($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index === 1 ? 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300' : (($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400')) }}">
+                        {{ ($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index + 1 }}
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="font-medium text-zinc-900 dark:text-zinc-100 {{ $entry['isCurrentUser'] ? 'text-blue-700 dark:text-blue-300' : '' }}">
@@ -270,6 +270,11 @@
                 </div>
             @endforelse
         </div>
+        @if($this->leaderboard->hasPages())
+            <div class="p-4 border-t border-zinc-200 dark:border-zinc-700">
+                {{ $this->leaderboard->links() }}
+            </div>
+        @endif
     </div>
 
     {{-- My Courses --}}
