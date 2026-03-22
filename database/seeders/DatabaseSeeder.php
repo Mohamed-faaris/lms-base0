@@ -10,7 +10,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             LmsDataSeeder::class,
-            KRCTFacultySeeder::class
+            KRCTFacultySeeder::class,
         ]);
     }
 }

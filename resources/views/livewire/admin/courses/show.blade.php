@@ -9,6 +9,12 @@
         <flux:button href="{{ route('admin.courses.edit', $course->id) }}" wire:navigate>
             Edit
         </flux:button>
+        <flux:button href="{{ route('admin.courses.analyze', $course->id) }}" wire:navigate variant="outline">
+            Analyze
+        </flux:button>
+        <flux:button href="{{ route('admin.courses.enroll', $course->id) }}" wire:navigate variant="primary">
+            Enroll
+        </flux:button>
     </div>
 
     {{-- Stats Cards --}}
@@ -155,6 +161,57 @@
                                         @endforelse
                                     </div>
                                 @endif
+
+                                {{-- Module Quizzes Section --}}
+                                @php
+                                    $moduleQuizzes = $module->moduleQuizzes ?? collect();
+                                    $moduleQuizzesExpanded = $expandedModules["quiz_{$module->id}"] ?? false;
+                                @endphp
+                                <div class="bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-700">
+                                    <button
+                                        wire:click="toggleModuleQuizzes({{ $module->id }})"
+                                        class="w-full flex items-center justify-between px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            <flux:icon.chevron-down class="w-4 h-4 {{ !$moduleQuizzesExpanded ? '-rotate-90' : '' }} transition-transform" />
+                                            <flux:icon.clipboard-document-list class="w-4 h-4 text-purple-500" />
+                                            <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Module Quizzes</span>
+                                            <flux:badge color="purple" size="xs">{{ $moduleQuizzes->count() }}</flux:badge>
+                                        </div>
+                                        <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.module-quiz.create', [$course->id, 'moduleId' => $module->id]) }}" wire:navigate>
+                                            <flux:icon.plus variant="mini" />
+                                        </flux:button>
+                                    </button>
+                                    @if ($moduleQuizzesExpanded)
+                                        @if ($moduleQuizzes->count() > 0)
+                                            <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
+                                                @foreach ($moduleQuizzes as $moduleQuiz)
+                                                    <button
+                                                        wire:click=""
+                                                        class="w-full flex items-center justify-between px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
+                                                    >
+                                                        <div class="flex items-center gap-3 flex-1">
+                                                            <flux:icon.clipboard-document-check class="w-4 h-4 text-purple-500" />
+                                                            <span class="text-sm text-zinc-700 dark:text-zinc-300">
+                                                                {{ $moduleQuiz->quiz && $moduleQuiz->quiz->question ? Str::limit($moduleQuiz->quiz->question->question_text, 50) : 'No question' }}
+                                                            </span>
+                                                        </div>
+                                                        <div class="flex items-center gap-1">
+                                                            <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.module-quiz.show', $moduleQuiz->id) }}" wire:navigate>
+                                                                <flux:icon.eye class="w-3 h-3" />
+                                                            </flux:button>
+                                                            <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.module-quiz.edit', [$course->id, $moduleQuiz->id]) }}" wire:navigate>
+                                                                <flux:icon.pencil-square class="w-3 h-3" />
+                                                            </flux:button>
+                                                        </div>
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <div class="px-4 py-2 text-xs text-zinc-500">No module quizzes yet.</div>
+                                        @endif
+                                    @endif
+                                </div>
                             </div>
                         @empty
                             <p class="text-sm text-zinc-500 ml-4">No modules.</p>
@@ -168,7 +225,7 @@
     </div>
 
     {{-- Topic Modal --}}
-    <flux:modal wire:model="showTopicModal">
+    <flux:modal wire:model="showTopicModal" size="lg">
         <flux:heading>
             {{ $editingTopic ? 'Edit Topic' : 'Add Topic' }}
         </flux:heading>
@@ -197,7 +254,7 @@
     </flux:modal>
 
     {{-- Module Modal --}}
-    <flux:modal wire:model="showModuleModal">
+    <flux:modal wire:model="showModuleModal" size="lg">
         <flux:heading>
             {{ $editingModule ? 'Edit Module' : 'Add Module' }}
         </flux:heading>
@@ -235,7 +292,7 @@
     </flux:modal>
 
     {{-- Content Modal --}}
-    <flux:modal wire:model="showContentModal">
+    <flux:modal wire:model="showContentModal" size="lg">
         <flux:heading>
             {{ $editingContent ? 'Edit Content' : 'Add Content' }}
         </flux:heading>
@@ -290,7 +347,7 @@
     </flux:modal>
 
     {{-- View Content Modal --}}
-    <flux:modal wire:model="showViewContentModal">
+    <flux:modal wire:model="showViewContentModal" size="lg">
         @if ($viewingContent)
             <flux:heading>{{ $viewingContent->title }}</flux:heading>
 
@@ -320,12 +377,300 @@
                     </div>
                 @endif
 
-                <div class="flex justify-between pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                {{-- Video: Timestamp Quizzes Section --}}
+                @if ($viewingContent->type === 'video')
+                    <div class="border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Timestamp Quizzes</p>
+                            <flux:button type="button" size="sm" wire:click="openTimestampedQuizModal(null, {{ $viewingContent->id }})">
+                                <flux:icon.plus variant="mini" />
+                                Add Timestamp
+                            </flux:button>
+                        </div>
+                        @php
+                            $timestampedQuizzes = $viewingContent->timestampedQuizzes;
+                        @endphp
+                        @if ($timestampedQuizzes->count() > 0)
+                            <div class="space-y-2">
+                                @foreach ($timestampedQuizzes as $tsQuiz)
+                                    <div class="flex items-center justify-between p-2 bg-zinc-50 dark:bg-zinc-900 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+                                        <button type="button" wire:click="openViewTimestampedQuizModal({{ $tsQuiz->id }})" class="flex items-center gap-3 flex-1 text-left">
+                                            <flux:icon.video-camera class="w-4 h-4 text-blue-500" />
+                                            <span class="text-sm font-mono">{{ $formatTimestamp($tsQuiz->timestamp) }}</span>
+                                            @if ($tsQuiz->quiz && $tsQuiz->quiz->question)
+                                                <flux:badge size="xs">{{ Str::limit($tsQuiz->quiz->question->question_text, 40) }}</flux:badge>
+                                            @else
+                                                <flux:badge size="xs" color="red">No question</flux:badge>
+                                            @endif
+                                        </button>
+                                        <flux:button type="button" size="xs" variant="ghost" wire:click="openTimestampedQuizModal({{ $tsQuiz->id }})">
+                                            <flux:icon.pencil-square class="w-4 h-4" />
+                                        </flux:button>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-sm text-zinc-500">No timestamp quizzes yet.</p>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- Quiz: Question Section --}}
+                @if ($viewingContent->type === 'quiz')
+                    @php
+                        $quiz = $viewingContent->quiz;
+                        $question = $quiz?->question;
+                    @endphp
+                    <div class="border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Quiz Question</p>
+                            <flux:button type="button" size="sm" wire:click="openQuizModal({{ $quiz?->id }})">
+                                <flux:icon.pencil-square class="w-4 h-4" />
+                                {{ $question ? 'Edit' : 'Add' }} Question
+                            </flux:button>
+                        </div>
+                        @if ($question)
+                            <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ $question->question_text }}
+                            </div>
+                            @if ($question->options)
+                                <div class="mt-2 space-y-1">
+                                    @foreach ($question->options as $index => $option)
+                                        <div class="flex items-center gap-2 text-sm {{ in_array($index, $question->correct_answer ?? []) ? 'text-green-600 font-medium' : 'text-zinc-600' }}">
+                                            <span class="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs">
+                                                {{ chr(65 + $index) }}
+                                            </span>
+                                            {{ $option }}
+                                            @if (in_array($index, $question->correct_answer ?? []))
+                                                <flux:icon.check-circle class="w-4 h-4 text-green-600 ml-auto" />
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        @else
+                            <p class="text-sm text-zinc-500">No question added yet.</p>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- End Quiz Section --}}
+                @if ($viewingContent->type === 'video')
+                    @php
+                        $endQuiz = $viewingContent->endQuiz;
+                    @endphp
+                    <div class="border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">End Quiz</p>
+                                <flux:badge color="green" size="xs">End of Video</flux:badge>
+                            </div>
+                            @if ($endQuiz)
+                                <div class="flex items-center gap-1">
+                                    <flux:button type="button" size="xs" variant="ghost" href="{{ route('admin.courses.end-quiz.show', $endQuiz->id) }}" wire:navigate>
+                                        <flux:icon.eye class="w-4 h-4" />
+                                    </flux:button>
+                                    <flux:button type="button" size="xs" variant="ghost" href="{{ route('admin.courses.end-quiz.edit', [$course->id, $endQuiz->id]) }}" wire:navigate>
+                                        <flux:icon.pencil-square class="w-4 h-4" />
+                                    </flux:button>
+                                </div>
+                            @else
+                                <flux:button type="button" size="sm" href="{{ route('admin.courses.end-quiz.create', [$course->id, 'contentId' => $viewingContent->id]) }}" wire:navigate>
+                                    <flux:icon.plus variant="mini" />
+                                    Add End Quiz
+                                </flux:button>
+                            @endif
+                        </div>
+                        @if ($endQuiz && $endQuiz->quiz && $endQuiz->quiz->question)
+                            <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ Str::limit($endQuiz->quiz->question->question_text, 100) }}
+                            </div>
+                        @else
+                            <p class="text-sm text-zinc-500">No end quiz added yet.</p>
+                        @endif
+                    </div>
+                @endif
+
+                <div class="flex items-center justify-between pt-4 border-t border-zinc-200 dark:border-zinc-700">
                     <flux:button type="button" variant="outline" wire:click="openContentModal({{ $viewingContent->id }})">
                         Edit Content
                     </flux:button>
+                    <flux:button type="button" variant="danger" wire:click="deleteContent({{ $viewingContent->id }})" wire:confirm="Delete this content?">
+                        Delete
+                    </flux:button>
                     <flux:button type="button" wire:click="closeViewContentModal">Close</flux:button>
                 </div>
+            </div>
+        @endif
+    </flux:modal>
+
+    {{-- Quiz Modal --}}
+    <flux:modal wire:model="showQuizModal" size="lg">
+        <flux:heading>
+            {{ $editingQuiz ? 'Edit Question' : 'Add Question' }}
+        </flux:heading>
+        
+        <form wire:submit="saveQuiz" class="space-y-4 mt-4">
+            <flux:field>
+                <flux:label>Question Text</flux:label>
+                <flux:textarea wire:model="quizQuestionText" placeholder="Enter your question" required />
+            </flux:field>
+            
+            <flux:field>
+                <flux:label>Question Type</flux:label>
+                <flux:select wire:model="quizType" required>
+                    <flux:select.option value="multiple_choice">Multiple Choice</flux:select.option>
+                    <flux:select.option value="true_false">True/False</flux:select.option>
+                </flux:select>
+            </flux:field>
+            
+            @if ($quizType === 'multiple_choice')
+                <flux:field>
+                    <flux:label>Options (one per line)</flux:label>
+                    <flux:textarea wire:model="quizOptionsText" placeholder="Option A&#10;Option B&#10;Option C&#10;Option D" />
+                </flux:field>
+            @endif
+            
+            <flux:field>
+                <flux:label>Correct Answer</flux:label>
+                @if ($quizType === 'multiple_choice')
+                    <flux:input wire:model="quizCorrectAnswer" placeholder="A or B or C or D" />
+                @else
+                    <flux:select wire:model="quizCorrectAnswer" required>
+                        <flux:select.option value="true">True</flux:select.option>
+                        <flux:select.option value="false">False</flux:select.option>
+                    </flux:select>
+                @endif
+            </flux:field>
+            
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="outline" wire:click="closeQuizModal">Cancel</flux:button>
+                <flux:button type="submit" variant="primary">{{ $editingQuiz ? 'Update' : 'Create' }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    {{-- View Quiz Modal --}}
+    <flux:modal wire:model="showViewQuizModal" size="lg">
+        @if ($viewingQuiz && $viewingQuiz->question)
+            <flux:heading>Question</flux:heading>
+            
+            <div class="mt-4 space-y-4">
+                <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm text-zinc-600 dark:text-zinc-400">
+                    {{ $viewingQuiz->question->question_text }}
+                </div>
+                
+                @if ($viewingQuiz->question->options)
+                    <div class="space-y-2">
+                        @foreach ($viewingQuiz->question->options as $index => $option)
+                            @php
+                                $isCorrect = in_array($index, $viewingQuiz->question->correct_answer ?? []);
+                            @endphp
+                            <div class="flex items-center gap-2 p-2 rounded-lg {{ $isCorrect ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-zinc-50 dark:bg-zinc-900' }}">
+                                <span class="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-medium {{ $isCorrect ? 'text-green-600' : 'text-zinc-600' }}">
+                                    {{ chr(65 + $index) }}
+                                </span>
+                                <span class="text-sm {{ $isCorrect ? 'text-green-700 dark:text-green-300 font-medium' : 'text-zinc-600 dark:text-zinc-400' }}">
+                                    {{ $option }}
+                                </span>
+                                @if ($isCorrect)
+                                    <flux:icon.check-circle class="w-4 h-4 text-green-600 ml-auto" />
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+                
+                <div class="flex justify-between pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                    <flux:button type="button" variant="outline" wire:click="openQuizModal({{ $viewingQuiz->id }})">
+                        Edit Question
+                    </flux:button>
+                    <flux:button type="button" wire:click="closeViewQuizModal">Close</flux:button>
+                </div>
+            </div>
+        @endif
+    </flux:modal>
+
+    {{-- Timestamped Quiz Modal --}}
+    <flux:modal wire:model="showTimestampedQuizModal" size="lg">
+        <flux:heading>
+            {{ $editingTimestampedQuiz ? 'Edit Timestamp' : 'Add Timestamp' }}
+        </flux:heading>
+        
+        <form wire:submit="saveTimestampedQuiz" class="space-y-4 mt-4">
+            <flux:field>
+                <flux:label>Timestamp (HH:MM:SS)</flux:label>
+                <flux:input wire:model="timestampedQuizTimestamp" placeholder="00:05:30" required />
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">When the quiz should appear in the video (hours:minutes:seconds)</p>
+            </flux:field>
+            
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="outline" wire:click="closeTimestampedQuizModal">Cancel</flux:button>
+                <flux:button type="submit" variant="primary">{{ $editingTimestampedQuiz ? 'Update' : 'Create' }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    {{-- View Timestamp Quiz Modal --}}
+    <flux:modal wire:model="showViewTimestampedQuizModal" size="lg">
+        @if ($viewingTimestampedQuiz)
+            <flux:heading>Timestamp Quiz @ {{ $formatTimestamp($viewingTimestampedQuiz->timestamp) }}</flux:heading>
+            
+            <div class="mt-4 space-y-4">
+                <div class="flex items-center gap-2">
+                    <flux:icon.video-camera class="w-5 h-5 text-blue-500" />
+                    <span class="text-lg font-mono">{{ $formatTimestamp($viewingTimestampedQuiz->timestamp) }}</span>
+                </div>
+                
+                @if ($viewingTimestampedQuiz->quiz && $viewingTimestampedQuiz->quiz->question)
+                    @php
+                        $question = $viewingTimestampedQuiz->quiz->question;
+                    @endphp
+                    <div class="border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                        <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">Question</p>
+                        <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm text-zinc-600 dark:text-zinc-400">
+                            {{ $question->question_text }}
+                        </div>
+                        
+                        @if ($question->options)
+                            <div class="mt-3 space-y-2">
+                                @foreach ($question->options as $index => $option)
+                                    @php
+                                        $isCorrect = in_array($index, $question->correct_answer ?? []);
+                                    @endphp
+                                    <div class="flex items-center gap-2 p-2 rounded-lg {{ $isCorrect ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-zinc-50 dark:bg-zinc-900' }}">
+                                        <span class="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-medium {{ $isCorrect ? 'text-green-600' : 'text-zinc-600' }}">
+                                            {{ chr(65 + $index) }}
+                                        </span>
+                                        <span class="text-sm {{ $isCorrect ? 'text-green-700 dark:text-green-300 font-medium' : 'text-zinc-600 dark:text-zinc-400' }}">
+                                            {{ $option }}
+                                        </span>
+                                        @if ($isCorrect)
+                                            <flux:icon.check-circle class="w-4 h-4 text-green-600 ml-auto" />
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                    
+                    <div class="flex justify-between pt-4 border-t border-zinc-200 dark:border-zinc-700">
+                        <flux:button type="button" variant="outline" wire:click="openTimestampedQuizModal({{ $viewingTimestampedQuiz->id }})">
+                            Edit Timestamp
+                        </flux:button>
+                        <flux:button type="button" wire:click="closeViewTimestampedQuizModal">Close</flux:button>
+                    </div>
+                @else
+                    <div class="border-t border-zinc-200 dark:border-zinc-700 pt-4">
+                        <flux:badge color="red">No question added</flux:badge>
+                        <div class="flex justify-between pt-4">
+                            <flux:button type="button" variant="outline" wire:click="openTimestampedQuizModal({{ $viewingTimestampedQuiz->id }})">
+                                Edit Timestamp
+                            </flux:button>
+                            <flux:button type="button" wire:click="closeViewTimestampedQuizModal">Close</flux:button>
+                        </div>
+                    </div>
+                @endif
             </div>
         @endif
     </flux:modal>

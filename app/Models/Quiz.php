@@ -10,12 +10,16 @@ class Quiz extends Model
 
     protected $fillable = [
         'content_id',
-        'question_id',
     ];
 
     public function content()
     {
         return $this->belongsTo(Content::class);
+    }
+
+    public function questions()
+    {
+        return $this->hasMany(Question::class);
     }
 
     public function question()

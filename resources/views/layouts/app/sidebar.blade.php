@@ -30,6 +30,12 @@
                             {{ __('Suggestions') }}
                         </flux:sidebar.item>
                     @endif
+
+                    @if(auth()->user()->isAdmin())
+                        <flux:sidebar.item icon="academic-cap" :href="route('admin.courses.index')" :current="request()->routeIs('admin.courses.*')" wire:navigate>
+                            {{ __('Courses') }}
+                        </flux:sidebar.item>
+                    @endif
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

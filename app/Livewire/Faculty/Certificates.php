@@ -7,11 +7,15 @@ use Livewire\Component;
 class Certificates extends Component
 {
     public array $completedCourses = [];
+
     public array $progressHistory = [];
-    
+
     public ?array $selectedCourse = null;
+
     public string $recipientName = '';
+
     public bool $isEditing = false;
+
     public string $activeTab = 'certificates';
 
     public function mount()
@@ -76,7 +80,7 @@ class Certificates extends Component
 
     public function toggleEditName()
     {
-        $this->isEditing = !$this->isEditing;
+        $this->isEditing = ! $this->isEditing;
     }
 
     public function setActiveTab($tab)

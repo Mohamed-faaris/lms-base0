@@ -14,7 +14,6 @@ enum Department: string
     case IT = 'IT';
     case SH = 'S&H';
 
-
     public function label(): string
     {
         return match ($this) {

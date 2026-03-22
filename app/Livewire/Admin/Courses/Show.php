@@ -6,6 +6,9 @@ use App\Models\Content;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Progress;
+use App\Models\Question;
+use App\Models\Quiz;
+use App\Models\TimestampedQuiz;
 use App\Models\Topic;
 use Livewire\Component;
 
@@ -68,13 +71,50 @@ class Show extends Component
 
     public ?int $selectedModuleId = null;
 
+    // Quiz Modal
+    public bool $showQuizModal = false;
+
+    public bool $showViewQuizModal = false;
+
+    public ?Quiz $editingQuiz = null;
+
+    public ?Quiz $viewingQuiz = null;
+
+    public string $quizQuestionText = '';
+
+    public string $quizType = 'multiple_choice';
+
+    public array $quizOptions = [];
+
+    public string $quizCorrectAnswer = '';
+
+    public string $quizOptionsText = '';
+
+    public ?int $quizContentId = null;
+
+    // Timestamped Quiz
+    public bool $showTimestampedQuizModal = false;
+
+    public ?TimestampedQuiz $editingTimestampedQuiz = null;
+
+    public string $timestampedQuizTimestamp = '';
+
+    public bool $showViewTimestampedQuizModal = false;
+
+    public ?TimestampedQuiz $viewingTimestampedQuiz = null;
+
     public function mount(Course $course): void
     {
         if (! auth()->user()->isAdmin()) {
             abort(403);
         }
 
-        $this->course = Course::with('topics.modules.contents', 'enrollments')->findOrFail($course->id);
+        $this->course = Course::with(
+            'topics.modules.contents.timestampedQuizzes.quiz.question',
+            'topics.modules.contents.endQuiz.quiz.question',
+            'topics.modules.moduleQuizzes.quiz.question',
+            'enrollments'
+        )->findOrFail($course->id);
         $this->calculateStats();
 
         foreach ($this->course->topics as $topic) {
@@ -133,6 +173,12 @@ class Show extends Component
     public function toggleModule(int $moduleId): void
     {
         $this->expandedModules[$moduleId] = ! ($this->expandedModules[$moduleId] ?? false);
+    }
+
+    public function toggleModuleQuizzes(int $moduleId): void
+    {
+        $key = "quiz_{$moduleId}";
+        $this->expandedModules[$key] = ! ($this->expandedModules[$key] ?? false);
     }
 
     // Topic Modal
@@ -328,9 +374,198 @@ class Show extends Component
         $this->viewingContent = null;
     }
 
+    // Quiz Modal
+    public function openQuizModal($quiz = null, ?int $contentId = null): void
+    {
+        $this->quizContentId = $contentId;
+
+        if ($quiz instanceof Quiz) {
+            $this->editingQuiz = $quiz;
+            $this->quizContentId = $quiz->content_id;
+            if ($quiz->question) {
+                $this->quizQuestionText = $quiz->question->question_text;
+                $this->quizType = $quiz->question->type;
+                $this->quizOptionsText = implode("\n", $quiz->question->options ?? []);
+                $this->quizCorrectAnswer = is_array($quiz->question->correct_answer)
+                    ? implode(',', array_map(function ($i) {
+                        return chr(65 + $i);
+                    }, $quiz->question->correct_answer))
+                    : ($quiz->question->correct_answer ?? '');
+            }
+        } else {
+            $this->editingQuiz = null;
+            $this->quizQuestionText = '';
+            $this->quizType = 'multiple_choice';
+            $this->quizOptionsText = '';
+            $this->quizCorrectAnswer = '';
+        }
+        $this->showQuizModal = true;
+    }
+
+    public function saveQuiz(): void
+    {
+        $this->validate([
+            'quizQuestionText' => 'required|string',
+            'quizType' => 'required|in:multiple_choice,true_false',
+            'quizContentId' => 'required|exists:contents,id',
+        ]);
+
+        $options = [];
+        if ($this->quizType === 'multiple_choice' && $this->quizOptionsText) {
+            $options = array_filter(array_map('trim', explode("\n", $this->quizOptionsText)));
+        }
+
+        $correctAnswer = [];
+        if ($this->quizType === 'multiple_choice') {
+            $answers = array_filter(array_map('trim', explode(',', $this->quizCorrectAnswer)));
+            foreach ($answers as $answer) {
+                $correctAnswer[] = ord(strtoupper($answer)) - 65;
+            }
+        } else {
+            $correctAnswer = [$this->quizCorrectAnswer === 'true' ? 0 : 1];
+        }
+
+        $question = Question::create([
+            'type' => $this->quizType,
+            'question_text' => $this->quizQuestionText,
+            'options' => $options,
+            'correct_answer' => $correctAnswer,
+        ]);
+
+        if ($this->editingQuiz) {
+            $this->editingQuiz->update(['question_id' => $question->id]);
+        } else {
+            Quiz::create([
+                'content_id' => $this->quizContentId,
+                'question_id' => $question->id,
+            ]);
+        }
+
+        $this->refreshCourse();
+        $this->closeQuizModal();
+    }
+
+    public function closeQuizModal(): void
+    {
+        $this->showQuizModal = false;
+        $this->editingQuiz = null;
+        $this->quizContentId = null;
+    }
+
+    public function openViewQuizModal(Quiz $quiz): void
+    {
+        $this->viewingQuiz = $quiz;
+        $this->showViewQuizModal = true;
+    }
+
+    public function closeViewQuizModal(): void
+    {
+        $this->showViewQuizModal = false;
+        $this->viewingQuiz = null;
+    }
+
+    // Timestamped Quiz Modal
+    public function openTimestampedQuizModal(?TimestampedQuiz $timestampedQuiz = null, ?int $contentId = null): void
+    {
+        $this->editingTimestampedQuiz = $timestampedQuiz;
+        if ($timestampedQuiz) {
+            $this->timestampedQuizTimestamp = $this->formatTimestamp($timestampedQuiz->timestamp);
+        } else {
+            $this->timestampedQuizTimestamp = '';
+        }
+        $this->showTimestampedQuizModal = true;
+    }
+
+    public function openViewTimestampedQuizModal(int $timestampedQuizId): void
+    {
+        $this->viewingTimestampedQuiz = TimestampedQuiz::with('quiz.question')->findOrFail($timestampedQuizId);
+        $this->showViewTimestampedQuizModal = true;
+    }
+
+    public function closeViewTimestampedQuizModal(): void
+    {
+        $this->showViewTimestampedQuizModal = false;
+        $this->viewingTimestampedQuiz = null;
+    }
+
+    public function saveTimestampedQuiz(): void
+    {
+        $this->validate([
+            'timestampedQuizTimestamp' => 'required|string',
+            'quizContentId' => 'required|exists:contents,id',
+        ]);
+
+        $seconds = $this->parseTimestamp($this->timestampedQuizTimestamp);
+
+        if ($this->editingTimestampedQuiz) {
+            $this->editingTimestampedQuiz->update(['timestamp' => $seconds]);
+        } else {
+            $quiz = Quiz::firstOrCreate(['content_id' => $this->quizContentId]);
+            TimestampedQuiz::create([
+                'content_id' => $this->quizContentId,
+                'quiz_id' => $quiz->id,
+                'timestamp' => $seconds,
+            ]);
+        }
+
+        $this->refreshCourse();
+        $this->closeTimestampedQuizModal();
+    }
+
+    protected function formatTimestamp(int $seconds): string
+    {
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+        $secs = $seconds % 60;
+
+        return sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
+    }
+
+    protected function parseTimestamp(string $timestamp): int
+    {
+        if (preg_match('/^(\d+):(\d+)(?::(\d+))?$/', $timestamp, $matches)) {
+            $hours = isset($matches[3]) ? (int) $matches[1] : 0;
+            $minutes = isset($matches[3]) ? (int) $matches[2] : (int) $matches[1];
+            $seconds = isset($matches[3]) ? (int) $matches[3] : 0;
+
+            if (isset($matches[3])) {
+                $hours = (int) $matches[1];
+                $minutes = (int) $matches[2];
+                $seconds = (int) $matches[3];
+            } else {
+                $hours = 0;
+                $minutes = (int) $matches[1];
+                $seconds = isset($matches[2]) ? (int) $matches[2] : 0;
+            }
+
+            return $hours * 3600 + $minutes * 60 + $seconds;
+        }
+
+        return (int) $timestamp;
+    }
+
+    public function closeTimestampedQuizModal(): void
+    {
+        $this->showTimestampedQuizModal = false;
+        $this->editingTimestampedQuiz = null;
+    }
+
+    public function deleteContent(int $contentId): void
+    {
+        $content = Content::findOrFail($contentId);
+        $content->delete();
+        $this->closeViewContentModal();
+        $this->refreshCourse();
+    }
+
     protected function refreshCourse(): void
     {
-        $this->course = Course::with('topics.modules.contents', 'enrollments')->findOrFail($this->course->id);
+        $this->course = Course::with(
+            'topics.modules.contents.timestampedQuizzes.quiz.question',
+            'topics.modules.contents.endQuiz.quiz.question',
+            'topics.modules.moduleQuizzes.quiz.question',
+            'enrollments'
+        )->findOrFail($this->course->id);
     }
 
     public function render()
