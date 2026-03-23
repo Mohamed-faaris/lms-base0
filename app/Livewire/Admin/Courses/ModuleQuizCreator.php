@@ -104,7 +104,9 @@ class ModuleQuizCreator extends Component
         ]);
 
         if (! $this->moduleQuiz) {
-            $quiz = Quiz::create();
+            $quiz = Quiz::create([
+                'content_id' => Module::findOrFail($this->moduleId)->contents()->first()?->id,
+            ]);
 
             $moduleQuiz = ModuleQuiz::create([
                 'module_id' => $this->moduleId,
@@ -114,10 +116,7 @@ class ModuleQuizCreator extends Component
             $this->moduleQuiz = ModuleQuiz::with('quiz')->find($moduleQuiz->id);
         }
 
-        $existingIds = array_filter(array_column($this->questions, 'id'));
-        Question::where('quiz_id', $this->moduleQuiz->quiz->id)
-            ->whereNotIn('id', $existingIds)
-            ->delete();
+        $existingIds = [];
 
         foreach ($this->questions as $questionData) {
             $options = [];
@@ -136,23 +135,33 @@ class ModuleQuizCreator extends Component
             }
 
             if (! empty($questionData['id'])) {
-                Question::where('id', $questionData['id'])->update([
-                    'quiz_id' => $this->moduleQuiz->quiz->id,
-                    'type' => $questionData['type'],
-                    'question_text' => $questionData['question_text'],
-                    'options' => $options,
-                    'correct_answer' => $correctAnswer,
-                ]);
+                $question = Question::where('id', $questionData['id'])->first();
+
+                if ($question) {
+                    $question->update([
+                        'quiz_id' => $this->moduleQuiz->quiz->id,
+                        'type' => $questionData['type'],
+                        'question_text' => $questionData['question_text'],
+                        'options' => $options,
+                        'correct_answer' => $correctAnswer,
+                    ]);
+                    $existingIds[] = $question->id;
+                }
             } else {
-                Question::create([
+                $question = Question::create([
                     'quiz_id' => $this->moduleQuiz->quiz->id,
                     'type' => $questionData['type'],
                     'question_text' => $questionData['question_text'],
                     'options' => $options,
                     'correct_answer' => $correctAnswer,
                 ]);
+                $existingIds[] = $question->id;
             }
         }
+
+        Question::where('quiz_id', $this->moduleQuiz->quiz->id)
+            ->whereNotIn('id', $existingIds)
+            ->delete();
 
         session()->flash('success', 'Module quiz saved successfully.');
         $this->redirectRoute('admin.courses.show', $this->course->id);

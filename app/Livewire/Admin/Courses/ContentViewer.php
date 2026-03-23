@@ -21,7 +21,8 @@ class ContentViewer extends Component
         $this->content = Content::with([
             'module.topic.course',
             'timestampedQuizzes.quiz.question',
-            'endQuiz.quiz.question',
+            'endQuiz.quiz.questions',
+            'quiz.questions',
         ])->findOrFail($contentId);
     }
 
@@ -37,5 +38,10 @@ class ContentViewer extends Component
     public function render()
     {
         return view('livewire.admin.courses.content-viewer');
+    }
+
+    public function getFormattedTimestampProperty(int $seconds): string
+    {
+        return $this->formatTimestamp($seconds);
     }
 }

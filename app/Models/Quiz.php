@@ -10,6 +10,7 @@ class Quiz extends Model
 
     protected $fillable = [
         'content_id',
+        'question_id',
     ];
 
     public function content()

@@ -116,33 +116,40 @@
                         Edit
                     </flux:button>
                 </div>
-                @if ($content->endQuiz->quiz && $content->endQuiz->quiz->question)
-                    @php
-                        $question = $content->endQuiz->quiz->question;
-                    @endphp
-                    <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm text-zinc-600 dark:text-zinc-400">
-                        {{ $question->question_text }}
-                    </div>
-                    @if ($question->options)
-                        <div class="mt-3 space-y-2">
-                            @foreach ($question->options as $index => $option)
-                                @php
-                                    $isCorrect = in_array($index, $question->correct_answer ?? []);
-                                @endphp
-                                <div class="flex items-center gap-2 p-2 rounded-lg {{ $isCorrect ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-zinc-50 dark:bg-zinc-900' }}">
-                                    <span class="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-medium {{ $isCorrect ? 'text-green-600' : 'text-zinc-600' }}">
-                                        {{ chr(65 + $index) }}
-                                    </span>
-                                    <span class="text-sm {{ $isCorrect ? 'text-green-700 dark:text-green-300 font-medium' : 'text-zinc-600 dark:text-zinc-400' }}">
-                                        {{ $option }}
-                                    </span>
-                                    @if ($isCorrect)
-                                        <flux:icon.check-circle class="w-4 h-4 text-green-600 ml-auto" />
-                                    @endif
+                @if ($content->endQuiz->quiz && $content->endQuiz->quiz->questions->count() > 0)
+                    <div class="space-y-4">
+                        @foreach ($content->endQuiz->quiz->questions as $questionIndex => $question)
+                            <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Question {{ $questionIndex + 1 }}</span>
+                                    <flux:badge size="xs">{{ $question->type === 'multiple_choice' ? 'Multiple Choice' : 'True/False' }}</flux:badge>
                                 </div>
-                            @endforeach
-                        </div>
-                    @endif
+                                <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm text-zinc-600 dark:text-zinc-400">
+                                    {{ $question->question_text }}
+                                </div>
+                                @if ($question->options)
+                                    <div class="mt-3 space-y-2">
+                                        @foreach ($question->options as $index => $option)
+                                            @php
+                                                $isCorrect = in_array($index, $question->correct_answer ?? []);
+                                            @endphp
+                                            <div class="flex items-center gap-2 p-2 rounded-lg {{ $isCorrect ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-zinc-50 dark:bg-zinc-900' }}">
+                                                <span class="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-medium {{ $isCorrect ? 'text-green-600' : 'text-zinc-600' }}">
+                                                    {{ chr(65 + $index) }}
+                                                </span>
+                                                <span class="text-sm {{ $isCorrect ? 'text-green-700 dark:text-green-300 font-medium' : 'text-zinc-600 dark:text-zinc-400' }}">
+                                                    {{ $option }}
+                                                </span>
+                                                @if ($isCorrect)
+                                                    <flux:icon.check-circle class="w-4 h-4 text-green-600 ml-auto" />
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 @else
                     <p class="text-sm text-zinc-500">No question added yet.</p>
                 @endif
@@ -151,43 +158,49 @@
 
         {{-- Quiz: Question Section --}}
         @if ($content->type === 'quiz' && $content->quiz)
-            @php
-                $question = $content->quiz?->question;
-            @endphp
             <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
                         <flux:icon.clipboard-document-list class="w-5 h-5 text-green-500" />
-                        <flux:heading level="2" size="lg">Quiz Question</flux:heading>
+                        <flux:heading level="2" size="lg">Quiz Questions</flux:heading>
                     </div>
                 </div>
-                @if ($question)
-                    <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm text-zinc-600 dark:text-zinc-400 mb-3">
-                        {{ $question->question_text }}
-                    </div>
-                    <flux:badge>{{ $question->type === 'multiple_choice' ? 'Multiple Choice' : 'True/False' }}</flux:badge>
-                    @if ($question->options)
-                        <div class="mt-4 space-y-2">
-                            @foreach ($question->options as $index => $option)
-                                @php
-                                    $isCorrect = in_array($index, $question->correct_answer ?? []);
-                                @endphp
-                                <div class="flex items-center gap-2 p-2 rounded-lg {{ $isCorrect ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-zinc-50 dark:bg-zinc-900' }}">
-                                    <span class="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-medium {{ $isCorrect ? 'text-green-600' : 'text-zinc-600' }}">
-                                        {{ chr(65 + $index) }}
-                                    </span>
-                                    <span class="text-sm {{ $isCorrect ? 'text-green-700 dark:text-green-300 font-medium' : 'text-zinc-600 dark:text-zinc-400' }}">
-                                        {{ $option }}
-                                    </span>
-                                    @if ($isCorrect)
-                                        <flux:icon.check-circle class="w-4 h-4 text-green-600 ml-auto" />
-                                    @endif
+                @if ($content->quiz->questions->count() > 0)
+                    <div class="space-y-4">
+                        @foreach ($content->quiz->questions as $questionIndex => $question)
+                            <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Question {{ $questionIndex + 1 }}</span>
+                                    <flux:badge size="xs">{{ $question->type === 'multiple_choice' ? 'Multiple Choice' : 'True/False' }}</flux:badge>
                                 </div>
-                            @endforeach
-                        </div>
-                    @endif
+                                <div class="p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg text-sm text-zinc-600 dark:text-zinc-400">
+                                    {{ $question->question_text }}
+                                </div>
+                                @if ($question->options)
+                                    <div class="mt-3 space-y-2">
+                                        @foreach ($question->options as $index => $option)
+                                            @php
+                                                $isCorrect = in_array($index, $question->correct_answer ?? []);
+                                            @endphp
+                                            <div class="flex items-center gap-2 p-2 rounded-lg {{ $isCorrect ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-zinc-50 dark:bg-zinc-900' }}">
+                                                <span class="w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-medium {{ $isCorrect ? 'text-green-600' : 'text-zinc-600' }}">
+                                                    {{ chr(65 + $index) }}
+                                                </span>
+                                                <span class="text-sm {{ $isCorrect ? 'text-green-700 dark:text-green-300 font-medium' : 'text-zinc-600 dark:text-zinc-400' }}">
+                                                    {{ $option }}
+                                                </span>
+                                                @if ($isCorrect)
+                                                    <flux:icon.check-circle class="w-4 h-4 text-green-600 ml-auto" />
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 @else
-                    <p class="text-sm text-zinc-500">No question added yet.</p>
+                    <p class="text-sm text-zinc-500">No questions added yet.</p>
                 @endif
             </div>
         @endif

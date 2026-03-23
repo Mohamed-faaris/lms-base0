@@ -79,13 +79,14 @@ class Analyze extends Component
             $this->stats['avgProgress'] = (int) round($totalProgress / $enrollments->count());
         }
 
-        $this->enrollmentData = $enrollments->map(function ($e) use ($enrollmentProgress) {
+        $this->enrollmentData = $enrollments->map(function ($enrollment) use ($enrollmentProgress): array {
             return [
-                'user' => $e->user,
-                'enrolled_at' => $e->enrolled_at,
-                'progress' => $enrollmentProgress[$e->id] ?? 0,
+                'user_name' => $enrollment->user?->name ?? 'Unknown',
+                'user_initial' => strtoupper(substr($enrollment->user?->name ?? '?', 0, 1)),
+                'enrolled_at' => $enrollment->enrolled_at,
+                'progress' => $enrollmentProgress[$enrollment->id] ?? 0,
             ];
-        })->toArray();
+        })->all();
 
         $this->calculateProgressDistribution($contentIds);
         $this->calculateCompletionTimeline($enrollments, $contentIds);

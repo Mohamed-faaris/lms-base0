@@ -105,6 +105,16 @@ class EndQuizCreator extends Component
             'questions.*.type' => 'required|in:multiple_choice,true_false',
         ]);
 
+        if (! $this->endQuiz) {
+            $this->endQuiz = EndQuiz::create([
+                'content_id' => $this->contentId,
+                'quiz_id' => Quiz::create(['content_id' => $this->contentId])->id,
+            ]);
+        }
+
+        $quiz = $this->endQuiz->quiz;
+        $existingIds = [];
+
         foreach ($this->questions as $questionData) {
             $options = [];
             if ($questionData['type'] === 'multiple_choice' && ! empty($questionData['options_text'])) {
@@ -122,48 +132,33 @@ class EndQuizCreator extends Component
             }
 
             if (! empty($questionData['id'])) {
-                Question::where('id', $questionData['id'])->update([
+                $question = Question::where('id', $questionData['id'])->first();
+                if ($question) {
+                    $question->update([
+                        'quiz_id' => $quiz->id,
+                        'type' => $questionData['type'],
+                        'question_text' => $questionData['question_text'],
+                        'options' => $options,
+                        'correct_answer' => $correctAnswer,
+                    ]);
+                    $existingIds[] = $question->id;
+                }
+            } else {
+                $question = Question::create([
+                    'quiz_id' => $quiz->id,
                     'type' => $questionData['type'],
                     'question_text' => $questionData['question_text'],
                     'options' => $options,
                     'correct_answer' => $correctAnswer,
                 ]);
+                $existingIds[] = $question->id;
             }
         }
 
-        if (! $this->endQuiz) {
-            $quiz = Quiz::create([
-                'content_id' => $this->contentId,
-            ]);
-
-            EndQuiz::create([
-                'content_id' => $this->contentId,
-                'quiz_id' => $quiz->id,
-            ]);
-
-            $this->endQuiz = EndQuiz::with('quiz')->where('content_id', $this->contentId)->first();
-        }
-
-        $existingIds = array_filter(array_column($this->questions, 'id'));
-        Question::where('quiz_id', $this->endQuiz->quiz->id)
+        $quiz->update(['question_id' => $existingIds[0] ?? null]);
+        Question::where('quiz_id', $quiz->id)
             ->whereNotIn('id', $existingIds)
             ->delete();
-
-        foreach ($this->questions as $index => $questionData) {
-            if (! empty($questionData['id'])) {
-                Question::where('id', $questionData['id'])->update([
-                    'quiz_id' => $this->endQuiz->quiz->id,
-                ]);
-            } else {
-                Question::create([
-                    'quiz_id' => $this->endQuiz->quiz->id,
-                    'type' => $questionData['type'],
-                    'question_text' => $questionData['question_text'],
-                    'options' => $options ?? [],
-                    'correct_answer' => $correctAnswer ?? [],
-                ]);
-            }
-        }
 
         session()->flash('success', 'End quiz saved successfully.');
         $this->redirectRoute('admin.courses.show', $this->course->id);

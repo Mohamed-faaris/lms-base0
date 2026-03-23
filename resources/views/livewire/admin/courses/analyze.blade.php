@@ -98,7 +98,7 @@
                         <span class="text-sm text-zinc-600 dark:text-zinc-400">Completed</span>
                         <div class="flex items-center gap-2">
                             <div class="w-32 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-green-500 rounded-full" style="width: {{ $stats['totalEnrollments'] > 0 ? round($stats['completedEnrollments'] / $stats['totalEnrollments'] * 100) : 0 }}%"></div>
+                                <div class="h-full bg-green-500 rounded-full" style="width: {{ $stats['totalEnrollments'] > 0 ? (int) round($stats['completedEnrollments'] / $stats['totalEnrollments'] * 100) : 0 }}%"></div>
                             </div>
                             <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $stats['completedEnrollments'] }}</span>
                         </div>
@@ -107,7 +107,7 @@
                         <span class="text-sm text-zinc-600 dark:text-zinc-400">In Progress</span>
                         <div class="flex items-center gap-2">
                             <div class="w-32 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-yellow-500 rounded-full" style="width: {{ $stats['totalEnrollments'] > 0 ? round($stats['inProgressEnrollments'] / $stats['totalEnrollments'] * 100) : 0 }}%"></div>
+                                <div class="h-full bg-yellow-500 rounded-full" style="width: {{ $stats['totalEnrollments'] > 0 ? (int) round($stats['inProgressEnrollments'] / $stats['totalEnrollments'] * 100) : 0 }}%"></div>
                             </div>
                             <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $stats['inProgressEnrollments'] }}</span>
                         </div>
@@ -116,7 +116,7 @@
                         <span class="text-sm text-zinc-600 dark:text-zinc-400">Not Started</span>
                         <div class="flex items-center gap-2">
                             <div class="w-32 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-zinc-400 rounded-full" style="width: {{ $stats['totalEnrollments'] > 0 ? round($stats['notStartedEnrollments'] / $stats['totalEnrollments'] * 100) : 0 }}%"></div>
+                                <div class="h-full bg-zinc-400 rounded-full" style="width: {{ $stats['totalEnrollments'] > 0 ? (int) round($stats['notStartedEnrollments'] / $stats['totalEnrollments'] * 100) : 0 }}%"></div>
                             </div>
                             <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $stats['notStartedEnrollments'] }}</span>
                         </div>
@@ -131,7 +131,7 @@
                         <span class="text-sm text-zinc-600 dark:text-zinc-400">Videos</span>
                         <div class="flex items-center gap-2">
                             <div class="w-32 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-blue-500 rounded-full" style="width: {{ $stats['totalContent'] > 0 ? round($stats['totalVideos'] / $stats['totalContent'] * 100) : 0 }}%"></div>
+                                <div class="h-full bg-blue-500 rounded-full" style="width: {{ $stats['totalContent'] > 0 ? (int) round($stats['totalVideos'] / $stats['totalContent'] * 100) : 0 }}%"></div>
                             </div>
                             <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $stats['totalVideos'] }}</span>
                         </div>
@@ -140,7 +140,7 @@
                         <span class="text-sm text-zinc-600 dark:text-zinc-400">Articles</span>
                         <div class="flex items-center gap-2">
                             <div class="w-32 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-purple-500 rounded-full" style="width: {{ $stats['totalContent'] > 0 ? round($stats['totalArticles'] / $stats['totalContent'] * 100) : 0 }}%"></div>
+                                <div class="h-full bg-purple-500 rounded-full" style="width: {{ $stats['totalContent'] > 0 ? (int) round($stats['totalArticles'] / $stats['totalContent'] * 100) : 0 }}%"></div>
                             </div>
                             <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $stats['totalArticles'] }}</span>
                         </div>
@@ -149,7 +149,7 @@
                         <span class="text-sm text-zinc-600 dark:text-zinc-400">Quizzes</span>
                         <div class="flex items-center gap-2">
                             <div class="w-32 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                                <div class="h-full bg-green-500 rounded-full" style="width: {{ $stats['totalContent'] > 0 ? round($stats['totalQuizzes'] / $stats['totalContent'] * 100) : 0 }}%"></div>
+                                <div class="h-full bg-green-500 rounded-full" style="width: {{ $stats['totalContent'] > 0 ? (int) round($stats['totalQuizzes'] / $stats['totalContent'] * 100) : 0 }}%"></div>
                             </div>
                             <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $stats['totalQuizzes'] }}</span>
                         </div>
@@ -178,10 +178,10 @@
                                 <div class="flex items-center gap-3">
                                     <div class="h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
                                         <span class="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                                            {{ $data['user']?->name?->substring(0, 1) ?? '?' }}
+                                            {{ $data['user_initial'] }}
                                         </span>
                                     </div>
-                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">{{ $data['user']?->name ?? 'Unknown' }}</span>
+                                    <span class="text-sm text-zinc-900 dark:text-zinc-100">{{ $data['user_name'] }}</span>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">

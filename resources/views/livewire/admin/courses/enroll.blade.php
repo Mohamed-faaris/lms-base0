@@ -8,130 +8,150 @@
     </div>
 
     @if ($showSuccess)
-        <div class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <div class="flex items-center gap-2 text-green-700 dark:text-green-400">
-                <flux:icon.check-circle class="w-5 h-5" />
-                <span class="font-medium">Successfully enrolled {{ $enrollmentCount }} users</span>
-            </div>
+        <div class="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+            <p class="font-medium text-green-700 dark:text-green-400">Successfully enrolled {{ $enrollmentCount }} users</p>
         </div>
     @endif
 
-    <div class="grid gap-6 md:grid-cols-2">
-        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6">
-            <flux:heading level="2" size="md" class="mb-4">Enrollment Options</flux:heading>
+    <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
+            <flux:heading level="2" size="md" class="mb-4">Enrollment Filters</flux:heading>
 
             <div class="space-y-4">
                 <flux:field>
-                    <flux:label>Enrollment Type</flux:label>
-                    <flux:select wire:model="enrollType" required>
-                        <flux:select.option value="college">By College (All Staff)</flux:select.option>
-                        <flux:select.option value="department">By Department (All Staff)</flux:select.option>
-                        <flux:select.option value="individual">Individual User</flux:select.option>
-                    </flux:select>
+                    <flux:label>College</flux:label>
+                    <div x-data="{ open: false, query: '' }" class="relative rounded-lg border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900 p-3">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            @if ($this->isAllSelected('selectedColleges'))
+                                <span class="rounded-full bg-zinc-900 px-3 py-1 text-xs text-white dark:bg-zinc-100 dark:text-zinc-900">All</span>
+                            @endif
+                            @if ($this->isAllSelected('selectedColleges'))
+                                <span class="rounded-full bg-zinc-900 px-3 py-1 text-xs text-white dark:bg-zinc-100 dark:text-zinc-900">All</span>
+                            @else
+                                @foreach (App\Enums\College::cases() as $college)
+                                    @if (in_array($college->value, $selectedColleges, true))
+                                        <button type="button" wire:click="toggleSelection('selectedColleges', '{{ $college->value }}')" class="rounded-full px-3 py-1 text-xs border bg-blue-600 text-white border-blue-600">
+                                            {{ $college->label() }}
+                                        </button>
+                                    @endif
+                                @endforeach
+                            @endif
+                        </div>
+                        <flux:input x-on:focus="open = true" x-on:input="query = $event.target.value; open = true" placeholder="Search colleges" />
+                        <div x-show="open" x-on:click.outside="open = false" class="mt-2 max-h-40 overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-950">
+                            <button type="button" wire:click="selectAll('selectedColleges')" class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                                <span>All</span>
+                                <span class="text-xs text-zinc-400">{{ count($selectedColleges) }} selected</span>
+                            </button>
+                            @foreach (App\Enums\College::cases() as $college)
+                                <button type="button" x-show="query === '' || '{{ strtolower($college->label()) }}'.includes(query.toLowerCase())" wire:click="toggleSelection('selectedColleges', '{{ $college->value }}')" class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                                    <span>{{ $college->label() }}</span>
+                                    <span class="text-xs text-zinc-400">{{ $this->countForOption('selectedColleges', $college->value) }} staff</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Default selects all colleges.</p>
                 </flux:field>
 
-                @if ($enrollType === 'college')
-                    <flux:field>
-                        <flux:label>Select College</flux:label>
-                        <flux:select wire:model="selectedCollege" placeholder="Select a college">
-                            <flux:select.option value="">Select college...</flux:select.option>
-                            @foreach (App\Enums\College::cases() as $college)
-                                <flux:select.option value="{{ $college }}">{{ $college->label() }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                    </flux:field>
-                @endif
-
-                @if ($enrollType === 'department')
-                    <flux:field>
-                        <flux:label>Select College</flux:label>
-                        <flux:select wire:model="selectedCollege" placeholder="Select a college">
-                            <flux:select.option value="">Select college...</flux:select.option>
-                            @foreach (App\Enums\College::cases() as $college)
-                                <flux:select.option value="{{ $college }}">{{ $college->label() }}</flux:select.option>
-                            @endforeach
-                        </flux:select>
-                    </flux:field>
-
-                    @if ($selectedCollege)
-                        <flux:field>
-                            <flux:label>Select Department</flux:label>
-                            <flux:select wire:model="selectedDepartment" placeholder="Select a department">
-                                <flux:select.option value="">Select department...</flux:select.option>
+                <flux:field>
+                    <flux:label>Department</flux:label>
+                    <div x-data="{ open: false, query: '' }" class="relative rounded-lg border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900 p-3">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            @if ($this->isAllSelected('selectedDepartments'))
+                                <span class="rounded-full bg-zinc-900 px-3 py-1 text-xs text-white dark:bg-zinc-100 dark:text-zinc-900">All</span>
+                            @else
                                 @foreach (App\Enums\Department::cases() as $department)
-                                    <flux:select.option value="{{ $department }}">{{ $department->label() }}</flux:select.option>
+                                    @if (in_array($department->value, $selectedDepartments, true))
+                                        <button type="button" wire:click="toggleSelection('selectedDepartments', '{{ $department->value }}')" class="rounded-full px-3 py-1 text-xs border bg-blue-600 text-white border-blue-600">
+                                            {{ $department->label() }}
+                                        </button>
+                                    @endif
                                 @endforeach
-                            </flux:select>
-                        </flux:field>
-                    @endif
-                @endif
-
-                @if ($enrollType === 'individual')
-                    <flux:field>
-                        <flux:label>Select User</flux:label>
-                        <flux:select wire:model="selectedUser" placeholder="Select a user" search>
-                            <flux:select.option value="">Search for a user...</flux:select.option>
-                            @foreach (App\Models\User::where('role', App\Enums\Role::Faculty)->orderBy('name')->get() as $user)
-                                <flux:select.option value="{{ $user }}">{{ $user->name }} ({{ $user->college?->label() ?? 'N/A' }} - {{ $user->department?->label() ?? 'N/A' }})</flux:select.option>
+                            @endif
+                        </div>
+                        <flux:input x-on:focus="open = true" x-on:input="query = $event.target.value; open = true" placeholder="Search departments" />
+                        <div x-show="open" x-on:click.outside="open = false" class="mt-2 max-h-40 overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-950">
+                            <button type="button" wire:click="selectAll('selectedDepartments')" class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                                <span>All</span>
+                                <span class="text-xs text-zinc-400">{{ count($selectedDepartments) }} selected</span>
+                            </button>
+                            @foreach (App\Enums\Department::cases() as $department)
+                                <button type="button" x-show="query === '' || '{{ strtolower($department->label()) }}'.includes(query.toLowerCase())" wire:click="toggleSelection('selectedDepartments', '{{ $department->value }}')" class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                                    <span>{{ $department->label() }}</span>
+                                    <span class="text-xs text-zinc-400">{{ $this->countForOption('selectedDepartments', $department->value) }} staff</span>
+                                </button>
                             @endforeach
-                        </flux:select>
-                    </flux:field>
-                @endif
+                        </div>
+                    </div>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Choose one or more departments, or leave all selected.</p>
+                </flux:field>
+
+                <flux:field>
+                    <flux:label>Faculty</flux:label>
+                    <div x-data="{ open: false, query: '' }" class="relative rounded-lg border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-900 p-3">
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            @if ($this->isAllSelected('selectedFacultyIds'))
+                                <span class="rounded-full bg-zinc-900 px-3 py-1 text-xs text-white dark:bg-zinc-100 dark:text-zinc-900">All</span>
+                            @else
+                                @foreach (App\Models\User::where('role', App\Enums\Role::Faculty)->orderBy('name')->get() as $user)
+                                    @if (in_array((string) $user->id, $selectedFacultyIds, true))
+                                        <button type="button" wire:click="toggleSelection('selectedFacultyIds', '{{ $user->id }}')" class="rounded-full px-3 py-1 text-xs border bg-blue-600 text-white border-blue-600">
+                                            {{ $user->name }}
+                                        </button>
+                                    @endif
+                                @endforeach
+                            @endif
+                        </div>
+                        <flux:input x-on:focus="open = true" x-on:input="query = $event.target.value; open = true" placeholder="Search faculty" />
+                        <div x-show="open" x-on:click.outside="open = false" class="mt-2 max-h-40 overflow-y-auto rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-950">
+                            <button type="button" wire:click="selectAll('selectedFacultyIds')" class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                                <span>All</span>
+                                <span class="text-xs text-zinc-400">{{ $this->facultyCount }} faculty</span>
+                            </button>
+                            @foreach (App\Models\User::where('role', App\Enums\Role::Faculty)->orderBy('name')->get() as $user)
+                                <button type="button" x-show="query === '' || '{{ strtolower($user->name) }}'.includes(query.toLowerCase())" wire:click="toggleSelection('selectedFacultyIds', '{{ $user->id }}')" class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                                    <span>{{ $user->name }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Use this to enroll only specific faculty members.</p>
+                </flux:field>
 
                 <flux:field>
                     <flux:label>Deadline (Days)</flux:label>
-                    <flux:input wire:model="deadlineDays" type="number" min="1" placeholder="30" />
-                    <flux:helper>Number of days from now to complete the course</flux:helper>
+                    <flux:input wire:model="deadlineDays" type="number" min="1" />
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Deadline is stored as an integer number of days.</p>
                 </flux:field>
+
+                <flux:button wire:click="enrollUsers" variant="primary" class="w-full">
+                    Enroll {{ $enrollmentCount }} User{{ $enrollmentCount === 1 ? '' : 's' }}
+                </flux:button>
             </div>
         </div>
 
-        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6">
-            <flux:heading level="2" size="md" class="mb-4">Enrollment Summary</flux:heading>
+        <div class="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
+            <flux:heading level="2" size="md" class="mb-4">Preview</flux:heading>
 
-            <div class="space-y-4">
-                <div class="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm text-zinc-600 dark:text-zinc-400">Eligible Users</span>
-                        <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ $enrollmentCount }}</span>
-                    </div>
-                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Users who can be enrolled (not already enrolled)</p>
+            <div class="mb-4 rounded-lg bg-zinc-50 p-4 dark:bg-zinc-900">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-zinc-500 dark:text-zinc-400">Eligible Users</span>
+                    <span class="text-2xl font-bold">{{ $enrollmentCount }}</span>
                 </div>
+            </div>
 
-                <div class="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm text-zinc-600 dark:text-zinc-400">Deadline</span>
-                        <span class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{{ $deadlineDays }} days</span>
-                    </div>
-                    <p class="text-xs text-zinc-500 dark:text-zinc-400">From: {{ now()->format('M d, Y') }}</p>
-                    <p class="text-xs text-zinc-500 dark:text-zinc-400">Until: {{ now()->addDays((int) $deadlineDays)->format('M d, Y') }}</p>
-                </div>
-
-                @if (count($eligibleUsers) > 0)
-                    <div class="border-t border-zinc-200 dark:border-zinc-700 pt-4">
-                        <flux:heading level="3" size="sm" class="mb-2">Preview Users</flux:heading>
-                        <div class="max-h-48 overflow-y-auto space-y-1">
-                            @foreach (array_slice($eligibleUsers, 0, 10) as $user)
-                                <div class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-                                    <div class="h-6 w-6 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
-                                        <span class="text-xs font-medium">{{ substr($user['name'] ?? '?', 0, 1) }}</span>
-                                    </div>
-                                    <span>{{ $user['name'] }}</span>
-                                    <span class="text-xs text-zinc-400">({{ $user['college'] ?? 'N/A' }} - {{ $user['department'] ?? 'N/A' }})</span>
-                                </div>
-                            @endforeach
-                            @if (count($eligibleUsers) > 10)
-                                <p class="text-xs text-zinc-500">... and {{ count($eligibleUsers) - 10 }} more</p>
-                            @endif
+            <div class="space-y-2">
+                @forelse (array_slice($eligibleUsers, 0, 10) as $user)
+                    <div class="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700">
+                        <div>
+                            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $user['name'] }}</p>
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $user['college'] }} - {{ $user['department'] }}</p>
                         </div>
                     </div>
-                @endif
-
-                <div class="pt-4">
-                    <flux:button wire:click="enrollUsers" variant="primary" :disabled="$enrollmentCount === 0" class="w-full">
-                        Enroll {{ $enrollmentCount }} User{{ $enrollmentCount === 1 ? '' : 's' }}
-                    </flux:button>
-                </div>
+                @empty
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400">No eligible users found.</p>
+                @endforelse
             </div>
         </div>
     </div>
