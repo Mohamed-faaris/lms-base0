@@ -1,5 +1,6 @@
 # Laravel Application Models
 
+
 This document describes all 24 Eloquent models in the application, grouped by domain.
 
 ## Table of Contents
