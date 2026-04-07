@@ -141,12 +141,51 @@ class CoursePlayer extends Component
             }
 
             $module->status = $status;
-            // Mock data for UI
-            $module->duration = '15:00';
-            $module->videoId = 'dQw4w9WgXcQ';
+            $meta = is_array($module->content_meta) ? $module->content_meta : [];
+            $module->duration = $meta['duration'] ?? '15:00';
+            $module->videoId = $meta['youtube_id'] ?? $this->extractYoutubeId($module->content_url) ?? 'dQw4w9WgXcQ';
 
             return $module;
         });
+    }
+
+    private function extractYoutubeId(?string $url): ?string
+    {
+        if (empty($url)) {
+            return null;
+        }
+
+        $parsedUrl = parse_url(trim($url));
+        if (! $parsedUrl) {
+            return null;
+        }
+
+        $host = strtolower($parsedUrl['host'] ?? '');
+        $path = $parsedUrl['path'] ?? '';
+
+        if (! empty($host) && str_contains($host, 'youtu.be')) {
+            return ltrim($path, '/');
+        }
+
+        if (! empty($host) && str_contains($host, 'youtube.com')) {
+            if (isset($parsedUrl['query'])) {
+                parse_str($parsedUrl['query'], $queryParams);
+                if (! empty($queryParams['v'])) {
+                    return $queryParams['v'];
+                }
+            }
+
+            $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+            if (! empty($segments)) {
+                if (in_array($segments[0], ['embed', 'v'], true) && isset($segments[1])) {
+                    return $segments[1];
+                }
+
+                return $segments[0];
+            }
+        }
+
+        return null;
     }
 
     public function selectModule(int $moduleId): void
