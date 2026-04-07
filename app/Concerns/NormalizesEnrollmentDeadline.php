@@ -9,19 +9,59 @@ trait NormalizesEnrollmentDeadline
         if ($deadline === null || $deadline === 0) {
             return [
                 'daysLeft' => null,
+                'hoursLeft' => null,
                 'isUrgent' => false,
                 'isOverdue' => false,
+                'label' => 'No deadline',
+                'compactLabel' => 'No deadline',
             ];
         }
 
-        $daysLeft = $deadline < 1_000_000_000
-            ? $deadline
-            : now()->diffInDays(now()->setTimestamp($deadline), false);
+        $now = now();
+        $isLegacyDeadline = $deadline < 1_000_000_000;
+
+        if ($isLegacyDeadline) {
+            $daysLeft = $deadline;
+            $hoursLeft = null;
+        } else {
+            $endDate = $now->copy()->setTimestamp($deadline);
+            $daysLeft = $now->diffInDays($endDate, false);
+            $hoursLeft = $daysLeft < 1 && $daysLeft >= 0
+                ? max(1, $now->diffInHours($endDate, false))
+                : null;
+        }
+
+        $isOverdue = $daysLeft < 0;
+        $isUrgent = $daysLeft <= 3 && $daysLeft > 0;
 
         return [
             'daysLeft' => $daysLeft,
-            'isUrgent' => $daysLeft <= 3 && $daysLeft > 0,
-            'isOverdue' => $daysLeft < 0,
+            'hoursLeft' => $hoursLeft,
+            'isUrgent' => $isUrgent,
+            'isOverdue' => $isOverdue,
+            'label' => $this->formatEnrollmentDeadlineLabel($daysLeft, $hoursLeft, $isOverdue),
+            'compactLabel' => $this->formatEnrollmentDeadlineLabel($daysLeft, $hoursLeft, $isOverdue, compact: true),
         ];
+    }
+
+    protected function formatEnrollmentDeadlineLabel(?int $daysLeft, ?int $hoursLeft, bool $isOverdue, bool $compact = false): string
+    {
+        if ($isOverdue) {
+            return 'Overdue';
+        }
+
+        if ($hoursLeft !== null) {
+            $suffix = $compact ? 'h left' : ' hour'.($hoursLeft === 1 ? '' : 's').' left';
+
+            return $hoursLeft.$suffix;
+        }
+
+        if ($daysLeft === null) {
+            return 'No deadline';
+        }
+
+        $suffix = $compact ? 'd left' : ' day'.($daysLeft === 1 ? '' : 's').' left';
+
+        return $daysLeft.$suffix;
     }
 }

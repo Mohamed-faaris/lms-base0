@@ -80,11 +80,7 @@ class Enrollments extends Component
                     'enrolledAt' => $latestEnrollment->enrolled_at?->format('M d, Y'),
                     'learnersCount' => $batch->count(),
                     'learnersPreview' => $learnerNames,
-                    'deadlineLabel' => match (true) {
-                        $deadlineMeta['isOverdue'] => 'Overdue',
-                        $deadlineMeta['daysLeft'] === null => 'No deadline',
-                        default => $deadlineMeta['daysLeft'].' days left',
-                    },
+                    'deadlineLabel' => $deadlineMeta['label'],
                     'deadlineTone' => match (true) {
                         $deadlineMeta['isOverdue'] => 'text-red-600 dark:text-red-400',
                         $deadlineMeta['isUrgent'] => 'text-amber-600 dark:text-amber-400',

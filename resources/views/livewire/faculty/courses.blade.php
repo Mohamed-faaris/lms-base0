@@ -49,11 +49,11 @@
                         @elseif($isOverdue)
                             <flux:badge color="red" class="font-semibold shadow-sm animate-pulse px-3 py-1">Overdue</flux:badge>
                         @elseif($isUrgent)
-                            <flux:badge color="amber" class="font-semibold shadow-sm px-3 py-1">{{ $daysLeft }} days left</flux:badge>
+                            <flux:badge color="amber" class="font-semibold shadow-sm px-3 py-1">{{ $course->deadlineLabel }}</flux:badge>
                         @elseif($daysLeft === null)
                             <flux:badge color="zinc" class="font-medium bg-zinc-100 dark:bg-zinc-800 px-3 py-1">No deadline</flux:badge>
                         @else
-                            <flux:badge color="zinc" class="font-medium bg-zinc-100 dark:bg-zinc-800 px-3 py-1">{{ $daysLeft }} days left</flux:badge>
+                            <flux:badge color="zinc" class="font-medium bg-zinc-100 dark:bg-zinc-800 px-3 py-1">{{ $course->deadlineLabel }}</flux:badge>
                         @endif
                     </div>
                 </div>

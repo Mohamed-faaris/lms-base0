@@ -27,6 +27,11 @@ test('faculty courses page shows normalized deadline labels for legacy and times
         'description' => 'Expired enrollment deadline format.',
     ]);
 
+    $hoursLeftCourse = Course::create([
+        'title' => 'Hours Left Deadline Course',
+        'description' => 'Enrollment deadline within the next day.',
+    ]);
+
     Enrollment::create([
         'user_id' => $staff->id,
         'course_id' => $legacyCourse->id,
@@ -51,10 +56,19 @@ test('faculty courses page shows normalized deadline labels for legacy and times
         'enrolled_at' => now(),
     ]);
 
+    Enrollment::create([
+        'user_id' => $staff->id,
+        'course_id' => $hoursLeftCourse->id,
+        'enrolled_by' => $staff->id,
+        'deadline' => now()->addHours(6)->timestamp,
+        'enrolled_at' => now(),
+    ]);
+
     Livewire::actingAs($staff)
         ->test(FacultyCourses::class)
         ->assertSee('30 days left')
         ->assertSee('2 days left')
+        ->assertSee('6 hours left')
         ->assertSee('Overdue');
 
     Date::setTestNow();

@@ -155,7 +155,7 @@
                         @elseif($isUrgent)
                             <flux:badge color="amber" size="sm">
                                 <flux:icon.clock class="h-3 w-3 mr-1" />
-                                {{ $daysLeft }}d left
+                                {{ $course->deadlineCompactLabel }}
                             </flux:badge>
                         @elseif($daysLeft === null)
                             <span class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -165,7 +165,7 @@
                         @else
                             <span class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
                                 <flux:icon.calendar class="h-3 w-3" />
-                                {{ $daysLeft }}d left
+                                {{ $course->deadlineCompactLabel }}
                             </span>
                         @endif
                     </div>

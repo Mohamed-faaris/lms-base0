@@ -56,8 +56,11 @@ class Courses extends Component
                     'progress' => $progress,
                     'deadline' => $enrollment->deadline,
                     'daysLeft' => $deadlineMeta['daysLeft'],
+                    'hoursLeft' => $deadlineMeta['hoursLeft'],
                     'isUrgent' => $deadlineMeta['isUrgent'],
                     'isOverdue' => $deadlineMeta['isOverdue'],
+                    'deadlineLabel' => $deadlineMeta['label'],
+                    'deadlineCompactLabel' => $deadlineMeta['compactLabel'],
                     'xpReward' => $enrollment->xp_reward ?? 500,
                     'status' => $status,
                 ];
