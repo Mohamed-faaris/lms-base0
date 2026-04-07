@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Faculty;
 
+use App\Concerns\NormalizesEnrollmentDeadline;
 use App\Models\Badge;
 use App\Models\Enrollment;
 use App\Models\Progress;
@@ -12,6 +13,8 @@ use Livewire\Component;
 
 class Dashboard extends Component
 {
+    use NormalizesEnrollmentDeadline;
+
     public Collection $enrolledCourses;
 
     public int $totalXp = 0;
@@ -76,12 +79,15 @@ class Dashboard extends Component
             ->first(fn ($b) => ($b->conditions['min_xp'] ?? 0) > $this->totalXp);
 
         // Get enrolled courses with progress
-        $this->enrolledCourses = Enrollment::with(['course.contents'])
+        $this->enrolledCourses = Enrollment::with(['course.topics.modules.contents'])
             ->where('user_id', $user->id)
             ->get()
-            ->map(function ($enrollment) {
+            ->map(function (Enrollment $enrollment) {
                 $course = $enrollment->course;
-                $contents = $course?->contents ?? collect();
+                $contents = $course?->topics
+                    ?->flatMap(fn ($topic) => $topic->modules)
+                    ->flatMap(fn ($module) => $module->contents)
+                    ?? collect();
                 $totalModules = $contents->count();
                 $completedModules = Progress::where('user_id', $enrollment->user_id)
                     ->whereIn('content_id', $contents->pluck('id'))
@@ -93,6 +99,7 @@ class Dashboard extends Component
                     : 0;
 
                 $status = $progress === 100 ? 'completed' : ($progress > 0 ? 'in-progress' : 'not-started');
+                $deadlineMeta = $this->normalizeEnrollmentDeadline($enrollment->deadline);
 
                 return (object) [
                     'id' => $course?->id,
@@ -101,6 +108,9 @@ class Dashboard extends Component
                     'completedModules' => $completedModules,
                     'progress' => $progress,
                     'deadline' => $enrollment->deadline,
+                    'daysLeft' => $deadlineMeta['daysLeft'],
+                    'isUrgent' => $deadlineMeta['isUrgent'],
+                    'isOverdue' => $deadlineMeta['isOverdue'],
                     'xpReward' => $enrollment->xp_reward ?? 500,
                     'status' => $status,
                 ];

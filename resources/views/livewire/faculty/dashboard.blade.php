@@ -111,10 +111,9 @@
         <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
             @forelse($enrolledCourses as $course)
                 @php
-                    $deadlineValue = is_numeric($course->deadline) ? $course->deadline : 0;
-                    $daysLeft = $deadlineValue;
-                    $isUrgent = $daysLeft <= 3 && $daysLeft > 0;
-                    $isOverdue = $daysLeft < 0;
+                    $daysLeft = $course->daysLeft;
+                    $isUrgent = $course->isUrgent;
+                    $isOverdue = $course->isOverdue;
                     $isCompleted = $course->status === 'completed';
                 @endphp
                 <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer">
@@ -158,6 +157,11 @@
                                 <flux:icon.clock class="h-3 w-3 mr-1" />
                                 {{ $daysLeft }}d left
                             </flux:badge>
+                        @elseif($daysLeft === null)
+                            <span class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
+                                <flux:icon.calendar class="h-3 w-3" />
+                                No deadline
+                            </span>
                         @else
                             <span class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
                                 <flux:icon.calendar class="h-3 w-3" />
