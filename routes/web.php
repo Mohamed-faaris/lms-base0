@@ -13,6 +13,7 @@ use App\Livewire\Admin\Courses\ModuleQuizCreator;
 use App\Livewire\Admin\Courses\ModuleQuizViewer;
 use App\Livewire\Admin\Courses\Show as CoursesShow;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Enrollments as AdminEnrollments;
 use App\Livewire\Faculty\Certificates;
 use App\Livewire\Faculty\CoursePlayer;
 use App\Livewire\Faculty\Courses;
@@ -41,6 +42,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', AdminDashboard::class)->name('dashboard');
+        Route::get('enrollments', AdminEnrollments::class)->name('enrollments.index');
 
         Route::prefix('courses')->name('courses.')->group(function () {
             Route::get('/', CoursesIndex::class)->name('index');

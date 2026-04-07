@@ -35,6 +35,9 @@
                         <flux:sidebar.item icon="academic-cap" :href="route('admin.courses.index')" :current="request()->routeIs('admin.courses.*')" wire:navigate>
                             {{ __('Courses') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="user-group" :href="route('admin.enrollments.index')" :current="request()->routeIs('admin.enrollments.*')" wire:navigate>
+                            {{ __('Enrollments') }}
+                        </flux:sidebar.item>
                     @endif
                 </flux:sidebar.group>
             </flux:sidebar.nav>
