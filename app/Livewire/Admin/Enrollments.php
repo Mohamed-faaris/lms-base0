@@ -6,6 +6,7 @@ use App\Concerns\NormalizesEnrollmentDeadline;
 use App\Models\Enrollment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -44,33 +45,41 @@ class Enrollments extends Component
                             $courseQuery
                                 ->where('title', 'like', '%'.$this->search.'%')
                                 ->orWhere('slug', 'like', '%'.$this->search.'%');
-                        });
+                        })
+                        ->orWhere('batch_id', 'like', '%'.$this->search.'%');
                 });
             });
 
-        $totalEnrollments = (clone $query)->count();
-        $activeLearners = (clone $query)->distinct('user_id')->count('user_id');
-        $activeCourses = (clone $query)->distinct('course_id')->count('course_id');
-        $urgentDeadlines = (clone $query)
-            ->where('deadline', '>=', 1_000_000_000)
-            ->whereBetween('deadline', [now()->timestamp, now()->addDays(3)->timestamp])
-            ->count();
-
-        /** @var LengthAwarePaginator<int, Enrollment> $enrollments */
-        $enrollments = $query
+        /** @var Collection<int, Enrollment> $matchedEnrollments */
+        $matchedEnrollments = $query
             ->orderByDesc('enrolled_at')
-            ->paginate(10)
-            ->through(function (Enrollment $enrollment): object {
-                $deadlineMeta = $this->normalizeEnrollmentDeadline($enrollment->deadline);
+            ->get();
+
+        $totalEnrollments = $matchedEnrollments->count();
+        $activeLearners = $matchedEnrollments->pluck('user_id')->unique()->count();
+        $activeCourses = $matchedEnrollments->pluck('course_id')->unique()->count();
+
+        $batches = $matchedEnrollments
+            ->groupBy(fn (Enrollment $enrollment): string => $this->batchKey($enrollment))
+            ->map(function (Collection $batch): object {
+                /** @var Enrollment $latestEnrollment */
+                $latestEnrollment = $batch->sortByDesc('enrolled_at')->first();
+                $deadlineMeta = $this->normalizeEnrollmentDeadline((int) $batch->max('deadline'));
+                $learnerNames = $batch
+                    ->pluck('user.name')
+                    ->filter()
+                    ->take(3)
+                    ->implode(', ');
 
                 return (object) [
-                    'id' => $enrollment->course_id.'-'.$enrollment->user_id,
-                    'course' => $enrollment->course?->title ?? 'Unknown Course',
-                    'courseUrl' => $enrollment->course ? route('admin.courses.show', $enrollment->course) : null,
-                    'learner' => $enrollment->user?->name ?? 'Unknown User',
-                    'learnerEmail' => $enrollment->user?->email ?? 'No email',
-                    'enrolledBy' => $enrollment->enrolledBy?->name ?? 'Unknown User',
-                    'enrolledAt' => $enrollment->enrolled_at?->format('M d, Y'),
+                    'id' => $this->batchKey($latestEnrollment),
+                    'batchId' => $latestEnrollment->batch_id ?: 'Legacy',
+                    'course' => $latestEnrollment->course?->title ?? 'Unknown Course',
+                    'courseUrl' => $latestEnrollment->course ? route('admin.courses.show', $latestEnrollment->course) : null,
+                    'enrolledBy' => $latestEnrollment->enrolledBy?->name ?? 'Unknown User',
+                    'enrolledAt' => $latestEnrollment->enrolled_at?->format('M d, Y'),
+                    'learnersCount' => $batch->count(),
+                    'learnersPreview' => $learnerNames,
                     'deadlineLabel' => match (true) {
                         $deadlineMeta['isOverdue'] => 'Overdue',
                         $deadlineMeta['daysLeft'] === null => 'No deadline',
@@ -81,15 +90,45 @@ class Enrollments extends Component
                         $deadlineMeta['isUrgent'] => 'text-amber-600 dark:text-amber-400',
                         default => 'text-zinc-600 dark:text-zinc-300',
                     },
+                    'sortTimestamp' => $latestEnrollment->enrolled_at?->timestamp ?? 0,
                 ];
-            });
+            })
+            ->sortByDesc('sortTimestamp')
+            ->values();
+
+        $totalBatches = $batches->count();
+        $urgentBatches = $batches
+            ->filter(fn (object $batch): bool => $batch->deadlineLabel !== 'No deadline' && str_contains($batch->deadlineTone, 'amber'))
+            ->count();
+
+        $currentPage = $this->getPage();
+        $perPage = 10;
+        $currentItems = $batches->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+        $enrollments = new LengthAwarePaginator(
+            $currentItems,
+            $totalBatches,
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'pageName' => 'page'],
+        );
 
         return view('livewire.admin.enrollments', [
             'activeCourses' => $activeCourses,
             'activeLearners' => $activeLearners,
             'enrollments' => $enrollments,
+            'totalBatches' => $totalBatches,
             'totalEnrollments' => $totalEnrollments,
-            'urgentDeadlines' => $urgentDeadlines,
+            'urgentBatches' => $urgentBatches,
         ])->layout('layouts.app');
+    }
+
+    protected function batchKey(Enrollment $enrollment): string
+    {
+        if ($enrollment->batch_id) {
+            return $enrollment->batch_id;
+        }
+
+        return 'legacy-'.$enrollment->course_id.'-'.$enrollment->enrolled_by.'-'.($enrollment->enrolled_at?->timestamp ?? 0);
     }
 }

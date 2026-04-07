@@ -91,4 +91,11 @@ class UserFactory extends Factory
             'role' => Role::Staff,
         ]);
     }
+
+    public function faculty(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => Role::Faculty,
+        ]);
+    }
 }

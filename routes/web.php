@@ -7,13 +7,13 @@ use App\Livewire\Admin\Courses\Create as CoursesCreate;
 use App\Livewire\Admin\Courses\Edit as CoursesEdit;
 use App\Livewire\Admin\Courses\EndQuizCreator;
 use App\Livewire\Admin\Courses\EndQuizViewer;
-use App\Livewire\Admin\Courses\Enroll as CoursesEnroll;
 use App\Livewire\Admin\Courses\Index as CoursesIndex;
 use App\Livewire\Admin\Courses\ModuleQuizCreator;
 use App\Livewire\Admin\Courses\ModuleQuizViewer;
 use App\Livewire\Admin\Courses\Show as CoursesShow;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Enrollments as AdminEnrollments;
+use App\Livewire\Admin\Enrollments\Create as EnrollmentBatchCreate;
 use App\Livewire\Faculty\Certificates;
 use App\Livewire\Faculty\CoursePlayer;
 use App\Livewire\Faculty\Courses;
@@ -43,13 +43,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', AdminDashboard::class)->name('dashboard');
         Route::get('enrollments', AdminEnrollments::class)->name('enrollments.index');
+        Route::get('enrollments/create', EnrollmentBatchCreate::class)->name('enrollments.create');
 
         Route::prefix('courses')->name('courses.')->group(function () {
             Route::get('/', CoursesIndex::class)->name('index');
             Route::get('/create', CoursesCreate::class)->name('create');
             Route::get('/{course}', CoursesShow::class)->name('show');
             Route::get('/{course}/analyze', CoursesAnalyze::class)->name('analyze');
-            Route::get('/{course}/enroll', CoursesEnroll::class)->name('enroll');
+            Route::get('/{course}/enroll', EnrollmentBatchCreate::class)->name('enroll');
             Route::get('/{course}/edit', CoursesEdit::class)->name('edit');
             Route::get('/content/{contentId}', ContentViewer::class)->name('content.show');
             Route::get('/{course}/content/{contentId}/edit', ContentEditor::class)->name('content.edit');
