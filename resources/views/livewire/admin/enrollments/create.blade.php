@@ -92,7 +92,7 @@
                             'all' => ['label' => 'All Learners', 'description' => 'Every staff and faculty learner in the platform.'],
                             'college' => ['label' => 'College Selection', 'description' => 'Choose one or more colleges and optionally narrow by departments.'],
                             'departments' => ['label' => 'Departments Across Colleges', 'description' => 'Same departments across every college.'],
-                            'user' => ['label' => 'Single User', 'description' => 'Enroll one learner only.'],
+                            'user' => ['label' => 'Selected Users', 'description' => 'Search and select one or more specific learners.'],
                         ];
                     @endphp
 
@@ -178,24 +178,48 @@
                     </div>
                 @else
                     <div class="space-y-3">
-                        <flux:input
-                            wire:model.live="userSearch"
-                            icon="magnifying-glass"
-                            placeholder="Search learners by name or email..."
-                        />
+                        <div class="rounded-xl border border-zinc-200 p-3 dark:border-zinc-700">
+                            <div class="mb-3 flex flex-wrap gap-2">
+                                @forelse ($selectedUserIds as $selectedUserId)
+                                    @php
+                                        $selectedUser = $userOptions->firstWhere('id', $selectedUserId) ?? \App\Models\User::find($selectedUserId);
+                                    @endphp
+                                    @if ($selectedUser)
+                                        <button
+                                            type="button"
+                                            wire:click="toggleUser({{ $selectedUser->id }})"
+                                            wire:key="selected-user-chip-{{ $selectedUser->id }}"
+                                            class="inline-flex items-center gap-2 rounded-full border border-blue-600 bg-blue-600 px-3 py-1 text-xs font-medium text-white"
+                                        >
+                                            <span>{{ $selectedUser->name }}</span>
+                                            <flux:icon.x-mark class="h-3.5 w-3.5" />
+                                        </button>
+                                    @endif
+                                @empty
+                                    <span class="text-sm text-zinc-500 dark:text-zinc-400">No learners selected yet.</span>
+                                @endforelse
+                            </div>
+
+                            <flux:input
+                                wire:model.live="userSearch"
+                                icon="magnifying-glass"
+                                placeholder="Search learners by name or email..."
+                            />
+                        </div>
+
                         <div class="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-zinc-200 p-2 dark:border-zinc-700">
                             @forelse ($userOptions as $userOption)
                                 <button
                                     type="button"
-                                    wire:click="selectUser({{ $userOption->id }})"
+                                    wire:click="toggleUser({{ $userOption->id }})"
                                     wire:key="user-{{ $userOption->id }}"
-                                    class="flex w-full items-start justify-between rounded-lg border px-4 py-3 text-left transition {{ $selectedUserId === $userOption->id ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/30' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-600 dark:hover:bg-zinc-900' }}"
+                                    class="flex w-full items-start justify-between rounded-lg border px-4 py-3 text-left transition {{ in_array($userOption->id, $selectedUserIds, true) ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/30' : 'border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:border-zinc-600 dark:hover:bg-zinc-900' }}"
                                 >
                                     <div>
                                         <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $userOption->name }}</p>
                                         <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ $userOption->email }}</p>
                                     </div>
-                                    @if ($selectedUserId === $userOption->id)
+                                    @if (in_array($userOption->id, $selectedUserIds, true))
                                         <span class="rounded-full bg-blue-600 px-2 py-1 text-xs font-semibold text-white">Selected</span>
                                     @endif
                                 </button>
@@ -203,7 +227,7 @@
                                 <p class="px-3 py-4 text-sm text-zinc-500 dark:text-zinc-400">No learners matched your search.</p>
                             @endforelse
                         </div>
-                        @error('selectedUserId')
+                        @error('selectedUserIds')
                             <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
@@ -248,7 +272,7 @@
                                 {{ match ($targetMode) {
                                     'college' => 'Entire College',
                                     'departments' => 'Departments Across Colleges',
-                                    'user' => 'Single User',
+                                    'user' => 'Selected Users',
                                     default => 'All Learners',
                                 } }}
                             </span>
@@ -275,10 +299,17 @@
                                 @endforeach
                             @endif
 
-                            @if ($targetMode === 'user' && $selectedUserId)
-                                <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                                    {{ $userOptions->firstWhere('id', $selectedUserId)?->name ?? 'Selected learner' }}
-                                </span>
+                            @if ($targetMode === 'user')
+                                @foreach ($selectedUserIds as $selectedUserId)
+                                    @php
+                                        $selectedUser = $userOptions->firstWhere('id', $selectedUserId) ?? \App\Models\User::find($selectedUserId);
+                                    @endphp
+                                    @if ($selectedUser)
+                                        <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                                            {{ $selectedUser->name }}
+                                        </span>
+                                    @endif
+                                @endforeach
                             @endif
                         </div>
                     </div>

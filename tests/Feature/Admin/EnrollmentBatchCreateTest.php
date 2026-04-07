@@ -128,3 +128,25 @@ test('non admin users cannot access the enrollment batch create page', function 
 
     $response->assertForbidden();
 });
+
+test('selected users mode enrolls multiple explicitly chosen learners', function () {
+    $admin = User::factory()->admin()->create();
+    $course = Course::create([
+        'title' => 'Selected Users Batch',
+        'description' => 'Selected users test.',
+    ]);
+    $firstLearner = User::factory()->staff()->create();
+    $secondLearner = User::factory()->faculty()->create();
+    User::factory()->staff()->create();
+
+    Livewire::actingAs($admin)
+        ->test(EnrollmentBatchCreate::class)
+        ->set('courseId', $course->id)
+        ->set('targetMode', 'user')
+        ->set('selectedUserIds', [$firstLearner->id, $secondLearner->id])
+        ->call('createBatch')
+        ->assertSet('createdCount', 2);
+
+    expect(Enrollment::where('course_id', $course->id)->pluck('user_id')->sort()->values()->all())
+        ->toBe([$firstLearner->id, $secondLearner->id]);
+});

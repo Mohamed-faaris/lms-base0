@@ -50,6 +50,8 @@ test('database seeder enrolls all faculty and staff into demo courses', function
             $enrollment = $userEnrollments->firstWhere('course_id', $courses[$courseTitle]->id);
 
             expect($enrollment)->not->toBeNull();
+            expect($enrollment->batch_id)->not->toBeNull();
+            expect((int) $enrollment->batch_id)->toBeGreaterThan(0);
             expect($enrollment->enrolled_by)->not->toBeNull();
             expect($enrollment->deadline)->toBeGreaterThan(now()->timestamp);
             expect($enrollment->enrolled_at)->not->toBeNull();

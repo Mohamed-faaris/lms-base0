@@ -634,16 +634,22 @@ class LmsDataSeeder extends Seeder
             $progressPercent = $facultyData['progress'];
             $xpValue = $facultyData['xp'];
             $streakDays = $facultyData['streak'];
+            $reactBatchId = 1001;
 
             // Create enrollment (ignore duplicates)
-            Enrollment::firstOrCreate(
+            $enrollment = Enrollment::firstOrCreate(
                 ['user_id' => $user->id, 'course_id' => $reactCourse->id],
                 [
+                    'batch_id' => $reactBatchId,
                     'enrolled_by' => $admin->id,
                     'deadline' => now()->addDays(30)->timestamp,
                     'enrolled_at' => now()->subDays(30),
                 ]
             );
+
+            if (! $enrollment->batch_id) {
+                $enrollment->update(['batch_id' => $reactBatchId]);
+            }
 
             // Calculate completed content based on progress percentage
             $completedCount = (int) round(($progressPercent / 100) * $totalContent);
@@ -891,16 +897,22 @@ class LmsDataSeeder extends Seeder
             $user = $phpData['user'];
             $progressPercent = $phpData['progress'];
             $addXp = $phpData['addXp'];
+            $phpBatchId = 1002;
 
             // Create PHP enrollment
-            Enrollment::firstOrCreate(
+            $enrollment = Enrollment::firstOrCreate(
                 ['user_id' => $user->id, 'course_id' => $phpCourse->id],
                 [
+                    'batch_id' => $phpBatchId,
                     'enrolled_by' => $admin->id,
                     'deadline' => now()->addDays(30)->timestamp,
                     'enrolled_at' => now()->subDays(25),
                 ]
             );
+
+            if (! $enrollment->batch_id) {
+                $enrollment->update(['batch_id' => $phpBatchId]);
+            }
 
             // Create PHP progress
             $completedCount = (int) round(($progressPercent / 100) * $phpTotalContent);
@@ -1643,17 +1655,24 @@ class LmsDataSeeder extends Seeder
 
         foreach ($users as $index => $user) {
             foreach ($courses as $courseIndex => $course) {
-                Enrollment::firstOrCreate(
+                $batchId = 2000 + $courseIndex + 1;
+
+                $enrollment = Enrollment::firstOrCreate(
                     [
                         'user_id' => $user->id,
                         'course_id' => $course->id,
                     ],
                     [
+                        'batch_id' => $batchId,
                         'enrolled_by' => $admin->id,
                         'deadline' => now()->addDays(21 + $index + ($courseIndex * 7))->timestamp,
                         'enrolled_at' => now()->subDays(14 - $courseIndex),
                     ]
                 );
+
+                if (! $enrollment->batch_id) {
+                    $enrollment->update(['batch_id' => $batchId]);
+                }
             }
         }
     }

@@ -28,7 +28,7 @@ class Create extends Component
 
     public array $selectedDepartments = [];
 
-    public ?int $selectedUserId = null;
+    public array $selectedUserIds = [];
 
     public string $userSearch = '';
 
@@ -76,7 +76,7 @@ class Create extends Component
     {
         $this->selectedColleges = [];
         $this->selectedDepartments = [];
-        $this->selectedUserId = null;
+        $this->selectedUserIds = [];
         $this->userSearch = '';
         $this->showSuccess = false;
         $this->refreshPreview();
@@ -88,7 +88,7 @@ class Create extends Component
         $this->refreshPreview();
     }
 
-    public function updatedSelectedUserId(): void
+    public function updatedSelectedUserIds(): void
     {
         $this->showSuccess = false;
         $this->refreshPreview();
@@ -131,9 +131,18 @@ class Create extends Component
         $this->refreshPreview();
     }
 
-    public function selectUser(int $userId): void
+    public function toggleUser(int $userId): void
     {
-        $this->selectedUserId = $userId;
+        if (in_array($userId, $this->selectedUserIds, true)) {
+            $this->selectedUserIds = array_values(array_filter(
+                $this->selectedUserIds,
+                fn (int $selectedUserId): bool => $selectedUserId !== $userId,
+            ));
+        } else {
+            $this->selectedUserIds[] = $userId;
+            $this->selectedUserIds = array_values(array_unique($this->selectedUserIds));
+        }
+
         $this->showSuccess = false;
         $this->refreshPreview();
     }
@@ -228,9 +237,16 @@ class Create extends Component
                 'string',
                 Rule::in(array_map(static fn (Department $department): string => $department->value, Department::cases())),
             ],
-            'selectedUserId' => [
+            'selectedUserIds' => [
                 Rule::requiredIf(fn (): bool => $this->targetMode === 'user'),
-                'nullable',
+                'array',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($this->targetMode === 'user' && count($value) === 0) {
+                        $fail('Choose at least one learner for this enrollment batch.');
+                    }
+                },
+            ],
+            'selectedUserIds.*' => [
                 'integer',
                 Rule::exists('users', 'id')->where(function ($query): void {
                     $query->whereIn('role', [Role::Staff->value, Role::Faculty->value]);
@@ -246,7 +262,7 @@ class Create extends Component
             'courseId.required' => 'Choose a course before creating the batch.',
             'selectedColleges.required' => 'Choose at least one college for this enrollment batch.',
             'selectedDepartments.required' => 'Choose at least one department.',
-            'selectedUserId.required' => 'Choose a learner for this enrollment batch.',
+            'selectedUserIds.required' => 'Choose at least one learner for this enrollment batch.',
         ];
     }
 
@@ -311,8 +327,8 @@ class Create extends Component
             }, function (Builder $builder): void {
                 $builder->whereRaw('1 = 0');
             }),
-            'user' => $query->when($this->selectedUserId, function (Builder $builder): void {
-                $builder->whereKey($this->selectedUserId);
+            'user' => $query->when($this->selectedUserIds !== [], function (Builder $builder): void {
+                $builder->whereIn('id', $this->selectedUserIds);
             }, function (Builder $builder): void {
                 $builder->whereRaw('1 = 0');
             }),

@@ -63,7 +63,7 @@ test('enroll page can target a single staff member', function () {
     Livewire::actingAs($admin)
         ->test(EnrollmentBatchCreate::class, ['course' => $course])
         ->set('targetMode', 'user')
-        ->set('selectedUserId', $staff->id)
+        ->set('selectedUserIds', [$staff->id])
         ->set('deadlineDays', '15')
         ->call('createBatch')
         ->assertSet('showSuccess', true)
