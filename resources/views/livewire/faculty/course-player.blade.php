@@ -22,7 +22,7 @@
             @foreach($modules as $index => $module)
                 <button
                     wire:click="selectModule({{ $module->id }})"
-                    @disabled($module->status === 'locked')
+                    @if($module->status === 'locked') disabled @endif
                     class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors
                         {{ $currentModule->id === $module->id ? 'bg-blue-600 text-white' : ($module->status === 'locked' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300') }}"
                 >
@@ -192,7 +192,6 @@
                                     variant="primary" 
                                     class="w-full" 
                                     wire:click="submitQuiz"
-                                    @disabled(count($quizAnswers) < count($quizQuestions))
                                 >
                                     Submit Quiz
                                 </flux:button>
@@ -273,7 +272,7 @@
                 @foreach($modules as $index => $module)
                     <button
                         wire:click="selectModule({{ $module->id }})"
-                        @disabled($module->status === 'locked')
+                        @if($module->status === 'locked') disabled @endif
                         class="w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors
                             {{ $currentModule->id === $module->id ? 'bg-blue-600 text-white' : ($module->status === 'locked' ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300') }}"
                     >

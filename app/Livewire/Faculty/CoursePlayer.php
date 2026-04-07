@@ -74,7 +74,7 @@ class CoursePlayer extends Component
         ],
     ];
 
-    public function mount(?Course $course = null)
+    public function mount(?Course $course = null): void
     {
         $user = auth()->user();
 
@@ -89,12 +89,21 @@ class CoursePlayer extends Component
         $this->loadCourseData();
     }
 
-    protected function loadCourseData()
+    protected function loadCourseData(): void
     {
         $user = auth()->user();
 
-        $this->modules = Content::where('course_id', $this->course->id)
-            ->orderBy('order')
+        $this->course->loadMissing('topics.modules.contents');
+
+        $this->modules = $this->course->topics
+            ->sortBy('order')
+            ->flatMap(fn ($topic) => $topic->modules->sortBy('order'))
+            ->flatMap(fn ($module) => $module->contents->sortBy('order'))
+            ->values();
+
+        $this->modules = Content::query()
+            ->whereIn('id', $this->modules->pluck('id'))
+            ->orderBy('id')
             ->get();
 
         $this->totalModules = $this->modules->count();
@@ -140,7 +149,7 @@ class CoursePlayer extends Component
         });
     }
 
-    public function selectModule($moduleId)
+    public function selectModule(int $moduleId): void
     {
         $module = $this->modules->firstWhere('id', $moduleId);
         if ($module && $module->status !== 'locked') {
@@ -150,22 +159,22 @@ class CoursePlayer extends Component
         }
     }
 
-    public function toggleSidebar()
+    public function toggleSidebar(): void
     {
         $this->sidebarOpen = ! $this->sidebarOpen;
     }
 
-    public function toggleMobileDrawer()
+    public function toggleMobileDrawer(): void
     {
         $this->mobileDrawerOpen = ! $this->mobileDrawerOpen;
     }
 
-    public function startQuiz()
+    public function startQuiz(): void
     {
         $this->showQuiz = true;
     }
 
-    public function resetQuiz()
+    public function resetQuiz(): void
     {
         $this->showQuiz = false;
         $this->quizSubmitted = false;
@@ -173,13 +182,17 @@ class CoursePlayer extends Component
         $this->quizAnswers = [];
     }
 
-    public function setAnswer($questionId, $answerId)
+    public function setAnswer(string $questionId, string $answerId): void
     {
         $this->quizAnswers[$questionId] = $answerId;
     }
 
-    public function submitQuiz()
+    public function submitQuiz(): void
     {
+        if (count($this->quizAnswers) < count($this->quizQuestions)) {
+            return;
+        }
+
         $correct = 0;
         foreach ($this->quizQuestions as $q) {
             if (isset($this->quizAnswers[$q['id']]) && $this->quizAnswers[$q['id']] === $q['correctAnswer']) {
@@ -194,7 +207,7 @@ class CoursePlayer extends Component
         }
     }
 
-    public function markCurrentModuleComplete()
+    public function markCurrentModuleComplete(): void
     {
         $user = auth()->user();
         Progress::updateOrCreate(
@@ -204,19 +217,19 @@ class CoursePlayer extends Component
         $this->loadCourseData();
     }
 
-    public function retakeQuiz()
+    public function retakeQuiz(): void
     {
         $this->quizSubmitted = false;
         $this->quizScore = null;
         $this->quizAnswers = [];
     }
 
-    public function toggleFeedback()
+    public function toggleFeedback(): void
     {
         $this->showFeedback = ! $this->showFeedback;
     }
 
-    public function togglePuzzle()
+    public function togglePuzzle(): void
     {
         $this->showPuzzle = ! $this->showPuzzle;
     }
