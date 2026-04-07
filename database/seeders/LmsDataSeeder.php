@@ -926,6 +926,8 @@ class LmsDataSeeder extends Seeder
             }
         }
 
+        $this->seedKrctStaffEnrollments($admin, [$reactCourse, $phpCourse]);
+
         // ============================================
         // PHP COURSE BADGES
         // ============================================
@@ -1630,6 +1632,30 @@ class LmsDataSeeder extends Seeder
         }
 
         return $quiz;
+    }
+
+    private function seedKrctStaffEnrollments(User $admin, array $courses): void
+    {
+        $staffUsers = User::query()
+            ->where('role', Role::Staff)
+            ->orderBy('id')
+            ->get();
+
+        foreach ($staffUsers as $index => $staffUser) {
+            foreach ($courses as $courseIndex => $course) {
+                Enrollment::firstOrCreate(
+                    [
+                        'user_id' => $staffUser->id,
+                        'course_id' => $course->id,
+                    ],
+                    [
+                        'enrolled_by' => $admin->id,
+                        'deadline' => now()->addDays(21 + $index + ($courseIndex * 7))->timestamp,
+                        'enrolled_at' => now()->subDays(14 - $courseIndex),
+                    ]
+                );
+            }
+        }
     }
 
     private function toCorrectIndex(string $correct): int
