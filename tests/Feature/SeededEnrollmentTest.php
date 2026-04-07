@@ -5,7 +5,7 @@ use App\Models\Enrollment;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 
-test('database seeder enrolls all staff into demo courses', function () {
+test('database seeder enrolls all faculty and staff into demo courses', function () {
     $this->seed(DatabaseSeeder::class);
 
     $courseTitles = [
@@ -13,8 +13,8 @@ test('database seeder enrolls all staff into demo courses', function () {
         'PHP Full Course 2024 - Bro Code',
     ];
 
-    $staffEmails = User::query()
-        ->where('role', \App\Enums\Role::Staff)
+    $userEmails = User::query()
+        ->whereIn('role', [\App\Enums\Role::Faculty, \App\Enums\Role::Staff])
         ->orderBy('email')
         ->pluck('email')
         ->all();
@@ -28,26 +28,26 @@ test('database seeder enrolls all staff into demo courses', function () {
 
     $enrollments = Enrollment::query()
         ->with('user')
-        ->whereHas('user', fn ($query) => $query->whereIn('email', $staffEmails))
+        ->whereHas('user', fn ($query) => $query->whereIn('email', $userEmails))
         ->get()
         ->groupBy(fn (Enrollment $enrollment): string => $enrollment->user->email);
 
     $seededEnrollmentEmails = array_keys($enrollments->all());
     sort($seededEnrollmentEmails);
-    $expectedStaffEmails = $staffEmails;
-    sort($expectedStaffEmails);
+    $expectedUserEmails = $userEmails;
+    sort($expectedUserEmails);
 
-    expect($expectedStaffEmails)->not->toBeEmpty();
-    expect($seededEnrollmentEmails)->toBe($expectedStaffEmails);
+    expect($expectedUserEmails)->not->toBeEmpty();
+    expect($seededEnrollmentEmails)->toBe($expectedUserEmails);
 
-    foreach ($staffEmails as $staffEmail) {
-        $staffEnrollments = $enrollments->get($staffEmail);
+    foreach ($userEmails as $userEmail) {
+        $userEnrollments = $enrollments->get($userEmail);
 
-        expect($staffEnrollments)->not->toBeNull();
-        expect($staffEnrollments->count())->toBe(count($courseTitles));
+        expect($userEnrollments)->not->toBeNull();
+        expect($userEnrollments->count())->toBeGreaterThanOrEqual(count($courseTitles));
 
         foreach ($courseTitles as $courseTitle) {
-            $enrollment = $staffEnrollments->firstWhere('course_id', $courses[$courseTitle]->id);
+            $enrollment = $userEnrollments->firstWhere('course_id', $courses[$courseTitle]->id);
 
             expect($enrollment)->not->toBeNull();
             expect($enrollment->enrolled_by)->not->toBeNull();

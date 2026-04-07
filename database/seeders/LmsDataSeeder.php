@@ -640,7 +640,7 @@ class LmsDataSeeder extends Seeder
                 ['user_id' => $user->id, 'course_id' => $reactCourse->id],
                 [
                     'enrolled_by' => $admin->id,
-                    'deadline' => 30,
+                    'deadline' => now()->addDays(30)->timestamp,
                     'enrolled_at' => now()->subDays(30),
                 ]
             );
@@ -897,7 +897,7 @@ class LmsDataSeeder extends Seeder
                 ['user_id' => $user->id, 'course_id' => $phpCourse->id],
                 [
                     'enrolled_by' => $admin->id,
-                    'deadline' => 30,
+                    'deadline' => now()->addDays(30)->timestamp,
                     'enrolled_at' => now()->subDays(25),
                 ]
             );
@@ -926,7 +926,7 @@ class LmsDataSeeder extends Seeder
             }
         }
 
-        $this->seedKrctStaffEnrollments($admin, [$reactCourse, $phpCourse]);
+        $this->seedDemoCourseEnrollments($admin, [$reactCourse, $phpCourse]);
 
         // ============================================
         // PHP COURSE BADGES
@@ -1634,18 +1634,18 @@ class LmsDataSeeder extends Seeder
         return $quiz;
     }
 
-    private function seedKrctStaffEnrollments(User $admin, array $courses): void
+    private function seedDemoCourseEnrollments(User $admin, array $courses): void
     {
-        $staffUsers = User::query()
-            ->where('role', Role::Staff)
+        $users = User::query()
+            ->whereIn('role', [Role::Faculty, Role::Staff])
             ->orderBy('id')
             ->get();
 
-        foreach ($staffUsers as $index => $staffUser) {
+        foreach ($users as $index => $user) {
             foreach ($courses as $courseIndex => $course) {
                 Enrollment::firstOrCreate(
                     [
-                        'user_id' => $staffUser->id,
+                        'user_id' => $user->id,
                         'course_id' => $course->id,
                     ],
                     [
