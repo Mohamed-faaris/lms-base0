@@ -4,6 +4,7 @@ namespace App\Livewire\Admin\Enrollments;
 
 use App\Concerns\NormalizesEnrollmentDeadline;
 use App\Models\Enrollment;
+use App\Models\Progress;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -19,9 +20,23 @@ class Show extends Component
 
     public string $learnerSearch = '';
 
-    public string $batchIdInput = '';
+    public string $progressFilter = 'all';
 
-    public string $deadlineDays = '1';
+    public string $sortBy = 'name';
+
+    public string $sortDirection = 'asc';
+
+    public bool $showRevokeBatchModal = false;
+
+    public bool $showLearnerDeadlineModal = false;
+
+    public string $revokeBatchConfirmation = '';
+
+    public ?int $selectedLearnerId = null;
+
+    public string $selectedLearnerName = '';
+
+    public string $selectedLearnerDeadlineDays = '1';
 
     /** @var array<int, string> */
     public array $learnerDeadlineDays = [];
@@ -36,46 +51,59 @@ class Show extends Component
         $this->syncEditableFields();
     }
 
-    public function saveBatchChanges(): Redirector
+    public function openRevokeBatchModal(): void
     {
-        $validated = $this->validate([
-            'batchIdInput' => ['nullable', 'string', 'max:255'],
-            'deadlineDays' => ['required', 'integer', 'min:1'],
-        ]);
+        $this->resetValidation('revokeBatchConfirmation');
+        $this->revokeBatchConfirmation = '';
+        $this->showRevokeBatchModal = true;
+    }
 
-        $enrollments = $this->resolveBatchEnrollments();
+    public function closeRevokeBatchModal(): void
+    {
+        $this->resetValidation('revokeBatchConfirmation');
+        $this->revokeBatchConfirmation = '';
+        $this->showRevokeBatchModal = false;
+    }
 
-        if ($enrollments->isEmpty()) {
-            abort(404);
+    public function openLearnerDeadlineModal(int $userId): void
+    {
+        $enrollment = $this->batchQuery()
+            ->with('user')
+            ->where('user_id', $userId)
+            ->firstOrFail();
+
+        $this->resetValidation('selectedLearnerDeadlineDays');
+        $this->selectedLearnerId = $userId;
+        $this->selectedLearnerName = $enrollment->user?->name ?? 'this learner';
+        $this->selectedLearnerDeadlineDays = $this->learnerDeadlineDays[$userId]
+            ?? (string) max(1, (int) ceil(((int) $enrollment->deadline - now()->timestamp) / 86400));
+        $this->showLearnerDeadlineModal = true;
+    }
+
+    public function closeLearnerDeadlineModal(): void
+    {
+        $this->resetValidation('selectedLearnerDeadlineDays');
+        $this->selectedLearnerId = null;
+        $this->selectedLearnerName = '';
+        $this->selectedLearnerDeadlineDays = '1';
+        $this->showLearnerDeadlineModal = false;
+    }
+
+    public function setSort(string $field): void
+    {
+        if ($this->sortBy === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+
+            return;
         }
 
-        $currentBatchId = $this->currentBatchId($enrollments);
-        $newBatchId = trim((string) $validated['batchIdInput']);
+        $this->sortBy = $field;
+        $this->sortDirection = 'asc';
+    }
 
-        if ($newBatchId === '' && $currentBatchId !== null) {
-            $newBatchId = $currentBatchId;
-        }
-
-        $updates = [
-            'deadline' => now()->addDays((int) $validated['deadlineDays'])->timestamp,
-        ];
-
-        if ($newBatchId !== '') {
-            $updates['batch_id'] = $newBatchId;
-        }
-
-        $this->batchQuery()->update($updates);
-
-        if ($currentBatchId !== $newBatchId && $newBatchId !== '') {
-            session()->flash('success', 'Batch updated successfully.');
-
-            return redirect()->route('admin.enrollments.show', $newBatchId);
-        }
-
-        $this->syncEditableFields();
-        session()->flash('success', 'Batch updated successfully.');
-
-        return redirect()->route('admin.enrollments.show', $this->batchKey);
+    public function setProgressFilter(string $filter): void
+    {
+        $this->progressFilter = $filter;
     }
 
     public function saveLearnerDeadline(int $userId): Redirector
@@ -88,6 +116,29 @@ class Show extends Component
 
         $this->batchQuery()
             ->where('user_id', $userId)
+            ->update([
+                'deadline' => now()->addDays($days)->timestamp,
+            ]);
+
+        session()->flash('success', 'Learner deadline updated successfully.');
+
+        return redirect()->route('admin.enrollments.show', $this->batchKey);
+    }
+
+    public function saveSelectedLearnerDeadline(): Redirector
+    {
+        if ($this->selectedLearnerId === null) {
+            abort(404);
+        }
+
+        $validated = $this->validate([
+            'selectedLearnerDeadlineDays' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $days = (int) $validated['selectedLearnerDeadlineDays'];
+
+        $this->batchQuery()
+            ->where('user_id', $this->selectedLearnerId)
             ->update([
                 'deadline' => now()->addDays($days)->timestamp,
             ]);
@@ -117,6 +168,13 @@ class Show extends Component
 
     public function revokeBatch(): Redirector
     {
+        $this->validate([
+            'revokeBatchConfirmation' => ['required', 'in:CONFIRM'],
+        ], [
+            'revokeBatchConfirmation.required' => 'Type CONFIRM to revoke this batch.',
+            'revokeBatchConfirmation.in' => 'Type CONFIRM exactly to revoke this batch.',
+        ]);
+
         $this->batchQuery()->delete();
 
         session()->flash('success', 'Batch revoked successfully.');
@@ -133,12 +191,14 @@ class Show extends Component
         }
 
         $batchSummary = $this->batchSummary($enrollments);
-        $filteredEnrollments = $this->filteredLearnerEnrollments($enrollments);
+        $progressByUser = $this->progressByUser($enrollments);
+        $filteredEnrollments = $this->filteredLearnerEnrollments($enrollments, $progressByUser);
 
         return view('livewire.admin.enrollments.show', [
             'batch' => $batchSummary,
-            'learners' => $this->learnerRows($filteredEnrollments),
+            'learners' => $this->learnerRows($filteredEnrollments, $progressByUser),
             'learnersCount' => $enrollments->count(),
+            'progressDistribution' => $this->progressDistribution($enrollments, $progressByUser),
         ])->layout('layouts.app');
     }
 
@@ -150,31 +210,54 @@ class Show extends Component
             return;
         }
 
-        $this->batchIdInput = $this->currentBatchId($enrollments) ?? '';
-        $this->deadlineDays = (string) $this->currentDeadlineDays($enrollments);
         $this->syncLearnerDeadlineFields($enrollments);
     }
 
     protected function resolveBatchEnrollments(): Collection
     {
         return $this->batchQuery()
-            ->with(['course', 'user', 'enrolledBy'])
+            ->with(['course.topics.modules.contents', 'user', 'enrolledBy'])
             ->orderBy('enrolled_at')
             ->get();
     }
 
-    protected function filteredLearnerEnrollments(Collection $enrollments): Collection
+    protected function filteredLearnerEnrollments(Collection $enrollments, array $progressByUser): Collection
     {
-        if ($this->learnerSearch === '') {
-            return $enrollments;
+        $filteredEnrollments = $enrollments;
+
+        if ($this->learnerSearch !== '') {
+            $search = mb_strtolower($this->learnerSearch);
+
+            $filteredEnrollments = $filteredEnrollments->filter(function (Enrollment $enrollment) use ($search): bool {
+                return str_contains(mb_strtolower((string) ($enrollment->user?->name ?? '')), $search)
+                    || str_contains(mb_strtolower((string) ($enrollment->user?->email ?? '')), $search);
+            });
         }
 
-        $search = mb_strtolower($this->learnerSearch);
+        if ($this->progressFilter !== 'all') {
+            $filteredEnrollments = $filteredEnrollments->filter(function (Enrollment $enrollment) use ($progressByUser): bool {
+                $progress = $progressByUser[$enrollment->user_id] ?? 0;
 
-        return $enrollments->filter(function (Enrollment $enrollment) use ($search): bool {
-            return str_contains(mb_strtolower((string) ($enrollment->user?->name ?? '')), $search)
-                || str_contains(mb_strtolower((string) ($enrollment->user?->email ?? '')), $search);
-        })->values();
+                return match ($this->progressFilter) {
+                    'not-started' => $progress === 0,
+                    '25' => $progress >= 25 && $progress < 50,
+                    '50' => $progress >= 50 && $progress < 75,
+                    '75' => $progress >= 75 && $progress < 100,
+                    '100' => $progress === 100,
+                    default => true,
+                };
+            });
+        }
+
+        return $filteredEnrollments
+            ->sortBy(function (Enrollment $enrollment) use ($progressByUser): int|string {
+                return match ($this->sortBy) {
+                    'progress' => $progressByUser[$enrollment->user_id] ?? 0,
+                    'deadline' => (int) $enrollment->deadline,
+                    default => mb_strtolower((string) ($enrollment->user?->name ?? '')),
+                };
+            }, options: SORT_NATURAL, descending: $this->sortDirection === 'desc')
+            ->values();
     }
 
     protected function batchQuery(): Builder
@@ -223,10 +306,11 @@ class Show extends Component
         ];
     }
 
-    protected function learnerRows(Collection $enrollments): array
+    protected function learnerRows(Collection $enrollments, array $progressByUser): array
     {
         return $enrollments->map(function (Enrollment $enrollment): array {
             $deadlineMeta = $this->normalizeEnrollmentDeadline((int) $enrollment->deadline);
+            $progress = $progressByUser[$enrollment->user_id] ?? 0;
 
             return [
                 'userId' => $enrollment->user_id,
@@ -240,10 +324,102 @@ class Show extends Component
                     $deadlineMeta['isUrgent'] => 'text-amber-600 dark:text-amber-400',
                     default => 'text-zinc-600 dark:text-zinc-300',
                 },
+                'progress' => $progress,
+                'progressStatus' => match (true) {
+                    $progress === 100 => 'Completed',
+                    $progress > 0 => 'In Progress',
+                    default => 'Not Started',
+                },
+                'progressBadgeColor' => match (true) {
+                    $progress === 100 => 'green',
+                    $progress > 0 => 'yellow',
+                    default => 'zinc',
+                },
+                'statusLabel' => match (true) {
+                    $progress === 100 => '100%',
+                    $progress >= 75 => '75%',
+                    $progress >= 50 => '50%',
+                    $progress >= 25 => '25%',
+                    default => 'Not Started',
+                },
+                'statusBadgeColor' => match (true) {
+                    $progress === 100 => 'green',
+                    $progress >= 75 => 'emerald',
+                    $progress >= 50 => 'blue',
+                    $progress >= 25 => 'amber',
+                    default => 'zinc',
+                },
                 'deadlineDaysInput' => $this->learnerDeadlineDays[$enrollment->user_id]
                     ?? (string) max(1, (int) ceil(((int) $enrollment->deadline - now()->timestamp) / 86400)),
             ];
         })->all();
+    }
+
+    protected function progressByUser(Collection $enrollments): array
+    {
+        /** @var Enrollment|null $firstEnrollment */
+        $firstEnrollment = $enrollments->first();
+        $contentIds = $firstEnrollment?->course?->topics
+            ?->flatMap(fn ($topic): Collection => $topic->modules)
+            ->flatMap(fn ($module): Collection => $module->contents)
+            ->pluck('id')
+            ->values()
+            ?? collect();
+
+        if ($contentIds->isEmpty()) {
+            return $enrollments
+                ->mapWithKeys(fn (Enrollment $enrollment): array => [$enrollment->user_id => 0])
+                ->all();
+        }
+
+        $completedCounts = Progress::query()
+            ->whereIn('user_id', $enrollments->pluck('user_id'))
+            ->whereIn('content_id', $contentIds)
+            ->whereNotNull('completed_at')
+            ->selectRaw('user_id, count(*) as completed_count')
+            ->groupBy('user_id')
+            ->pluck('completed_count', 'user_id');
+
+        $totalContent = $contentIds->count();
+
+        return $enrollments
+            ->mapWithKeys(function (Enrollment $enrollment) use ($completedCounts, $totalContent): array {
+                $completedContent = (int) ($completedCounts[$enrollment->user_id] ?? 0);
+
+                return [
+                    $enrollment->user_id => (int) round(($completedContent / $totalContent) * 100),
+                ];
+            })
+            ->all();
+    }
+
+    protected function progressDistribution(Collection $enrollments, array $progressByUser): array
+    {
+        $distribution = [
+            '0-25%' => 0,
+            '26-50%' => 0,
+            '51-75%' => 0,
+            '76-99%' => 0,
+            '100%' => 0,
+        ];
+
+        foreach ($enrollments as $enrollment) {
+            $progress = $progressByUser[$enrollment->user_id] ?? 0;
+
+            if ($progress <= 25) {
+                $distribution['0-25%']++;
+            } elseif ($progress <= 50) {
+                $distribution['26-50%']++;
+            } elseif ($progress <= 75) {
+                $distribution['51-75%']++;
+            } elseif ($progress < 100) {
+                $distribution['76-99%']++;
+            } else {
+                $distribution['100%']++;
+            }
+        }
+
+        return $distribution;
     }
 
     protected function syncLearnerDeadlineFields(Collection $enrollments): void
@@ -259,26 +435,5 @@ class Show extends Component
                 ];
             })
             ->all();
-    }
-
-    protected function currentBatchId(Collection $enrollments): ?string
-    {
-        /** @var Enrollment $firstEnrollment */
-        $firstEnrollment = $enrollments->first();
-
-        return $firstEnrollment->batch_id !== null ? (string) $firstEnrollment->batch_id : null;
-    }
-
-    protected function currentDeadlineDays(Collection $enrollments): int
-    {
-        $deadline = (int) $enrollments->max('deadline');
-
-        if ($deadline < 1) {
-            return 1;
-        }
-
-        $daysRemaining = (int) ceil(($deadline - now()->timestamp) / 86400);
-
-        return max(1, $daysRemaining);
     }
 }
