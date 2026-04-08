@@ -1,638 +1,294 @@
-# Laravel Application Models
+# Model ER Diagram
 
-This document describes all 24 Eloquent models in the application, grouped by domain.
+This document summarizes the relationships defined in `app/Models`.
 
-## Table of Contents
+## Core entities
 
-- [Domain Overview](#domain-overview)
-- [Core Models](#core-models)
-- [Course Models](#course-models)
-- [Quiz Models](#quiz-models)
-- [Progress Models](#progress-models)
-- [Engagement Models](#engagement-models)
-- [Gamification Models](#gamification-models)
+- `User`: authentication, enrollment, activity, gamification
+- `Course`: top-level learning container
+- `Topic`: belongs to a course
+- `Module`: belongs to a topic
+- `Content`: belongs to a module
+- `Quiz` / `Question`: assessment layer
+- `Enrollment`, `Progress`, `BadgeAssignment`: pivot-style linking records
 
----
-
-## Domain Overview
+## Mermaid ER diagram
 
 ```mermaid
 erDiagram
-    CORE {
-        User user
-        UserMeta user_meta
+    USER ||--o| USER_META : has_one
+    USER ||--o{ ENROLLMENT : has_many
+    COURSE ||--o{ ENROLLMENT : has_many
+    USER }o--o{ COURSE : enrolled_via_enrollments
+
+    COURSE ||--o{ TOPIC : has_many
+    TOPIC ||--o{ MODULE : has_many
+    MODULE ||--o{ CONTENT : has_many
+    COURSE ||--o| COURSE_META : has_one
+
+    CONTENT ||--o{ COMMENT : has_many
+    USER ||--o{ COMMENT : has_many
+    COMMENT ||--o{ COMMENT : replies
+
+    USER ||--o{ PROGRESS : has_many
+    CONTENT ||--o{ PROGRESS : has_many
+
+    USER ||--o{ FEEDBACK : has_many
+    COURSE ||--o{ FEEDBACK : has_many
+
+    CONTENT ||--o{ QUIZ : has_many
+    QUIZ ||--o{ QUESTION : has_many
+    QUESTION }o--|| QUIZ : belongs_to
+
+    MODULE ||--o{ MODULE_QUIZ : has_many
+    QUIZ ||--o{ MODULE_QUIZ : has_many
+
+    CONTENT ||--o| END_QUIZ : has_one
+    QUIZ ||--o{ END_QUIZ : has_many
+
+    CONTENT ||--o{ TIMESTAMPED_QUIZ : has_many
+    QUIZ ||--o{ TIMESTAMPED_QUIZ : has_many
+
+    USER ||--o{ QUIZ_ATTEMPT : has_many
+    QUIZ ||--o{ QUIZ_ATTEMPT : has_many
+
+    USER ||--o{ SPEED_LOG : has_many
+    CONTENT ||--o{ SPEED_LOG : has_many
+
+    USER ||--o{ STREAK : has_many
+    USER ||--o| XP : has_one
+    USER ||--o{ XP_LOG : has_many
+    USER ||--o{ NOTIFICATION : has_many
+
+    USER }o--o{ BADGE : assigned_via_badge_assignments
+    USER ||--o{ BADGE_ASSIGNMENT : has_many
+    BADGE ||--o{ BADGE_ASSIGNMENT : has_many
+
+    USER {
+        bigint id PK
+        string name
+        string email
+        string password
+        enum college
+        enum department
+        enum role
+        string image
     }
+
+    USER_META {
+        bigint id PK
+        bigint user_id FK
+        string phone_number
+        string address
+    }
+
     COURSE {
-        Course course
-        CourseMeta course_meta
-        Topic topic
-        Module module
-        Content content
+        bigint id PK
+        string title
+        string slug
+        text description
     }
-    QUIZ {
-        Quiz quiz
-        Question question
-        EndQuiz end_quiz
-        ModuleQuiz module_quiz
-        TimestampedQuiz timestamped_quiz
-        QuizAttempt quiz_attempt
+
+    COURSE_META {
+        bigint id PK
+        bigint course_id FK
+        string category
+        string thumbnail
+        string difficulty
+        string duration
+        json data
     }
+
+    TOPIC {
+        bigint id PK
+        bigint course_id FK
+        string name
+        text description
+        int order
+    }
+
+    MODULE {
+        bigint id PK
+        bigint topic_id FK
+        string title
+        text description
+        int order
+    }
+
+    CONTENT {
+        bigint id PK
+        bigint module_id FK
+        int order
+        string title
+        text body
+        enum type
+        string content_url
+        json content_meta
+    }
+
+    COMMENT {
+        bigint id PK
+        bigint content_id FK
+        bigint parent_comment_id FK
+        bigint user_id FK
+        text comment_text
+    }
+
+    ENROLLMENT {
+        bigint user_id PK,FK
+        bigint course_id PK,FK
+        bigint enrolled_by FK
+        bigint batch_id
+        datetime deadline
+        datetime enrolled_at
+    }
+
     PROGRESS {
-        Enrollment enrollment
-        Progress progress
-        Streak streak
-        Xp xp
-        XpLog xp_log
+        bigint user_id PK,FK
+        bigint content_id PK,FK
+        datetime completed_at
     }
-    ENGAGEMENT {
-        Comment comment
-        Feedback feedback
-        Notification notification
-        SpeedLog speed_log
+
+    FEEDBACK {
+        bigint id PK
+        bigint user_id FK
+        bigint course_id FK
+        int rating
+        text comments
+        datetime created_at
     }
-    GAMIFICATION {
-        Badge badge
-        BadgeAssignment badge_assignment
+
+    QUIZ {
+        bigint id PK
+        bigint content_id FK
+        bigint question_id FK
+    }
+
+    QUESTION {
+        bigint id PK
+        bigint quiz_id FK
+        string type
+        text question_text
+        json options
+        json correct_answer
+    }
+
+    MODULE_QUIZ {
+        bigint id PK
+        bigint module_id FK
+        bigint quiz_id FK
+    }
+
+    END_QUIZ {
+        bigint id PK
+        bigint content_id FK
+        bigint quiz_id FK
+    }
+
+    TIMESTAMPED_QUIZ {
+        bigint id PK
+        bigint content_id FK
+        bigint quiz_id FK
+        string timestamp
+    }
+
+    QUIZ_ATTEMPT {
+        bigint id PK
+        bigint user_id FK
+        bigint quiz_id FK
+        int score
+        datetime attempted_at
+    }
+
+    SPEED_LOG {
+        bigint id PK
+        bigint user_id FK
+        bigint content_id FK
+        enum event
+        float speed
+        datetime logged_at
+    }
+
+    STREAK {
+        bigint user_id PK,FK
+        date date PK
+        int count
+    }
+
+    XP {
+        bigint user_id PK,FK
+        int xp
+        datetime updated_at
+    }
+
+    XP_LOG {
+        bigint id PK
+        bigint user_id FK
+        int xp_change
+        string reason
+        datetime created_at
+    }
+
+    NOTIFICATION {
+        bigint id PK
+        bigint user_id FK
+        string subject
+        text description
+        enum status
+    }
+
+    BADGE {
+        bigint id PK
+        string image
+        string title
+        text description
+        json conditions
+    }
+
+    BADGE_ASSIGNMENT {
+        bigint user_id PK,FK
+        bigint badge_id PK,FK
+        datetime assigned_at
     }
 ```
 
----
+## Relationship summary
 
-## Core Models
+### Learning hierarchy
 
-### User
+- `Course -> Topic -> Module -> Content` is the main instructional tree.
+- `Course` also exposes `contents()` and `quizzes()` / `endQuizzes()` through nested relations.
 
-| Property | Value |
-|----------|-------|
-| Table | `users` |
-| Key | `id` (auto-increment) |
-| Purpose | Authentication and authorization entity |
+### Enrollment and progress
 
-**Relationships:**
+- `Enrollment` is the user-course pivot and includes `enrolled_by`, `deadline`, and `enrolled_at`.
+- `Progress` is the user-content pivot keyed by `user_id + content_id`.
 
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `meta()` | HasOne | `UserMeta` | Single user metadata record |
-| `enrollments()` | HasMany | `Enrollment` | User's course enrollments |
-| `enrolledCourses()` | BelongsToMany | `Course` | Courses user is enrolled in |
-| `progress()` | HasMany | `Progress` | User's content progress |
-| `feedback()` | HasMany | `Feedback` | User's course feedback |
-| `comments()` | HasMany | `Comment` | User's comments on content |
-| `quizAttempts()` | HasMany | `QuizAttempt` | User's quiz attempts |
-| `speedLogs()` | HasMany | `SpeedLog` | User's video speed changes |
-| `streaks()` | HasMany | `Streak` | User's daily streaks |
-| `xp()` | HasOne | `Xp` | User's total XP |
-| `xpLogs()` | HasMany | `XpLog` | User's XP change history |
-| `badges()` | BelongsToMany | `Badge` | Badges earned by user |
-| `notifications()` | HasMany | `Notification` | User's notifications |
+### Assessments
 
----
+- `Content` can own quizzes directly through `quizzes()` and also specialized quiz wrappers:
+  - `endQuiz()`
+  - `timestampedQuizzes()`
+- `Quiz` has both:
+  - `questions()` as a one-to-many relation
+  - `question()` as a direct `belongsTo`
+- `ModuleQuiz`, `EndQuiz`, and `TimestampedQuiz` all reference `Quiz`.
 
-### UserMeta
+### Community and feedback
 
-| Property | Value |
-|----------|-------|
-| Table | `user_meta` |
-| Key | `id` (auto-increment) |
-| Purpose | Extended user profile information |
+- `Comment` is self-referential through `parent()` and `replies()`.
+- `Feedback` links users to courses.
 
-**Attributes:**
-- `phone_number` - User's phone number
-- `address` - User's address
+### Gamification and activity
 
-**Relationships:**
+- `Xp`, `XpLog`, `Streak`, `Badge`, and `BadgeAssignment` form the gamification layer.
+- `SpeedLog` records user interactions against content.
+- `Notification` belongs to a user.
 
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | Owner of metadata |
+## Notes from the model code
 
----
-
-## Course Models
-
-### Course
-
-| Property | Value |
-|----------|-------|
-| Table | `courses` |
-| Key | `id` (auto-increment) |
-| Purpose | Main course entity containing topics and modules |
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `contents()` | HasManyThrough | `Content` | All content through modules |
-| `topics()` | HasMany | `Topic` | Course topics |
-| `courseMeta()` | HasOne | `CourseMeta` | Course metadata |
-| `enrollments()` | HasMany | `Enrollment` | Course enrollments |
-| `enrolledUsers()` | BelongsToMany | `User` | Users enrolled in course |
-| `feedback()` | HasMany | `Feedback` | Course feedback |
-
----
-
-### CourseMeta
-
-| Property | Value |
-|----------|-------|
-| Table | `course_meta` |
-| Key | `id` (auto-increment) |
-| Purpose | Extended course information |
-
-**Attributes:**
-- `category` - Course category
-- `thumbnail` - Course thumbnail URL
-- `difficulty` - Course difficulty level
-- `duration` - Course duration
-- `data` - JSON metadata
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `course()` | BelongsTo | `Course` | Parent course |
-
----
-
-### Topic
-
-| Property | Value |
-|----------|-------|
-| Table | `topics` |
-| Key | `id` (auto-increment) |
-| Purpose | Grouping entity for modules within a course |
-
-**Attributes:**
-- `name` - Topic name
-- `description` - Topic description
-- `order` - Display order
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `course()` | BelongsTo | `Course` | Parent course |
-| `modules()` | HasMany | `Module` | Topic modules |
-
----
-
-### Module
-
-| Property | Value |
-|----------|-------|
-| Table | `modules` |
-| Key | `id` (auto-increment) |
-| Purpose | Container for content items |
-
-**Attributes:**
-- `title` - Module title
-- `description` - Module description
-- `order` - Display order
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `topic()` | BelongsTo | `Topic` | Parent topic |
-| `contents()` | HasMany | `Content` | Module content items |
-
----
-
-### Content
-
-| Property | Value |
-|----------|-------|
-| Table | `contents` |
-| Key | `id` (auto-increment) |
-| Purpose | Individual learning content (video, text, etc.) |
-
-**Attributes:**
-- `title` - Content title
-- `body` - Content body/text
-- `type` - Content type (enum: ContentType)
-- `content_url` - URL for media content
-- `content_meta` - JSON metadata
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `module()` | BelongsTo | `Module` | Parent module |
-| `course()` | HasOneThrough | `Course` | Parent course |
-| `comments()` | HasMany | `Comment` | Content comments |
-| `endQuiz()` | HasMany | `EndQuiz` | End-of-content quizzes |
-| `quizzes()` | HasMany | `Quiz` | Content quizzes |
-| `timestampedQuizzes()` | HasMany | `TimestampedQuiz` | Timestamped quizzes |
-| `progress()` | HasMany | `Progress` | User progress records |
-| `speedLogs()` | HasMany | `SpeedLog` | Video speed logs |
-
----
-
-## Quiz Models
-
-### Quiz Architecture Overview
-
-```mermaid
-erDiagram
-    Content ||--o{ Quiz : "contains"
-    Quiz ||--o{ Question : "has"
-    Quiz ||--o{ EndQuiz : "end_quiz"
-    Quiz ||--o{ ModuleQuiz : "module_quiz"
-    Quiz ||--o{ TimestampedQuiz : "timestamped_quiz"
-    EndQuiz ||--o{ QuizAttempt : "attempts"
-    User ||--o{ QuizAttempt : "attempts"
-```
-
----
-
-### Quiz
-
-| Property | Value |
-|----------|-------|
-| Table | `quizzes` |
-| Key | `id` (auto-increment) |
-| Purpose | Collection of questions attached to content |
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `content()` | BelongsTo | `Content` | Parent content |
-| `question()` | BelongsTo | `Question` | Associated question |
-| `module()` | HasOneThrough | `Module` | Parent module |
-| `endQuizzes()` | HasMany | `EndQuiz` | End quiz references |
-| `moduleQuizzes()` | HasMany | `ModuleQuiz` | Module quiz references |
-| `timestampedQuizzes()` | HasMany | `TimestampedQuiz` | Timestamped quiz references |
-
-**Methods:**
-- `isEndQuiz(): bool` - Check if quiz is an end quiz
-- `isModuleQuiz(): bool` - Check if quiz is a module quiz
-- `isTimestampedQuiz(): bool` - Check if quiz is a timestamped quiz
-
----
-
-### Question
-
-| Property | Value |
-|----------|-------|
-| Table | `questions` |
-| Key | `id` (auto-increment) |
-| Purpose | Individual quiz question |
-
-**Attributes:**
-- `type` - Question type
-- `question_text` - Question content
-- `options` - Answer options (JSON array)
-- `correct_answer` - Correct answer(s) (JSON array)
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `endQuiz()` | HasMany | `EndQuiz` | End quiz references |
-
----
-
-### EndQuiz
-
-| Property | Value |
-|----------|-------|
-| Table | `end_quiz` |
-| Key | `id` (auto-increment) |
-| Purpose | Quiz at the end of content completion |
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `content()` | BelongsTo | `Content` | Parent content |
-| `quiz()` | BelongsTo | `Quiz` | Associated quiz |
-| `question()` | HasOneThrough | `Question` | Quiz question |
-| `module()` | HasOneThrough | `Module` | Parent module |
-| `attempts()` | HasMany | `QuizAttempt` | User attempts |
-
----
-
-### ModuleQuiz
-
-| Property | Value |
-|----------|-------|
-| Table | `module_quiz` |
-| Key | `id` (auto-increment) |
-| Purpose | Quiz at the module level |
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `module()` | BelongsTo | `Module` | Parent module |
-| `quiz()` | BelongsTo | `Quiz` | Associated quiz |
-| `question()` | HasOneThrough | `Question` | Quiz question |
-| `content()` | HasOneThrough | `Content` | First content in module |
-
----
-
-### TimestampedQuiz
-
-| Property | Value |
-|----------|-------|
-| Table | `timestamped_quiz` |
-| Key | `id` (auto-increment) |
-| Purpose | Quiz at specific video timestamp |
-
-**Attributes:**
-- `timestamp` - Video timestamp in seconds
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `content()` | BelongsTo | `Content` | Parent content |
-| `quiz()` | BelongsTo | `Quiz` | Associated quiz |
-| `question()` | HasOneThrough | `Question` | Quiz question |
-| `module()` | HasOneThrough | `Module` | Parent module |
-
----
-
-### QuizAttempt
-
-| Property | Value |
-|----------|-------|
-| Table | `quiz_attempts` |
-| Key | `id` (auto-increment) |
-| Purpose | User's attempt at a quiz |
-| Timestamps | Disabled (uses `attempted_at` cast) |
-
-**Attributes:**
-- `score` - Attempt score
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | User who attempted |
-| `quiz()` | BelongsTo | `Quiz` | Quiz attempted |
-
----
-
-## Progress Models
-
-### Enrollment
-
-| Property | Value |
-|----------|-------|
-| Table | `enrollments` |
-| Key | Composite: `[user_id, course_id]` |
-| Purpose | User's enrollment in a course |
-| Timestamps | Disabled (uses `enrolled_at` cast) |
-
-**Attributes:**
-- `enrolled_by` - User who enrolled (self or admin)
-- `deadline` - Enrollment deadline
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | Enrolled user |
-| `enrolledBy()` | BelongsTo | `User` | Who enrolled the user |
-| `course()` | BelongsTo | `Course` | Enrolled course |
-
----
-
-### Progress
-
-| Property | Value |
-|----------|-------|
-| Table | `progress` |
-| Key | Composite: `[user_id, content_id]` |
-| Purpose | User's completion status for content |
-| Timestamps | Disabled (uses `completed_at` cast) |
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | User with progress |
-| `content()` | BelongsTo | `Content` | Content being tracked |
-
----
-
-### Streak
-
-| Property | Value |
-|----------|-------|
-| Table | `streaks` |
-| Key | Composite: `[user_id, date]` |
-| Purpose | User's daily activity streak |
-
-**Attributes:**
-- `count` - Streak count
-- `date` - Streak date
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | User with streak |
-
----
-
-### Xp
-
-| Property | Value |
-|----------|-------|
-| Table | `xp` |
-| Key | `user_id` |
-| Purpose | User's total experience points |
-| Timestamps | Disabled (uses `updated_at` cast) |
-
-**Attributes:**
-- `xp` - Total XP amount
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | User with XP |
-
----
-
-### XpLog
-
-| Property | Value |
-|----------|-------|
-| Table | `xp_logs` |
-| Key | `id` (auto-increment) |
-| Purpose | History of XP changes |
-| Timestamps | Disabled (uses `created_at` cast) |
-
-**Attributes:**
-- `xp_change` - XP amount change (positive/negative)
-- `reason` - Reason for XP change
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | User whose XP changed |
-
----
-
-## Engagement Models
-
-### Comment
-
-| Property | Value |
-|----------|-------|
-| Table | `comments` |
-| Key | `id` (auto-increment) |
-| Purpose | User comments on content |
-
-**Attributes:**
-- `comment_text` - Comment content
-- `parent_comment_id` - Parent comment for replies
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `content()` | BelongsTo | `Content` | Commented content |
-| `parent()` | BelongsTo | `Comment` | Parent comment |
-| `replies()` | HasMany | `Comment` | Reply comments |
-| `user()` | BelongsTo | `User` | Comment author |
-
----
-
-### Feedback
-
-| Property | Value |
-|----------|-------|
-| Table | `feedback` |
-| Key | `id` (auto-increment) |
-| Purpose | User feedback on courses |
-| Timestamps | Disabled (uses `created_at` cast) |
-
-**Attributes:**
-- `rating` - Course rating
-- `comments` - Feedback comments
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | Feedback author |
-| `course()` | BelongsTo | `Course` | Course being rated |
-
----
-
-### Notification
-
-| Property | Value |
-|----------|-------|
-| Table | `notifications` |
-| Key | `id` (auto-increment) |
-| Purpose | User notifications |
-
-**Attributes:**
-- `subject` - Notification subject
-- `description` - Notification description
-- `status` - Notification status (enum: NotificationStatus)
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | Notification recipient |
-
----
-
-### SpeedLog
-
-| Property | Value |
-|----------|-------|
-| Table | `speed_logs` |
-| Key | `id` (auto-increment) |
-| Purpose | Video playback speed changes |
-| Timestamps | Disabled (uses `logged_at` cast) |
-
-**Attributes:**
-- `event` - Video event type (enum: VideoEvent)
-- `speed` - Playback speed
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | User who changed speed |
-| `content()` | BelongsTo | `Content` | Video content |
-
----
-
-## Gamification Models
-
-### Badge
-
-| Property | Value |
-|----------|-------|
-| Table | `badges` |
-| Key | `id` (auto-increment) |
-| Purpose | Achievements users can earn |
-
-**Attributes:**
-- `image` - Badge image URL
-- `title` - Badge title
-- `description` - Badge description
-- `conditions` - JSON conditions to earn badge
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `users()` | BelongsToMany | `User` | Users who earned badge |
-
----
-
-### BadgeAssignment
-
-| Property | Value |
-|----------|-------|
-| Table | `badge_assignments` |
-| Key | Composite: `[user_id, badge_id]` |
-| Purpose | Records when users earn badges |
-| Timestamps | Disabled (uses `assigned_at` cast) |
-
-**Relationships:**
-
-| Method | Type | Related Model | Description |
-|--------|------|---------------|-------------|
-| `user()` | BelongsTo | `User` | User who earned badge |
-| `badge()` | BelongsTo | `Badge` | Earned badge |
-
----
-
-## Enums Used in Models
-
-| Enum | Models Using |
-|------|--------------|
-| `Role` | `User` |
-| `College` | `User` |
-| `Department` | `User` |
-| `ContentType` | `Content` |
-| `NotificationStatus` | `Notification` |
-| `VideoEvent` | `SpeedLog` |
-
----
-
-## Key Architectural Patterns
-
-1. **Polymorphic Quiz Usage**: The `Quiz` model serves as a central collection of questions, used polymorphically via `EndQuiz`, `ModuleQuiz`, and `TimestampedQuiz` to support different quiz placement scenarios.
-
-2. **Composite Keys**: Several models use composite primary keys:
-   - `Enrollment`: `[user_id, course_id]`
-   - `Progress`: `[user_id, content_id]`
-   - `Streak`: `[user_id, date]`
-   - `BadgeAssignment`: `[user_id, badge_id]`
-   - `Xp`: `user_id`
-
-3. **HasManyThrough**: Used extensively for traversing relationships across multiple models (e.g., `Course -> Content`, `Content -> Course`).
+- `Enrollment`, `Progress`, `Streak`, `Xp`, and `BadgeAssignment` use nonstandard primary key setups in the models.
+- `EndQuiz::attempts()` points to `QuizAttempt`, but `QuizAttempt` only declares `quiz_id`, not `end_quiz_id`.
+- `Quiz` defines both `questions()` and `question()`, which suggests mixed one-to-many and direct-current-question usage.
+- `Content` defines both `quizzes()` and `quiz()`, which also implies mixed collection and single-record access patterns.
+- `Notification` is a simple child of `User` with a status enum cast.
