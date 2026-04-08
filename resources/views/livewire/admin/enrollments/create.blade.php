@@ -91,7 +91,6 @@
                         $targetOptions = [
                             'all' => ['label' => 'All Learners', 'description' => 'Every staff and faculty learner in the platform.'],
                             'college' => ['label' => 'College Selection', 'description' => 'Choose one or more colleges and optionally narrow by departments.'],
-                            'departments' => ['label' => 'Departments Across Colleges', 'description' => 'Same departments across every college.'],
                             'user' => ['label' => 'Selected Users', 'description' => 'Search and select one or more specific learners.'],
                         ];
                     @endphp
@@ -156,25 +155,6 @@
                             </div>
                             <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Leave departments empty to include every department inside the selected colleges.</p>
                         </div>
-                    </div>
-                @elseif ($targetMode === 'departments')
-                    <div class="space-y-3">
-                        <flux:label>Select Department</flux:label>
-                        <div class="flex flex-wrap gap-2">
-                            @foreach ($departmentOptions as $department)
-                                <button
-                                    type="button"
-                                    wire:click="toggleDepartment('{{ $department->value }}')"
-                                    wire:key="department-{{ $department->value }}"
-                                    class="rounded-full border px-4 py-2 text-sm transition {{ in_array($department->value, $selectedDepartments, true) ? 'border-blue-600 bg-blue-600 text-white' : 'border-zinc-300 text-zinc-700 hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-900' }}"
-                                >
-                                    {{ $department->label() }}
-                                </button>
-                            @endforeach
-                        </div>
-                        @error('selectedDepartments')
-                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
                     </div>
                 @else
                     <div class="space-y-3">
@@ -271,7 +251,6 @@
                             <span class="rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">
                                 {{ match ($targetMode) {
                                     'college' => 'Entire College',
-                                    'departments' => 'Departments Across Colleges',
                                     'user' => 'Selected Users',
                                     default => 'All Learners',
                                 } }}
@@ -284,14 +263,6 @@
                                     </span>
                                 @endforeach
 
-                                @foreach ($selectedDepartments as $selectedDepartment)
-                                    <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-                                        {{ App\Enums\Department::from($selectedDepartment)->label() }}
-                                    </span>
-                                @endforeach
-                            @endif
-
-                            @if ($targetMode === 'departments')
                                 @foreach ($selectedDepartments as $selectedDepartment)
                                     <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
                                         {{ App\Enums\Department::from($selectedDepartment)->label() }}

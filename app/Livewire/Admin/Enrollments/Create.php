@@ -14,10 +14,14 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Create extends Component
 {
+    #[Url(as: 'course')]
+    public ?string $courseSlug = null;
+
     public ?int $courseId = null;
 
     public string $courseSearch = '';
@@ -56,11 +60,11 @@ class Create extends Component
             abort(403);
         }
 
-        $prefilledCourseId = $course?->id ?? request()->integer('course');
-
-        if ($prefilledCourseId > 0) {
-            $this->courseId = $prefilledCourseId;
+        if ($course !== null) {
+            $this->courseId = $course->id;
             $this->courseLocked = $course !== null;
+        } elseif (filled($this->courseSlug)) {
+            $this->syncCourseSelectionFromSlug();
         }
 
         $this->refreshPreview();
@@ -69,6 +73,19 @@ class Create extends Component
     public function updatedCourseId(): void
     {
         $this->showSuccess = false;
+        if (! $this->courseLocked) {
+            $this->courseSlug = $this->selectedCourse()?->slug;
+        }
+        $this->refreshPreview();
+    }
+
+    public function updatedCourseSlug(): void
+    {
+        if ($this->courseLocked) {
+            return;
+        }
+
+        $this->syncCourseSelectionFromSlug();
         $this->refreshPreview();
     }
 
@@ -188,9 +205,7 @@ class Create extends Component
 
     public function render(): View
     {
-        $selectedCourse = $this->courseId
-            ? Course::query()->find($this->courseId)
-            : null;
+        $selectedCourse = $this->selectedCourse();
 
         return view('livewire.admin.enrollments.create', [
             'collegeOptions' => College::cases(),
@@ -211,7 +226,7 @@ class Create extends Component
     {
         return [
             'courseId' => ['required', 'integer', 'exists:courses,id'],
-            'targetMode' => ['required', Rule::in(['all', 'college', 'departments', 'user'])],
+            'targetMode' => ['required', Rule::in(['all', 'college', 'user'])],
             'selectedColleges' => [
                 Rule::requiredIf(fn (): bool => $this->targetMode === 'college'),
                 'array',
@@ -322,11 +337,6 @@ class Create extends Component
             }, function (Builder $builder): void {
                 $builder->whereRaw('1 = 0');
             }),
-            'departments' => $query->when($this->selectedDepartments !== [], function (Builder $builder): void {
-                $builder->whereIn('department', $this->selectedDepartments);
-            }, function (Builder $builder): void {
-                $builder->whereRaw('1 = 0');
-            }),
             'user' => $query->when($this->selectedUserIds !== [], function (Builder $builder): void {
                 $builder->whereIn('id', $this->selectedUserIds);
             }, function (Builder $builder): void {
@@ -358,5 +368,22 @@ class Create extends Component
             ->orderBy('name')
             ->limit(8)
             ->get();
+    }
+
+    protected function selectedCourse(): ?Course
+    {
+        return $this->courseId
+            ? Course::query()->find($this->courseId)
+            : null;
+    }
+
+    protected function syncCourseSelectionFromSlug(): void
+    {
+        $course = filled($this->courseSlug)
+            ? Course::query()->where('slug', $this->courseSlug)->first()
+            : null;
+
+        $this->courseId = $course?->id;
+        $this->courseSlug = $course?->slug;
     }
 }

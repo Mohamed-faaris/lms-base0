@@ -19,6 +19,23 @@ test('admin can open the enrollment batch create page', function () {
     $response->assertSee('Create Enrollment Batch');
 });
 
+test('admin can preselect the course on the enrollment batch create page with a query string', function () {
+    $admin = User::factory()->admin()->create();
+    $course = Course::create([
+        'title' => 'Query String Course',
+        'description' => 'Query string test.',
+    ]);
+
+    $response = $this
+        ->actingAs($admin)
+        ->get(route('admin.enrollments.create', ['course' => $course->slug]));
+
+    $response->assertSuccessful();
+    $response->assertSee($course->title);
+    $response->assertSee('Selected');
+    $response->assertDontSee('Course is locked because you came from the course page.');
+});
+
 test('all learners mode enrolls staff and faculty into one shared batch', function () {
     $admin = User::factory()->admin()->create();
     $course = Course::create([
@@ -77,46 +94,6 @@ test('college selection mode can target multiple colleges and optional departmen
 
     expect(Enrollment::where('course_id', $course->id)->pluck('user_id')->sort()->values()->all())
         ->toBe([$krceStaff->id, $krctFaculty->id]);
-});
-
-test('departments mode enrolls matching departments across colleges and skips duplicates', function () {
-    $admin = User::factory()->admin()->create();
-    $course = Course::create([
-        'title' => 'Department Batch',
-        'description' => 'Department targeting test.',
-    ]);
-    $krceCse = User::factory()->staff()->create([
-        'college' => College::KRCE,
-        'department' => Department::CSE,
-    ]);
-    $krctCse = User::factory()->faculty()->create([
-        'college' => College::KRCT,
-        'department' => Department::CSE,
-    ]);
-    User::factory()->staff()->create([
-        'college' => College::KRCE,
-        'department' => Department::ECE,
-    ]);
-
-    Enrollment::create([
-        'user_id' => $krceCse->id,
-        'course_id' => $course->id,
-        'enrolled_by' => $admin->id,
-        'batch_id' => 'legacy-dept-batch',
-        'deadline' => now()->addDays(5)->timestamp,
-    ]);
-
-    Livewire::actingAs($admin)
-        ->test(EnrollmentBatchCreate::class)
-        ->set('courseId', $course->id)
-        ->set('targetMode', 'departments')
-        ->set('selectedDepartments', [Department::CSE->value])
-        ->call('createBatch')
-        ->assertSet('createdCount', 1)
-        ->assertSet('skippedCount', 1);
-
-    expect(Enrollment::where('course_id', $course->id)->pluck('user_id')->sort()->values()->all())
-        ->toBe([$krceCse->id, $krctCse->id]);
 });
 
 test('non admin users cannot access the enrollment batch create page', function () {

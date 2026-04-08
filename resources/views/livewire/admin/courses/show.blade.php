@@ -12,7 +12,7 @@
         <flux:button href="{{ route('admin.courses.analyze', $course->id) }}" wire:navigate variant="outline">
             Analyze
         </flux:button>
-        <flux:button href="{{ route('admin.courses.enroll', $course->id) }}" wire:navigate variant="primary">
+        <flux:button href="{{ route('admin.enrollments.create', ['course' => $course->slug]) }}" wire:navigate variant="primary">
             Enroll
         </flux:button>
     </div>
