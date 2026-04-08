@@ -34,11 +34,20 @@
                 </div>
 
                 @foreach ($questions as $index => $question)
-                    <div class="mb-6 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-700">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Question {{ $index + 1 }}</span>
+                    <div class="mb-8 p-6 bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700">
+                        <div class="flex items-center justify-between mb-6 pb-4 border-b border-zinc-200 dark:border-zinc-700">
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">
+                                    Question {{ $index + 1 }}
+                                </span>
+                                @if ($question['type'] === 'multiple_choice')
+                                    <flux:badge color="blue" size="sm">Multiple Choice</flux:badge>
+                                @else
+                                    <flux:badge color="purple" size="sm">True/False</flux:badge>
+                                @endif
+                            </div>
                             @if (count($questions) > 1)
-                                <flux:button type="button" size="xs" variant="ghost" wire:click="removeQuestion({{ $index }})">
+                                <flux:button type="button" size="xs" variant="ghost" wire:click="removeQuestion({{ $index }})" wire:confirm="Delete this question?">
                                     <flux:icon.trash class="w-4 h-4 text-red-500" />
                                 </flux:button>
                             @endif
@@ -58,24 +67,87 @@
                         </flux:field>
 
                         @if ($question['type'] === 'multiple_choice')
+                            <div class="mt-6">
+                                <flux:label>Options</flux:label>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-4">Add at least 2 options. Select the radio button to mark the correct answer.</p>
+                                
+                                <div class="space-y-3">
+                                    @for ($i = 0; $i < 4; $i++)
+                                        @php
+                                            $isCorrect = in_array(chr(65 + $i), explode(',', $question['correct_answer'] ?? ''));
+                                        @endphp
+                                        <div class="flex items-center gap-3 p-3 rounded-lg border transition-colors
+                                            {{ $isCorrect 
+                                                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' 
+                                                : 'bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600' }}">
+                                            <div class="flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium
+                                                {{ $isCorrect 
+                                                    ? 'bg-green-500 text-white' 
+                                                    : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300' }}">
+                                                {{ chr(65 + $i) }}
+                                            </div>
+                                            <input 
+                                                type="radio" 
+                                                name="correct_answer_{{ $index }}"
+                                                value="{{ chr(65 + $i) }}"
+                                                wire:model="questions.{{ $index }}.correct_answer"
+                                                class="w-4 h-4"
+                                            />
+                                            <input 
+                                                type="text" 
+                                                wire:model="questions.{{ $index }}.options.{{ $i }}"
+                                                placeholder="Option {{ chr(65 + $i) }}"
+                                                class="flex-1 px-4 py-2 bg-transparent border-0 focus:ring-0 focus:outline-none"
+                                            />
+                                            @if ($isCorrect)
+                                                <flux:icon.check-circle class="w-5 h-5 text-green-600" />
+                                            @endif
+                                        </div>
+                                    @endfor
+                                </div>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-3">
+                                    Select the radio button next to the correct answer(s). You can select multiple correct answers.
+                                </p>
+                            </div>
+                        @else
                             <flux:field class="mt-4">
-                                <flux:label>Options (one per line)</flux:label>
-                                <flux:textarea wire:model="questions.{{ $index }}.options_text" placeholder="Option A&#10;Option B&#10;Option C&#10;Option D" />
+                                <flux:label>Correct Answer</flux:label>
+                                <div class="flex gap-4">
+                                    <label class="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-lg border transition-colors
+                                        {{ ($question['correct_answer'] ?? '') === 'true' 
+                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' 
+                                            : 'bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600' }}">
+                                        <input 
+                                            type="radio" 
+                                            name="true_false_{{ $index }}"
+                                            value="true"
+                                            wire:model="questions.{{ $index }}.correct_answer"
+                                            class="w-4 h-4"
+                                        />
+                                        <span class="text-sm text-zinc-700 dark:text-zinc-300">True</span>
+                                        @if (($question['correct_answer'] ?? '') === 'true')
+                                            <flux:icon.check-circle class="w-4 h-4 text-green-600 ml-2" />
+                                        @endif
+                                    </label>
+                                    <label class="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-lg border transition-colors
+                                        {{ ($question['correct_answer'] ?? '') === 'false' 
+                                            ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' 
+                                            : 'bg-white dark:bg-zinc-800 border-zinc-300 dark:border-zinc-600' }}">
+                                        <input 
+                                            type="radio" 
+                                            name="true_false_{{ $index }}"
+                                            value="false"
+                                            wire:model="questions.{{ $index }}.correct_answer"
+                                            class="w-4 h-4"
+                                        />
+                                        <span class="text-sm text-zinc-700 dark:text-zinc-300">False</span>
+                                        @if (($question['correct_answer'] ?? '') === 'false')
+                                            <flux:icon.check-circle class="w-4 h-4 text-green-600 ml-2" />
+                                        @endif
+                                    </label>
+                                </div>
                             </flux:field>
                         @endif
-
-                        <flux:field class="mt-4">
-                            <flux:label>Correct Answer</flux:label>
-                            @if ($question['type'] === 'multiple_choice')
-                                <flux:input wire:model="questions.{{ $index }}.correct_answer" placeholder="A or B or C or D" />
-                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Separate multiple correct answers with commas (e.g., "A,C")</p>
-                            @else
-                                <flux:select wire:model="questions.{{ $index }}.correct_answer" required>
-                                    <flux:select.option value="true">True</flux:select.option>
-                                    <flux:select.option value="false">False</flux:select.option>
-                                </flux:select>
-                            @endif
-                        </flux:field>
                     </div>
                 @endforeach
             </div>

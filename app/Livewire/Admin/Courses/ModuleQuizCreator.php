@@ -21,12 +21,21 @@ class ModuleQuizCreator extends Component
 
     public array $availableModules = [];
 
+    protected function rules(): array
+    {
+        return [
+            'moduleId' => 'required|exists:modules,id',
+            'questions' => 'required|array|min:1',
+            'questions.*.question_text' => 'required|string',
+            'questions.*.type' => 'required|in:multiple_choice,true_false',
+            'questions.*.options' => 'required_if:questions.*.type,multiple_choice|array|min:2',
+            'questions.*.options.*' => 'required|string',
+            'questions.*.correct_answer' => 'required',
+        ];
+    }
+
     public function mount(?int $courseId = null, ?int $moduleQuizId = null): void
     {
-        if (! auth()->user()->isAdmin()) {
-            abort(403);
-        }
-
         if ($courseId) {
             $this->course = Course::findOrFail($courseId);
             $this->loadAvailableModules();
@@ -58,16 +67,24 @@ class ModuleQuizCreator extends Component
 
             if ($this->moduleQuiz->quiz) {
                 foreach ($this->moduleQuiz->quiz->questions as $question) {
+                    $optionsArray = $question->options ?? [];
+                    $correctAnswers = is_array($question->correct_answer)
+                        ? array_map(function ($i) {
+                            return chr(65 + $i);
+                        }, $question->correct_answer)
+                        : [];
+
                     $this->questions[] = [
                         'id' => $question->id,
                         'question_text' => $question->question_text,
                         'type' => $question->type,
-                        'options_text' => implode("\n", $question->options ?? []),
-                        'correct_answer' => is_array($question->correct_answer)
-                            ? implode(',', array_map(function ($i) {
-                                return chr(65 + $i);
-                            }, $question->correct_answer))
-                            : ($question->correct_answer ?? ''),
+                        'options' => [
+                            $optionsArray[0] ?? '',
+                            $optionsArray[1] ?? '',
+                            $optionsArray[2] ?? '',
+                            $optionsArray[3] ?? '',
+                        ],
+                        'correct_answer' => implode(',', $correctAnswers),
                     ];
                 }
             }
@@ -80,7 +97,7 @@ class ModuleQuizCreator extends Component
             'id' => null,
             'question_text' => '',
             'type' => 'multiple_choice',
-            'options_text' => '',
+            'options' => ['', '', '', ''],
             'correct_answer' => '',
         ];
     }
@@ -94,14 +111,23 @@ class ModuleQuizCreator extends Component
         $this->questions = array_values($this->questions);
     }
 
+    public function setCorrectAnswer(int $index, string $letter, bool $checked): void
+    {
+        $currentAnswers = explode(',', $this->questions[$index]['correct_answer'] ?? '');
+        $currentAnswers = array_filter($currentAnswers);
+        
+        if ($checked && !in_array($letter, $currentAnswers)) {
+            $currentAnswers[] = $letter;
+        } elseif (!$checked) {
+            $currentAnswers = array_filter($currentAnswers, fn($a) => $a !== $letter);
+        }
+        
+        $this->questions[$index]['correct_answer'] = implode(',', $currentAnswers);
+    }
+
     public function save(): void
     {
-        $this->validate([
-            'moduleId' => 'required|exists:modules,id',
-            'questions' => 'required|array|min:1',
-            'questions.*.question_text' => 'required|string',
-            'questions.*.type' => 'required|in:multiple_choice,true_false',
-        ]);
+        $this->validate();
 
         if (! $this->moduleQuiz) {
             $quiz = Quiz::create([
@@ -120,8 +146,8 @@ class ModuleQuizCreator extends Component
 
         foreach ($this->questions as $questionData) {
             $options = [];
-            if ($questionData['type'] === 'multiple_choice' && ! empty($questionData['options_text'])) {
-                $options = array_filter(array_map('trim', explode("\n", $questionData['options_text'])));
+            if ($questionData['type'] === 'multiple_choice' && ! empty($questionData['options'])) {
+                $options = array_filter($questionData['options']);
             }
 
             $correctAnswer = [];
