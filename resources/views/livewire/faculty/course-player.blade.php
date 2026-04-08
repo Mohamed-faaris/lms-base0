@@ -84,15 +84,146 @@
                 <div class="space-y-4 pb-4">
                     {{-- Video Container --}}
                     <div class="rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-                        <div class="aspect-video bg-black relative">
-                            <iframe
-                                src="https://www.youtube.com/embed/{{ $currentModule->videoId }}?modestbranding=1&rel=0&disablekb=1"
-                                class="w-full h-full"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowfullscreen
-                            ></iframe>
+                        <div class="relative pb-[56.25%] bg-black">
+                            <div id="player" class="absolute inset-0 w-full h-full"></div>
                         </div>
                     </div>
+
+                    <script src="https://www.youtube.com/iframe_api"></script>
+                    <script>
+                        let player;
+                        const INITIAL_WATCHED_SECONDS_FROM_BACKEND = @json($watchedSeconds);
+                        let maxWatched = INITIAL_WATCHED_SECONDS_FROM_BACKEND || 0;
+                        let isSeeking = false;
+
+                        function onYouTubeIframeAPIReady() {
+                            player = new YT.Player('player', {
+                                videoId: '{{ $currentModule->videoId }}',
+                                playerVars: {
+                                    'controls': 2,
+                                    'rel': 0,
+                                    'modestbranding': 1,
+                                    'disablekb': 1,
+                                    'enablejsapi': 1,
+                                    'fs': 0,
+                                    'iv_load_policy': 3,
+                                    'showinfo': 0,
+                                    'autohide': 0
+                                },
+                                events: {
+                                    'onReady': onPlayerReady,
+                                    'onStateChange': onPlayerStateChange
+                                }
+                            });
+                        }
+
+                        function onPlayerReady() {
+                            player.seekTo(maxWatched);
+
+                            setInterval(() => {
+                                if (!player || typeof player.getCurrentTime !== "function") return;
+
+                                let current = player.getCurrentTime();
+
+                                if (!isSeeking && current > maxWatched) {
+                                    maxWatched = current;
+                                }
+                            }, 1000);
+
+                            setInterval(() => {
+                                if (!player || typeof player.getDuration !== "function") return;
+
+                                fetch('/progress/update', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    },
+                                    body: JSON.stringify({
+                                        module_id: {{ $currentModule->id }},
+                                        seconds: Math.floor(maxWatched),
+                                        duration: player.getDuration()
+                                    })
+                                });
+                            }, 5000);
+
+                            setInterval(() => {
+                                preventSeek();
+                            }, 1000);
+                        }
+
+                        function onPlayerStateChange(event) {
+                            if (event.data === YT.PlayerState.PLAYING) {
+                                preventSeek();
+                            }
+                        }
+
+                        function preventSeek() {
+                            if (!player || typeof player.getCurrentTime !== "function") return;
+                            if (isSeeking) return;
+
+                            let current = player.getCurrentTime();
+
+                            // prevent early reset bug
+                            if (maxWatched < 1) return;
+
+                            if (current > maxWatched + 2) {
+                                isSeeking = true;
+
+                                player.seekTo(maxWatched, true);
+
+                                setTimeout(() => {
+                                    isSeeking = false;
+                                }, 500);
+                            }
+                        }
+
+                        document.addEventListener('keydown', function (e) {
+                            if (['ArrowRight', 'ArrowLeft'].includes(e.key)) {
+                                e.preventDefault();
+                            }
+                        });
+
+                        // Disable progress bar and controls interaction
+                        setTimeout(() => {
+                            const playerFrame = document.querySelector('#player iframe');
+                            if (playerFrame) {
+                                // Add CSS to disable progress bar interaction
+                                const style = document.createElement('style');
+                                style.textContent = `
+                                    #player iframe {
+                                        pointer-events: none !important;
+                                    }
+                                    #player {
+                                        position: relative;
+                                    }
+                                    #player::after {
+                                        content: '';
+                                        position: absolute;
+                                        top: 0;
+                                        left: 0;
+                                        right: 0;
+                                        bottom: 40px; /* Leave controls area interactive */
+                                        z-index: 10;
+                                        cursor: default;
+                                    }
+                                `;
+                                document.head.appendChild(style);
+                            }
+                        }, 2000);
+
+                        document.addEventListener("visibilitychange", () => {
+                            if (document.hidden && player && player.pauseVideo) {
+                                player.pauseVideo();
+                            }
+                        });
+
+                        window.addEventListener("blur", () => {
+                            if (player && player.pauseVideo) {
+                                player.pauseVideo();
+                            }
+                        });
+                    </script>
 
                     {{-- In-Video Activities --}}
                     <div class="flex flex-wrap gap-2">

@@ -38,6 +38,10 @@ class CoursePlayer extends Component
 
     public bool $showPuzzle = false;
 
+    public int $watchedSeconds = 0;
+
+    public int $videoDuration = 900;
+
     public array $quizQuestions = [
         [
             'id' => 'q1',
@@ -86,6 +90,10 @@ class CoursePlayer extends Component
             $this->course = $course;
         }
 
+        if ($this->course->expires_at && now()->gt($this->course->expires_at)) {
+            abort(403, 'Training expired');
+        }
+
         $this->loadCourseData();
     }
 
@@ -124,6 +132,8 @@ class CoursePlayer extends Component
         // Find current module (first incomplete, or last if all complete)
         $firstIncomplete = $this->modules->first(fn ($module) => ! in_array($module->id, $completedContentIds));
         $this->currentModule = $firstIncomplete ?? $this->modules->last();
+
+        $this->loadModuleProgress();
 
         // Format modules for UI
         $this->modules->transform(function ($module, $key) use ($completedContentIds) {
@@ -188,11 +198,23 @@ class CoursePlayer extends Component
         return null;
     }
 
+    private function loadModuleProgress(): void
+    {
+        $user = auth()->user();
+        $progress = Progress::where('user_id', $user->id)
+            ->where('content_id', $this->currentModule->id)
+            ->first();
+
+        $this->watchedSeconds = $progress->progress_seconds ?? 0;
+        $this->videoDuration = $progress->video_duration ?? 900;
+    }
+
     public function selectModule(int $moduleId): void
     {
         $module = $this->modules->firstWhere('id', $moduleId);
         if ($module && $module->status !== 'locked') {
             $this->currentModule = $module;
+            $this->loadModuleProgress();
             $this->resetQuiz();
             $this->mobileDrawerOpen = false;
         }
@@ -210,7 +232,11 @@ class CoursePlayer extends Component
 
     public function startQuiz(): void
     {
-        $this->showQuiz = true;
+        $percentage = ($this->watchedSeconds / $this->videoDuration) * 100;
+
+        if ($percentage >= 95) {
+            $this->showQuiz = true;
+        }
     }
 
     public function resetQuiz(): void
@@ -241,18 +267,35 @@ class CoursePlayer extends Component
         $this->quizScore = (int) round(($correct / count($this->quizQuestions)) * 100);
         $this->quizSubmitted = true;
 
-        if ($this->quizScore >= 80) {
+        $percentage = ($this->watchedSeconds / $this->videoDuration) * 100;
+
+        if ($this->quizScore >= 80 && $percentage >= 95) {
             $this->markCurrentModuleComplete();
+        } elseif ($this->quizScore < 80) {
+            Progress::where('user_id', auth()->id())
+                ->where('content_id', $this->currentModule->id)
+                ->update(['progress_seconds' => 0]);
+            $this->watchedSeconds = 0;
         }
     }
 
     public function markCurrentModuleComplete(): void
     {
         $user = auth()->user();
-        Progress::updateOrCreate(
-            ['user_id' => $user->id, 'content_id' => $this->currentModule->id],
-            ['completed_at' => now()]
-        );
+        $progress = Progress::where('user_id', $user->id)
+            ->where('content_id', $this->currentModule->id)
+            ->first();
+
+        if (! $progress) {
+            $progress = new Progress([
+                'user_id' => $user->id,
+                'content_id' => $this->currentModule->id,
+            ]);
+        }
+
+        $progress->completed_at = now();
+        $progress->save();
+
         $this->loadCourseData();
     }
 

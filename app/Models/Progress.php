@@ -15,12 +15,16 @@ class Progress extends Model
     protected $fillable = [
         'user_id',
         'content_id',
+        'progress_seconds',
+        'video_duration',
+        'completed_at',
     ];
 
     protected function casts(): array
     {
         return [
             'completed_at' => 'datetime',
+            'last_watched_at' => 'datetime',
         ];
     }
 

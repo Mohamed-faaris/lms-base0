@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProgressController;
 use App\Livewire\Admin\Courses\Analyze as CoursesAnalyze;
 use App\Livewire\Admin\Courses\ContentEditor;
 use App\Livewire\Admin\Courses\ContentViewer;
@@ -31,6 +32,8 @@ Route::view('/', 'welcome')->name('home');
 Route::get('courses', PublicCourses::class)->name('courses');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/progress/update', [ProgressController::class, 'update']);
+
     Route::get('dashboard', function () {
         $user = auth()->user();
 
