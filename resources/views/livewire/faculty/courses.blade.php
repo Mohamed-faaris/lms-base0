@@ -17,10 +17,9 @@
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
         @forelse($enrolledCourses as $course)
             @php
-                $deadlineValue = is_numeric($course->deadline) ? $course->deadline : 0;
-                $daysLeft = $deadlineValue;
-                $isUrgent = $daysLeft <= 3 && $daysLeft > 0;
-                $isOverdue = $daysLeft < 0;
+                $daysLeft = $course->daysLeft;
+                $isUrgent = $course->isUrgent;
+                $isOverdue = $course->isOverdue;
                 $isCompleted = $course->status === 'completed';
             @endphp
             <div class="group flex flex-col bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 overflow-hidden relative hover:-translate-y-1">
@@ -50,9 +49,11 @@
                         @elseif($isOverdue)
                             <flux:badge color="red" class="font-semibold shadow-sm animate-pulse px-3 py-1">Overdue</flux:badge>
                         @elseif($isUrgent)
-                            <flux:badge color="amber" class="font-semibold shadow-sm px-3 py-1">{{ $daysLeft }} days left</flux:badge>
+                            <flux:badge color="amber" class="font-semibold shadow-sm px-3 py-1">{{ $course->deadlineLabel }}</flux:badge>
+                        @elseif($daysLeft === null)
+                            <flux:badge color="zinc" class="font-medium bg-zinc-100 dark:bg-zinc-800 px-3 py-1">No deadline</flux:badge>
                         @else
-                            <flux:badge color="zinc" class="font-medium bg-zinc-100 dark:bg-zinc-800 px-3 py-1">{{ $daysLeft }} days left</flux:badge>
+                            <flux:badge color="zinc" class="font-medium bg-zinc-100 dark:bg-zinc-800 px-3 py-1">{{ $course->deadlineLabel }}</flux:badge>
                         @endif
                     </div>
                 </div>
@@ -121,7 +122,7 @@
                 <p class="text-zinc-500 dark:text-zinc-400 max-w-md mx-auto text-lg leading-relaxed">
                     You haven't been assigned to any learning paths. When you are enrolled in a course, your journey will begin here.
                 </p>
-                <flux:button variant="outline" size="lg" class="mt-8 font-semibold" href="{{ route('faculty.dashboard') }}" wire:navigate>
+                <flux:button variant="outline" class="mt-8 font-semibold" href="{{ route('faculty.dashboard') }}" wire:navigate>
                     <flux:icon.arrow-left class="w-4 h-4 mr-2" />
                     Return to Dashboard
                 </flux:button>

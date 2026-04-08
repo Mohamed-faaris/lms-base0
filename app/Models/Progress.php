@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Progress extends Model
 {
     public $incrementing = false;
+
     protected $primaryKey = ['user_id', 'content_id'];
+
     public $timestamps = false;
 
     protected $fillable = [

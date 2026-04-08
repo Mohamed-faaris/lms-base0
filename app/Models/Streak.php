@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Streak extends Model
 {
     public $incrementing = false;
+
     protected $primaryKey = ['user_id', 'date'];
 
     protected $fillable = [

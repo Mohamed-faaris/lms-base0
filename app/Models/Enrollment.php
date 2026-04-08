@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Enrollment extends Model
 {
     public $incrementing = false;
+
     protected $primaryKey = ['user_id', 'course_id'];
 
     protected $fillable = [
         'user_id',
         'enrolled_by',
         'course_id',
+        'batch_id',
         'deadline',
     ];
 

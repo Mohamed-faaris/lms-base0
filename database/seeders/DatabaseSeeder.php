@@ -9,8 +9,8 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            KRCTFacultySeeder::class,
             LmsDataSeeder::class,
-            KRCTFacultySeeder::class
         ]);
     }
 }

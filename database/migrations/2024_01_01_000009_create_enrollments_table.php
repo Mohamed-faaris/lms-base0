@@ -12,6 +12,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('enrolled_by')->constrained('users');
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('batch_id')->nullable()->index();
             $table->integer('deadline')->default(0);
             $table->timestamp('enrolled_at')->useCurrent();
 

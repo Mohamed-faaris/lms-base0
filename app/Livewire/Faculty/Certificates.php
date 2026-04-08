@@ -7,14 +7,18 @@ use Livewire\Component;
 class Certificates extends Component
 {
     public array $completedCourses = [];
+
     public array $progressHistory = [];
-    
+
+    public bool $showCertificateModal = false;
+
     public ?array $selectedCourse = null;
+
     public string $recipientName = '';
-    public bool $isEditing = false;
+
     public string $activeTab = 'certificates';
 
-    public function mount()
+    public function mount(): void
     {
         $user = auth()->user();
         $this->recipientName = $user->name ?? '';
@@ -62,24 +66,29 @@ class Certificates extends Component
         ];
     }
 
-    public function viewCertificate($courseId)
+    public function viewCertificate(int $courseId): void
     {
-        $this->selectedCourse = collect($this->completedCourses)->firstWhere('id', $courseId);
+        $selectedCourse = collect($this->completedCourses)->firstWhere('id', $courseId);
+
+        $this->selectedCourse = is_array($selectedCourse) ? $selectedCourse : null;
+        $this->showCertificateModal = $this->selectedCourse !== null;
         $this->recipientName = auth()->user()->name ?? '';
-        $this->isEditing = false;
     }
 
-    public function closeCertificate()
+    public function closeCertificate(): void
     {
+        $this->showCertificateModal = false;
         $this->selectedCourse = null;
     }
 
-    public function toggleEditName()
+    public function updatedShowCertificateModal(bool $isOpen): void
     {
-        $this->isEditing = !$this->isEditing;
+        if (! $isOpen) {
+            $this->selectedCourse = null;
+        }
     }
 
-    public function setActiveTab($tab)
+    public function setActiveTab(string $tab): void
     {
         $this->activeTab = $tab;
     }

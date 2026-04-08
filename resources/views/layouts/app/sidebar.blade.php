@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" >
     <head>
         @include('partials.head')
     </head>
@@ -28,6 +28,18 @@
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="cog-6-tooth" :href="route('faculty.suggestions')" :current="request()->routeIs('faculty.suggestions')" wire:navigate>
                             {{ __('Suggestions') }}
+                        </flux:sidebar.item>
+                    @endif
+
+                    @if(auth()->user()->isAdmin())
+                        <flux:sidebar.item icon="users" :href="route('admin.users.index')" :current="request()->routeIs('admin.users.*')" wire:navigate>
+                            {{ __('Users') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="academic-cap" :href="route('admin.courses.index')" :current="request()->routeIs('admin.courses.*')" wire:navigate>
+                            {{ __('Courses') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="user-group" :href="route('admin.enrollments.index')" :current="request()->routeIs('admin.enrollments.*')" wire:navigate>
+                            {{ __('Enrollments') }}
                         </flux:sidebar.item>
                     @endif
                 </flux:sidebar.group>

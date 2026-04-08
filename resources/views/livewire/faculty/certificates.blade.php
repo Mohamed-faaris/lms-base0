@@ -148,7 +148,7 @@
     </div>
 
     {{-- Certificate Modal --}}
-    <flux:modal wire:model.live="selectedCourse">
+    <flux:modal wire:model.live="showCertificateModal">
         @if($selectedCourse)
             <div class="w-[900px] max-w-full space-y-6">
                 <div class="flex items-center justify-between pb-2">
@@ -158,26 +158,15 @@
                     </div>
                 </div>
 
-                {{-- Editable Name --}}
+                {{-- Recipient --}}
                 <div class="flex items-center gap-4 p-5 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/50">
                     <div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center shrink-0">
                         <flux:icon.user class="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div class="flex-1">
-                        <label class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Recipient Name Display</label>
-                        <div class="flex items-center gap-3 mt-1.5">
-                            @if($isEditing)
-                                <flux:input wire:model="recipientName" class="max-w-sm font-medium" />
-                            @else
-                                <span class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">{{ $recipientName }}</span>
-                            @endif
-                            <flux:button variant="ghost" size="sm" class="font-semibold" wire:click="toggleEditName">
-                                @if($isEditing)
-                                    <flux:icon.check class="h-4 w-4 mr-1.5" /> Done
-                                @else
-                                    <flux:icon.pencil-square class="h-4 w-4 mr-1.5" /> Edit Name
-                                @endif
-                            </flux:button>
+                        <label class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Recipient Name</label>
+                        <div class="mt-1.5">
+                            <span class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">{{ $recipientName }}</span>
                         </div>
                     </div>
                 </div>
@@ -251,11 +240,11 @@
 
                 {{-- Action Buttons --}}
                 <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                    <flux:button variant="outline" size="lg" class="flex-1 font-semibold border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800" onclick="alert('Downloading Image...')">
+                    <flux:button variant="outline" class="flex-1 font-semibold border-zinc-300 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800" onclick="alert('Downloading Image...')">
                         <flux:icon.photo class="mr-2.5 h-5 w-5" />
                         Download Image (PNG)
                     </flux:button>
-                    <flux:button variant="primary" size="lg" class="flex-1 font-semibold shadow-lg shadow-blue-500/20" onclick="alert('Downloading PDF...')">
+                    <flux:button variant="primary" class="flex-1 font-semibold shadow-lg shadow-blue-500/20" onclick="alert('Downloading PDF...')">
                         <flux:icon.document-text class="mr-2.5 h-5 w-5" />
                         Download PDF Document
                     </flux:button>

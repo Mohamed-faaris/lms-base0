@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Question extends Model
 {
     protected $fillable = [
+        'quiz_id',
         'type',
         'question_text',
         'options',
@@ -19,6 +20,11 @@ class Question extends Model
             'options' => 'array',
             'correct_answer' => 'array',
         ];
+    }
+
+    public function quiz()
+    {
+        return $this->belongsTo(Quiz::class);
     }
 
     public function endQuiz()

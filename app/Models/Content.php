@@ -42,12 +42,17 @@ class Content extends Model
 
     public function endQuiz()
     {
-        return $this->hasMany(EndQuiz::class);
+        return $this->hasOne(EndQuiz::class);
     }
 
     public function quizzes()
     {
         return $this->hasMany(Quiz::class);
+    }
+
+    public function quiz()
+    {
+        return $this->hasOne(Quiz::class);
     }
 
     public function timestampedQuizzes()

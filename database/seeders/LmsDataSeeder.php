@@ -596,24 +596,12 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        foreach ($finalQuestions as $qData) {
-            $question = Question::create([
-                'type' => 'multiple_choice',
-                'question_text' => $qData['text'],
-                'options' => json_encode($qData['options']),
-                'correct_answer' => $qData['correct'],
-            ]);
+        $finalQuiz = $this->createQuizWithQuestions($finalQuizContent->id, $finalQuestions);
 
-            $quiz = Quiz::create([
-                'content_id' => $finalQuizContent->id,
-                'question_id' => $question->id,
-            ]);
-
-            EndQuiz::create([
-                'content_id' => $finalQuizContent->id,
-                'quiz_id' => $quiz->id,
-            ]);
-        }
+        EndQuiz::create([
+            'content_id' => $finalQuizContent->id,
+            'quiz_id' => $finalQuiz->id,
+        ]);
 
         // ============================================
         // ENROLLMENT DATA
@@ -646,16 +634,22 @@ class LmsDataSeeder extends Seeder
             $progressPercent = $facultyData['progress'];
             $xpValue = $facultyData['xp'];
             $streakDays = $facultyData['streak'];
+            $reactBatchId = 1001;
 
             // Create enrollment (ignore duplicates)
-            Enrollment::firstOrCreate(
+            $enrollment = Enrollment::firstOrCreate(
                 ['user_id' => $user->id, 'course_id' => $reactCourse->id],
                 [
+                    'batch_id' => $reactBatchId,
                     'enrolled_by' => $admin->id,
-                    'deadline' => 30,
+                    'deadline' => now()->addDays(30)->timestamp,
                     'enrolled_at' => now()->subDays(30),
                 ]
             );
+
+            if (! $enrollment->batch_id) {
+                $enrollment->update(['batch_id' => $reactBatchId]);
+            }
 
             // Calculate completed content based on progress percentage
             $completedCount = (int) round(($progressPercent / 100) * $totalContent);
@@ -903,16 +897,22 @@ class LmsDataSeeder extends Seeder
             $user = $phpData['user'];
             $progressPercent = $phpData['progress'];
             $addXp = $phpData['addXp'];
+            $phpBatchId = 1002;
 
             // Create PHP enrollment
-            Enrollment::firstOrCreate(
+            $enrollment = Enrollment::firstOrCreate(
                 ['user_id' => $user->id, 'course_id' => $phpCourse->id],
                 [
+                    'batch_id' => $phpBatchId,
                     'enrolled_by' => $admin->id,
-                    'deadline' => 30,
+                    'deadline' => now()->addDays(30)->timestamp,
                     'enrolled_at' => now()->subDays(25),
                 ]
             );
+
+            if (! $enrollment->batch_id) {
+                $enrollment->update(['batch_id' => $phpBatchId]);
+            }
 
             // Create PHP progress
             $completedCount = (int) round(($progressPercent / 100) * $phpTotalContent);
@@ -937,6 +937,8 @@ class LmsDataSeeder extends Seeder
                 Xp::create(['user_id' => $user->id, 'xp' => $addXp]);
             }
         }
+
+        $this->seedDemoCourseEnrollments($admin, [$reactCourse, $phpCourse]);
 
         // ============================================
         // PHP COURSE BADGES
@@ -1166,24 +1168,12 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        foreach ($questions as $qData) {
-            $question = Question::create([
-                'type' => 'multiple_choice',
-                'question_text' => $qData['text'],
-                'options' => json_encode($qData['options']),
-                'correct_answer' => $qData['correct'],
-            ]);
+        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
 
-            $quiz = Quiz::create([
-                'content_id' => $module->contents->first()?->id ?? 0,
-                'question_id' => $question->id,
-            ]);
-
-            ModuleQuiz::create([
-                'module_id' => $module->id,
-                'quiz_id' => $quiz->id,
-            ]);
-        }
+        ModuleQuiz::create([
+            'module_id' => $module->id,
+            'quiz_id' => $quiz->id,
+        ]);
     }
 
     /**
@@ -1244,24 +1234,12 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        foreach ($questions as $qData) {
-            $question = Question::create([
-                'type' => 'multiple_choice',
-                'question_text' => $qData['text'],
-                'options' => json_encode($qData['options']),
-                'correct_answer' => $qData['correct'],
-            ]);
+        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
 
-            $quiz = Quiz::create([
-                'content_id' => $module->contents->first()?->id ?? 0,
-                'question_id' => $question->id,
-            ]);
-
-            ModuleQuiz::create([
-                'module_id' => $module->id,
-                'quiz_id' => $quiz->id,
-            ]);
-        }
+        ModuleQuiz::create([
+            'module_id' => $module->id,
+            'quiz_id' => $quiz->id,
+        ]);
     }
 
     /**
@@ -1312,24 +1290,12 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        foreach ($questions as $qData) {
-            $question = Question::create([
-                'type' => 'multiple_choice',
-                'question_text' => $qData['text'],
-                'options' => json_encode($qData['options']),
-                'correct_answer' => $qData['correct'],
-            ]);
+        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
 
-            $quiz = Quiz::create([
-                'content_id' => $module->contents->first()?->id ?? 0,
-                'question_id' => $question->id,
-            ]);
-
-            ModuleQuiz::create([
-                'module_id' => $module->id,
-                'quiz_id' => $quiz->id,
-            ]);
-        }
+        ModuleQuiz::create([
+            'module_id' => $module->id,
+            'quiz_id' => $quiz->id,
+        ]);
     }
 
     /**
@@ -1380,24 +1346,12 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        foreach ($questions as $qData) {
-            $question = Question::create([
-                'type' => 'multiple_choice',
-                'question_text' => $qData['text'],
-                'options' => json_encode($qData['options']),
-                'correct_answer' => $qData['correct'],
-            ]);
+        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
 
-            $quiz = Quiz::create([
-                'content_id' => $module->contents->first()?->id ?? 0,
-                'question_id' => $question->id,
-            ]);
-
-            ModuleQuiz::create([
-                'module_id' => $module->id,
-                'quiz_id' => $quiz->id,
-            ]);
-        }
+        ModuleQuiz::create([
+            'module_id' => $module->id,
+            'quiz_id' => $quiz->id,
+        ]);
     }
 
     // ============================================
@@ -1643,41 +1597,88 @@ class LmsDataSeeder extends Seeder
             ['text' => 'Which superglobal contains uploaded files?', 'opts' => ['A' => '$_FILES', 'B' => '$_UPLOAD', 'C' => '$_FILE', 'D' => '$FILES'], 'correct' => 'A'],
         ];
 
-        foreach ($questions as $q) {
-            $question = Question::create([
-                'type' => 'multiple_choice',
-                'question_text' => $q['text'],
-                'options' => json_encode($q['opts']),
-                'correct_answer' => $q['correct'],
-            ]);
-            $quiz = Quiz::create([
-                'content_id' => $finalQuizContent->id,
-                'question_id' => $question->id,
-            ]);
-            EndQuiz::create([
-                'content_id' => $finalQuizContent->id,
-                'quiz_id' => $quiz->id,
-            ]);
-        }
+        $quiz = $this->createQuizWithQuestions($finalQuizContent->id, $questions);
+
+        EndQuiz::create([
+            'content_id' => $finalQuizContent->id,
+            'quiz_id' => $quiz->id,
+        ]);
     }
 
     private function createPhpQuizQuestions(Module $module, array $questions): void
     {
-        foreach ($questions as $q) {
-            $question = Question::create([
-                'type' => 'multiple_choice',
-                'question_text' => $q['text'],
-                'options' => json_encode($q['opts']),
-                'correct_answer' => $q['correct'],
-            ]);
-            $quiz = Quiz::create([
-                'content_id' => $module->contents->first()?->id ?? 0,
-                'question_id' => $question->id,
-            ]);
-            ModuleQuiz::create([
-                'module_id' => $module->id,
+        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
+
+        ModuleQuiz::create([
+            'module_id' => $module->id,
+            'quiz_id' => $quiz->id,
+        ]);
+    }
+
+    private function createQuizWithQuestions(int $contentId, array $questions): Quiz
+    {
+        $firstQuestionData = array_shift($questions);
+
+        $quiz = Quiz::create([
+            'content_id' => $contentId,
+        ]);
+
+        $firstQuestion = Question::create([
+            'quiz_id' => $quiz->id,
+            'type' => 'multiple_choice',
+            'question_text' => $firstQuestionData['text'],
+            'options' => array_values($firstQuestionData['options'] ?? $firstQuestionData['opts'] ?? []),
+            'correct_answer' => [$this->toCorrectIndex($firstQuestionData['correct'])],
+        ]);
+
+        $quiz->update(['question_id' => $firstQuestion->id]);
+
+        foreach ($questions as $questionData) {
+            Question::create([
                 'quiz_id' => $quiz->id,
+                'type' => 'multiple_choice',
+                'question_text' => $questionData['text'],
+                'options' => array_values($questionData['options'] ?? $questionData['opts'] ?? []),
+                'correct_answer' => [$this->toCorrectIndex($questionData['correct'])],
             ]);
         }
+
+        return $quiz;
+    }
+
+    private function seedDemoCourseEnrollments(User $admin, array $courses): void
+    {
+        $users = User::query()
+            ->whereIn('role', [Role::Faculty, Role::Staff])
+            ->orderBy('id')
+            ->get();
+
+        foreach ($users as $index => $user) {
+            foreach ($courses as $courseIndex => $course) {
+                $batchId = 2000 + $courseIndex + 1;
+
+                $enrollment = Enrollment::firstOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'course_id' => $course->id,
+                    ],
+                    [
+                        'batch_id' => $batchId,
+                        'enrolled_by' => $admin->id,
+                        'deadline' => now()->addDays(21 + $index + ($courseIndex * 7))->timestamp,
+                        'enrolled_at' => now()->subDays(14 - $courseIndex),
+                    ]
+                );
+
+                if (! $enrollment->batch_id) {
+                    $enrollment->update(['batch_id' => $batchId]);
+                }
+            }
+        }
+    }
+
+    private function toCorrectIndex(string $correct): int
+    {
+        return ord(strtoupper($correct)) - 65;
     }
 }
