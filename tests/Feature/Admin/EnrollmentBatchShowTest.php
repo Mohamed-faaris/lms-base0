@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\NormalizesEnrollmentDeadline;
 use App\Enums\ContentType;
 use App\Livewire\Admin\Enrollments\Show as EnrollmentBatchShow;
 use App\Models\Content;
@@ -65,6 +66,28 @@ test('admin can view an individual enrollment batch page', function () {
     $response->assertSee('Are you sure you want to revoke this batch?');
     $response->assertSee('Type CONFIRM to continue');
     $response->assertSee('Progress Distribution');
+
+    Date::setTestNow();
+});
+
+test('timestamp deadlines are normalized without float precision drift', function () {
+    Date::setTestNow('2026-04-07 00:01:00');
+
+    $deadlineFormatter = new class
+    {
+        use NormalizesEnrollmentDeadline;
+
+        public function format(int $deadline): array
+        {
+            return $this->normalizeEnrollmentDeadline($deadline);
+        }
+    };
+
+    $deadline = now()->addDays(30)->subMinute()->timestamp;
+    $normalizedDeadline = $deadlineFormatter->format($deadline);
+
+    expect($normalizedDeadline['label'])->toBe('30 days left');
+    expect($normalizedDeadline['compactLabel'])->toBe('30d left');
 
     Date::setTestNow();
 });
@@ -142,11 +165,7 @@ test('admin can view learner progress and batch progress distribution', function
         ->get(route('admin.enrollments.show', 'BATCH-PROGRESS'));
 
     $response->assertSuccessful();
-    $response->assertSee('Ada Learner');
-    $response->assertSee('Ben Learner');
-    $response->assertSeeText('Progress');
-    $response->assertSeeText('Status');
-    $response->assertSeeText('50%');
+    $response->assertSeeInOrder(['Ada Learner', '50%', 'Ben Learner', '0%']);
     $response->assertSeeText('Not Started');
     $response->assertSeeText('0-25%');
     $response->assertSeeText('26-50%');

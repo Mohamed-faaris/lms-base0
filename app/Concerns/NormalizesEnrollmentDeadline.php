@@ -24,10 +24,10 @@ trait NormalizesEnrollmentDeadline
             $daysLeft = $deadline;
             $hoursLeft = null;
         } else {
-            $endDate = $now->copy()->setTimestamp($deadline);
-            $daysLeft = $now->diffInDays($endDate, false);
+            $secondsUntilDeadline = $deadline - $now->timestamp;
+            $daysLeft = $this->normalizeDeadlineDayDifference($secondsUntilDeadline);
             $hoursLeft = $daysLeft < 1 && $daysLeft >= 0
-                ? max(1, $now->diffInHours($endDate, false))
+                ? max(1, (int) ceil($secondsUntilDeadline / 3600))
                 : null;
         }
 
@@ -63,5 +63,14 @@ trait NormalizesEnrollmentDeadline
         $suffix = $compact ? 'd left' : ' day'.($daysLeft === 1 ? '' : 's').' left';
 
         return $daysLeft.$suffix;
+    }
+
+    protected function normalizeDeadlineDayDifference(int $secondsUntilDeadline): int
+    {
+        if ($secondsUntilDeadline >= 0) {
+            return (int) ceil($secondsUntilDeadline / 86400);
+        }
+
+        return (int) floor($secondsUntilDeadline / 86400);
     }
 }

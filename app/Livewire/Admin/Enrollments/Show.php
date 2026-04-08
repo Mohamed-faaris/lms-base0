@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Enrollments;
 
 use App\Concerns\NormalizesEnrollmentDeadline;
+use App\Models\Content;
 use App\Models\Enrollment;
 use App\Models\Progress;
 use Illuminate\Contracts\View\View;
@@ -76,7 +77,7 @@ class Show extends Component
         $this->selectedLearnerId = $userId;
         $this->selectedLearnerName = $enrollment->user?->name ?? 'this learner';
         $this->selectedLearnerDeadlineDays = $this->learnerDeadlineDays[$userId]
-            ?? (string) max(1, (int) ceil(((int) $enrollment->deadline - now()->timestamp) / 86400));
+            ?? (string) max(1, $this->normalizeDeadlineDayDifference((int) $enrollment->deadline - now()->timestamp));
         $this->showLearnerDeadlineModal = true;
     }
 
@@ -308,7 +309,7 @@ class Show extends Component
 
     protected function learnerRows(Collection $enrollments, array $progressByUser): array
     {
-        return $enrollments->map(function (Enrollment $enrollment): array {
+        return $enrollments->map(function (Enrollment $enrollment) use ($progressByUser): array {
             $deadlineMeta = $this->normalizeEnrollmentDeadline((int) $enrollment->deadline);
             $progress = $progressByUser[$enrollment->user_id] ?? 0;
 
@@ -350,7 +351,7 @@ class Show extends Component
                     default => 'zinc',
                 },
                 'deadlineDaysInput' => $this->learnerDeadlineDays[$enrollment->user_id]
-                    ?? (string) max(1, (int) ceil(((int) $enrollment->deadline - now()->timestamp) / 86400)),
+                    ?? (string) max(1, $this->normalizeDeadlineDayDifference((int) $enrollment->deadline - now()->timestamp)),
             ];
         })->all();
     }
@@ -359,12 +360,20 @@ class Show extends Component
     {
         /** @var Enrollment|null $firstEnrollment */
         $firstEnrollment = $enrollments->first();
-        $contentIds = $firstEnrollment?->course?->topics
-            ?->flatMap(fn ($topic): Collection => $topic->modules)
-            ->flatMap(fn ($module): Collection => $module->contents)
+        $courseId = $firstEnrollment?->course_id;
+
+        if ($courseId === null) {
+            return $enrollments
+                ->mapWithKeys(fn (Enrollment $enrollment): array => [$enrollment->user_id => 0])
+                ->all();
+        }
+
+        $contentIds = Content::query()
+            ->whereHas('module.topic', function (Builder $query) use ($courseId): void {
+                $query->where('course_id', $courseId);
+            })
             ->pluck('id')
-            ->values()
-            ?? collect();
+            ->values();
 
         if ($contentIds->isEmpty()) {
             return $enrollments
@@ -430,7 +439,7 @@ class Show extends Component
 
                 return [
                     $enrollment->user_id => (string) max(1, $deadline > 0
-                        ? (int) ceil(($deadline - now()->timestamp) / 86400)
+                        ? $this->normalizeDeadlineDayDifference($deadline - now()->timestamp)
                         : 1),
                 ];
             })
