@@ -40,6 +40,7 @@ test('admin can view the enrollments page', function () {
     $response->assertSee('Advanced Safety Training');
     $response->assertSee('Admin User');
     $response->assertSee('BATCH-001');
+    $response->assertSee(route('admin.enrollments.show', 'BATCH-001'));
     $response->assertSee('1 user');
     $response->assertSee('2 days left');
     $response->assertSee('Total Batches');

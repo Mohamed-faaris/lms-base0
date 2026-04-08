@@ -14,6 +14,7 @@ use App\Livewire\Admin\Courses\Show as CoursesShow;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Enrollments as AdminEnrollments;
 use App\Livewire\Admin\Enrollments\Create as EnrollmentBatchCreate;
+use App\Livewire\Admin\Enrollments\Show as EnrollmentBatchShow;
 use App\Livewire\Faculty\Certificates;
 use App\Livewire\Faculty\CoursePlayer;
 use App\Livewire\Faculty\Courses;
@@ -44,6 +45,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('dashboard', AdminDashboard::class)->name('dashboard');
         Route::get('enrollments', AdminEnrollments::class)->name('enrollments.index');
         Route::get('enrollments/create', EnrollmentBatchCreate::class)->name('enrollments.create');
+        Route::get('enrollments/{batchKey}', EnrollmentBatchShow::class)->name('enrollments.show');
 
         Route::prefix('courses')->name('courses.')->group(function () {
             Route::get('/', CoursesIndex::class)->name('index');

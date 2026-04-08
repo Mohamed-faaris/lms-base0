@@ -9,6 +9,12 @@
         </flux:button>
     </div>
 
+    @if (session('success'))
+        <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">
+            <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">{{ session('success') }}</p>
+        </div>
+    @endif
+
     <div class="mb-6 grid gap-4 md:grid-cols-4">
         <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-800">
             <p class="text-sm text-zinc-500 dark:text-zinc-400">Total Batches</p>
@@ -57,7 +63,13 @@
                 @forelse ($enrollments as $enrollment)
                     <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-900/40">
                         <td class="px-4 py-4 text-sm text-zinc-600 dark:text-zinc-300">
-                            <span class="rounded-md bg-zinc-100 px-2 py-1 font-mono text-xs dark:bg-zinc-900">{{ $enrollment->batchId }}</span>
+                            <a
+                                href="{{ route('admin.enrollments.show', $enrollment->id) }}"
+                                wire:navigate
+                                class="inline-flex rounded-md bg-zinc-100 px-2 py-1 font-mono text-xs text-zinc-700 transition hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            >
+                                {{ $enrollment->batchId }}
+                            </a>
                         </td>
                         <td class="px-4 py-4">
                             @if ($enrollment->courseUrl)
