@@ -32,6 +32,9 @@
                     @endif
 
                     @if(auth()->user()->isAdmin())
+                        <flux:sidebar.item icon="users" :href="route('admin.users.index')" :current="request()->routeIs('admin.users.*')" wire:navigate>
+                            {{ __('Users') }}
+                        </flux:sidebar.item>
                         <flux:sidebar.item icon="academic-cap" :href="route('admin.courses.index')" :current="request()->routeIs('admin.courses.*')" wire:navigate>
                             {{ __('Courses') }}
                         </flux:sidebar.item>
