@@ -3,18 +3,38 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
-class Course extends Model
+class Course extends Model implements HasMedia
 {
     use HasSlug;
+    use InteractsWithMedia;
 
     protected $fillable = [
         'title',
         'slug',
         'description',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('course-thumbnail')
+            ->singleFile()
+            ->useDisk(config('media-library.disk_name', 'public'));
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->width(960)
+            ->height(540)
+            ->sharpen(10)
+            ->nonQueued();
+    }
 
     public function getSlugOptions(): SlugOptions
     {

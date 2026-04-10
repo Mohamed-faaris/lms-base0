@@ -11,6 +11,7 @@ use App\Livewire\Admin\Courses\Index as CoursesIndex;
 use App\Livewire\Admin\Courses\ModuleQuizCreator;
 use App\Livewire\Admin\Courses\ModuleQuizViewer;
 use App\Livewire\Admin\Courses\Show as CoursesShow;
+use App\Livewire\Admin\Courses\Structure as CoursesStructure;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Enrollments as AdminEnrollments;
 use App\Livewire\Admin\Enrollments\Create as EnrollmentBatchCreate;
@@ -55,6 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/', CoursesIndex::class)->name('index');
             Route::get('/create', CoursesCreate::class)->name('create');
             Route::get('/{course}', CoursesShow::class)->name('show');
+            Route::get('/{course}/structure', CoursesStructure::class)->name('structure');
             Route::get('/{course}/analyze', CoursesAnalyze::class)->name('analyze');
             Route::get('/{course}/enroll', EnrollmentBatchCreate::class)->name('enroll');
             Route::get('/{course}/edit', CoursesEdit::class)->name('edit');

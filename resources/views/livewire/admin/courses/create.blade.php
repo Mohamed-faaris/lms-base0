@@ -1,53 +1,12 @@
 <div>
-    {{-- Header --}}
-    <div class="flex items-center gap-4 mb-6">
-        <flux:button variant="ghost" href="{{ route('admin.courses.index') }}" wire:navigate icon="arrow-left" />
-        <flux:heading level="1" size="xl">Create Course</flux:heading>
-    </div>
-
-    {{-- Form --}}
-    <div class="max-w-2xl">
-        <form wire:submit="save" class="space-y-6">
-            {{-- Title --}}
-            <flux:field>
-                <flux:label>Title</flux:label>
-                <flux:input 
-                    wire:model="title" 
-                    placeholder="Enter course title" 
-                    required
-                />
-                <flux:error name="title" />
-            </flux:field>
-
-            {{-- Slug --}}
-            <flux:field>
-                <flux:label>Slug</flux:label>
-                <flux:input 
-                    wire:model="slug" 
-                    placeholder="Auto-generated from title"
-                />
-                <p class="text-sm text-zinc-500 dark:text-zinc-400">URL-friendly version of the title</p>
-            </flux:field>
-
-            {{-- Description --}}
-            <flux:field>
-                <flux:label>Description</flux:label>
-                <flux:textarea 
-                    wire:model="description" 
-                    placeholder="Enter course description"
-                    rows="4"
-                />
-            </flux:field>
-
-            {{-- Actions --}}
-            <div class="flex gap-4">
-                <flux:button type="submit" variant="primary">
-                    Create Course
-                </flux:button>
-                <flux:button href="{{ route('admin.courses.index') }}" wire:navigate variant="outline">
-                    Cancel
-                </flux:button>
-            </div>
-        </form>
-    </div>
+    @include('livewire.admin.courses.partials.form', [
+        'backUrl' => route('admin.courses.index'),
+        'cancelUrl' => route('admin.courses.index'),
+        'submitLabel' => 'Create Course',
+        'pageTitle' => 'Build a course that reads like a real product',
+        'pageSummary' => 'Define the course identity, catalog metadata, and learner outcomes before you start assembling topics and modules.',
+        'isEditing' => false,
+        'course' => null,
+        'difficultyOptions' => $difficultyOptions,
+    ])
 </div>

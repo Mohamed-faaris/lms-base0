@@ -8,6 +8,12 @@ class CourseMeta extends Model
 {
     protected $table = 'course_meta';
 
+    protected $primaryKey = 'course_id';
+
+    public $incrementing = false;
+
+    protected $keyType = 'int';
+
     protected $fillable = [
         'course_id',
         'category',
