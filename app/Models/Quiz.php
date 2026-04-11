@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\QuizKind;
 use Illuminate\Database\Eloquent\Model;
 
 class Quiz extends Model
@@ -10,8 +11,17 @@ class Quiz extends Model
 
     protected $fillable = [
         'content_id',
-        'question_id',
+        'kind',
+        'timestamp_seconds',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'kind' => QuizKind::class,
+            'timestamp_seconds' => 'integer',
+        ];
+    }
 
     public function content()
     {
@@ -23,43 +33,18 @@ class Quiz extends Model
         return $this->hasMany(Question::class);
     }
 
-    public function question()
+    public function isContentQuiz(): bool
     {
-        return $this->belongsTo(Question::class);
-    }
-
-    public function module()
-    {
-        return $this->hasOneThrough(Module::class, Content::class);
-    }
-
-    public function endQuizzes()
-    {
-        return $this->hasMany(EndQuiz::class);
-    }
-
-    public function moduleQuizzes()
-    {
-        return $this->hasMany(ModuleQuiz::class);
-    }
-
-    public function timestampedQuizzes()
-    {
-        return $this->hasMany(TimestampedQuiz::class);
+        return $this->kind === QuizKind::Content;
     }
 
     public function isEndQuiz(): bool
     {
-        return $this->endQuizzes()->exists();
-    }
-
-    public function isModuleQuiz(): bool
-    {
-        return $this->moduleQuizzes()->exists();
+        return $this->kind === QuizKind::End;
     }
 
     public function isTimestampedQuiz(): bool
     {
-        return $this->timestampedQuizzes()->exists();
+        return $this->kind === QuizKind::Timestamped;
     }
 }

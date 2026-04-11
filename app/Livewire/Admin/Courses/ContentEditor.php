@@ -66,7 +66,7 @@ class ContentEditor extends Component
     {
         $this->validate([
             'title' => 'required|string|max:255',
-            'type' => 'required|in:video,article,quiz',
+            'type' => 'required|in:video,article,ppt,quiz',
             'selectedModuleId' => 'required|exists:modules,id',
         ]);
 

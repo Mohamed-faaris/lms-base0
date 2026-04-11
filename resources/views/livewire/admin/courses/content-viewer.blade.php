@@ -7,15 +7,22 @@
                 {{ $content->module?->title ?? 'Content Details' }}
             </p>
         </div>
-        <flux:button href="{{ route('admin.courses.content.edit', [$content->module?->topic?->course?->id, $content->id]) }}" wire:navigate>
-            Edit
-        </flux:button>
+        <div class="flex gap-2">
+            <flux:button href="{{ route('admin.courses.content.edit', [$content->module?->topic?->course?->id, $content->id]) }}" wire:navigate>
+                Edit Content
+            </flux:button>
+            @if ($content->type->value === 'quiz')
+                <flux:button variant="outline" href="{{ route('admin.courses.content.quiz.edit', [$content->module?->topic?->course?->id, $content->id]) }}" wire:navigate>
+                    Edit Quiz
+                </flux:button>
+            @endif
+        </div>
     </div>
 
     @if ($content)
         <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6 mb-6">
             <div class="flex items-center gap-2 mb-4">
-                @switch($content->type)
+                @switch($content->type->value)
                     @case('video')
                         <flux:icon.video-camera class="w-5 h-5 text-blue-500" />
                         @break
@@ -28,8 +35,8 @@
                     @default
                         <flux:icon.document-text class="w-5 h-5 text-zinc-500" />
                 @endswitch
-                <flux:heading level="2" size="lg">{{ $content->type === 'video' ? 'Video' : ucfirst($content->type) }}</flux:heading>
-                <flux:badge>{{ $content->type }}</flux:badge>
+                <flux:heading level="2" size="lg">{{ $content->type->label() }}</flux:heading>
+                <flux:badge>{{ $content->type->value }}</flux:badge>
             </div>
 
             <div class="space-y-4">
@@ -69,7 +76,7 @@
         </div>
 
         {{-- Video: Timestamp Quizzes Section --}}
-        @if ($content->type === 'video')
+        @if ($content->type->value === 'video')
             <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6 mb-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
@@ -77,7 +84,7 @@
                         <flux:heading level="2" size="lg">Timestamp Quizzes</flux:heading>
                         <flux:badge color="blue">{{ $content->timestampedQuizzes->count() }}</flux:badge>
                     </div>
-                    <flux:button size="sm" href="{{ route('admin.courses.show', $content->module->topic->course->id) }}" wire:navigate>
+                    <flux:button size="sm" href="{{ route('admin.courses.structure', $content->module->topic->course->id) }}" wire:navigate>
                         Manage
                     </flux:button>
                 </div>
@@ -87,13 +94,12 @@
                             <div class="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg">
                                 <div class="flex items-center gap-3">
                                     <flux:icon.video-camera class="w-4 h-4 text-blue-500" />
-                                    <span class="text-sm font-mono">{{ $formatTimestamp($tsQuiz->timestamp) }}</span>
-                                    @if ($tsQuiz->quiz && $tsQuiz->quiz->question)
-                                        <flux:badge size="xs">{{ Str::limit($tsQuiz->quiz->question->question_text, 40) }}</flux:badge>
-                                    @else
-                                        <flux:badge size="xs" color="red">No question</flux:badge>
-                                    @endif
+                                    <span class="text-sm font-mono">{{ gmdate('H:i:s', $tsQuiz->timestamp_seconds ?? 0) }}</span>
+                                    <flux:badge size="xs">{{ $tsQuiz->questions->count() }} questions</flux:badge>
                                 </div>
+                                <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.content.timestamped-quiz.edit', [$content->module->topic->course->id, $content->id, $tsQuiz->id]) }}" wire:navigate>
+                                    Edit
+                                </flux:button>
                             </div>
                         @endforeach
                     </div>
@@ -104,7 +110,7 @@
         @endif
 
         {{-- Video: End Quiz Section --}}
-        @if ($content->type === 'video' && $content->endQuiz)
+        @if ($content->endQuiz)
             <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6 mb-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
@@ -112,13 +118,13 @@
                         <flux:heading level="2" size="lg">End Quiz</flux:heading>
                         <flux:badge color="green">End of Video</flux:badge>
                     </div>
-                    <flux:button size="sm" href="{{ route('admin.courses.end-quiz.edit', [$content->module->topic->course->id, $content->endQuiz->id]) }}" wire:navigate>
+                    <flux:button size="sm" href="{{ route('admin.courses.content.end-quiz.edit', [$content->module->topic->course->id, $content->id]) }}" wire:navigate>
                         Edit
                     </flux:button>
                 </div>
-                @if ($content->endQuiz->quiz && $content->endQuiz->quiz->questions->count() > 0)
+                @if ($content->endQuiz->questions->count() > 0)
                     <div class="space-y-4">
-                        @foreach ($content->endQuiz->quiz->questions as $questionIndex => $question)
+                        @foreach ($content->endQuiz->questions as $questionIndex => $question)
                             <div class="border border-zinc-200 dark:border-zinc-700 rounded-lg p-4">
                                 <div class="flex items-center gap-2 mb-3">
                                     <span class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Question {{ $questionIndex + 1 }}</span>
@@ -157,7 +163,7 @@
         @endif
 
         {{-- Quiz: Question Section --}}
-        @if ($content->type === 'quiz' && $content->quiz)
+        @if ($content->type->value === 'quiz' && $content->quiz)
             <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">

@@ -107,7 +107,7 @@
                                         <div class="flex items-center gap-2">
                                             <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">Module</span>
                                             <flux:badge color="zinc" size="xs">{{ $module->contents->count() }} content</flux:badge>
-                                            <flux:badge color="purple" size="xs">{{ $module->moduleQuizzes->count() }} quizzes</flux:badge>
+                                            <flux:badge color="purple" size="xs">{{ $module->contents->where('type', \App\Enums\ContentType::Quiz)->count() }} quiz content</flux:badge>
                                         </div>
 
                                         @if ($quickEditType === 'module' && $quickEditId === $module->id)
@@ -129,7 +129,7 @@
                                         <flux:tooltip content="Quick edit module" position="top">
                                             <flux:button size="sm" variant="ghost" wire:click="startQuickEdit('module', {{ $module->id }})" icon="pencil-square" />
                                         </flux:tooltip>
-                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.module-quiz.create', [$course->id, 'moduleId' => $module->id]) }}" wire:navigate>Add Quiz</flux:button>
+                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.structure', $course->id) }}" wire:navigate>Open Structure</flux:button>
                                     </div>
                                 </div>
 
@@ -143,6 +143,9 @@
                                                         <span class="text-xs text-zinc-500 dark:text-zinc-400">Order {{ $content->order }}</span>
                                                         @if ($content->type->value === 'video')
                                                             <flux:badge color="blue" size="xs">{{ $content->timestampedQuizzes->count() }} timestamps</flux:badge>
+                                                        @endif
+                                                        @if ($content->type->value === 'quiz')
+                                                            <flux:badge color="emerald" size="xs">{{ $content->quiz?->questions?->count() ?? 0 }} quiz questions</flux:badge>
                                                         @endif
                                                         @if ($content->endQuiz)
                                                             <flux:badge color="green" size="xs">End quiz</flux:badge>
@@ -174,11 +177,16 @@
                                                             <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
                                                                 {{ $content->timestampedQuizzes->count() }} timestamp quizzes
                                                             </span>
-                                                            @if ($content->endQuiz?->quiz?->question)
+                                                            @if ($content->endQuiz)
                                                                 <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
-                                                                    End quiz: {{ \Illuminate\Support\Str::limit($content->endQuiz->quiz->question->question_text, 45) }}
+                                                                    End quiz: {{ $content->endQuiz->questions->count() }} questions
                                                                 </span>
                                                             @endif
+                                                        @endif
+                                                        @if ($content->type->value === 'quiz')
+                                                            <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                                                                Main quiz: {{ $content->quiz?->questions?->count() ?? 0 }} questions
+                                                            </span>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -190,8 +198,10 @@
                                                     <flux:tooltip content="Open full editor" position="top">
                                                         <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.edit', [$course->id, $content->id]) }}" wire:navigate icon="arrow-top-right-on-square" />
                                                     </flux:tooltip>
-                                                    @if ($content->endQuiz)
-                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.end-quiz.show', $content->endQuiz->id) }}" wire:navigate>End Quiz</flux:button>
+                                                    @if ($content->type->value === 'quiz')
+                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.quiz.edit', [$course->id, $content->id]) }}" wire:navigate>Quiz Editor</flux:button>
+                                                    @elseif ($content->endQuiz)
+                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.end-quiz.edit', [$course->id, $content->id]) }}" wire:navigate>End Quiz</flux:button>
                                                     @endif
                                                 </div>
                                             </div>

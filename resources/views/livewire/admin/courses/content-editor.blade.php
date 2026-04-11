@@ -45,6 +45,7 @@
                 <flux:select wire:model="type" required>
                     <flux:select.option value="video">Video</flux:select.option>
                     <flux:select.option value="article">Article</flux:select.option>
+                    <flux:select.option value="ppt">Presentation</flux:select.option>
                     <flux:select.option value="quiz">Quiz</flux:select.option>
                 </flux:select>
                 <flux:error name="type" />

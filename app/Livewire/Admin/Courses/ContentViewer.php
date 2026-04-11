@@ -20,8 +20,8 @@ class ContentViewer extends Component
         $this->contentId = $contentId;
         $this->content = Content::with([
             'module.topic.course',
-            'timestampedQuizzes.quiz.question',
-            'endQuiz.quiz.questions',
+            'timestampedQuizzes.questions',
+            'endQuiz.questions',
             'quiz.questions',
         ])->findOrFail($contentId);
     }

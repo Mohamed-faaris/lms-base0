@@ -3,20 +3,18 @@
 namespace Database\Seeders;
 
 use App\Enums\ContentType;
+use App\Enums\QuizKind;
 use App\Models\Comment;
 use App\Models\Content;
 use App\Models\Course;
 use App\Models\CourseMeta;
-use App\Models\EndQuiz;
 use App\Models\Enrollment;
 use App\Models\Feedback;
 use App\Models\Module;
-use App\Models\ModuleQuiz;
 use App\Models\Progress;
 use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\SpeedLog;
-use App\Models\TimestampedQuiz;
 use App\Models\Topic;
 use App\Models\User;
 use App\Models\Xp;
@@ -334,37 +332,26 @@ class JavaCourseSeeder extends Seeder
 
                     $createdContents[] = $content;
 
-                    $contentQuiz = $this->createQuizWithQuestions($content->id, $this->buildContentQuizQuestions($moduleData['title'], $contentData['title'], $contentData['body']));
-
-                    TimestampedQuiz::firstOrCreate([
-                        'content_id' => $content->id,
-                        'timestamp' => $this->buildTimestamp($contentData['duration']),
-                        'quiz_id' => $contentQuiz->id,
-                    ]);
+                    $this->createQuizWithQuestions(
+                        $content->id,
+                        $this->buildContentQuizQuestions($moduleData['title'], $contentData['title'], $contentData['body']),
+                        QuizKind::Timestamped,
+                        $this->buildTimestamp($contentData['duration'])
+                    );
 
                 }
 
                 if (! empty($moduleData['quiz'])) {
-                    $quiz = $this->createQuizWithQuestions($module->contents()->orderBy('order')->firstOrFail()->id, $moduleData['quiz']);
-                    ModuleQuiz::firstOrCreate([
-                        'module_id' => $module->id,
-                        'quiz_id' => $quiz->id,
-                    ]);
+                    $this->createQuizContentForModule($module, $moduleData['title'].' Assessment', $moduleData['quiz']);
                 }
 
                 if ($moduleData['title'] === 'Swing Basics') {
                     $content = $module->contents()->where('title', 'GUI')->first();
 
                     if ($content) {
-                        $timestampedQuiz = $this->createQuizWithQuestions($content->id, [
+                        $this->createQuizWithQuestions($content->id, [
                             ['text' => 'What package is Swing part of?', 'options' => ['A' => 'java.awt', 'B' => 'javax.swing', 'C' => 'java.io', 'D' => 'java.sql'], 'correct' => ['B']],
-                        ]);
-
-                        TimestampedQuiz::firstOrCreate([
-                            'content_id' => $content->id,
-                            'timestamp' => 10,
-                            'quiz_id' => $timestampedQuiz->id,
-                        ]);
+                        ], QuizKind::Timestamped, 10);
                     }
                 }
             }
@@ -391,7 +378,7 @@ class JavaCourseSeeder extends Seeder
             [
                 'title' => 'Java Course Final Assessment',
                 'body' => 'Pass score: 75%, Time limit: 90 minutes.',
-                'type' => ContentType::Video,
+                'type' => ContentType::Quiz,
                 'content_url' => null,
                 'content_meta' => [
                     'is_final_quiz' => true,
@@ -401,18 +388,13 @@ class JavaCourseSeeder extends Seeder
             ]
         );
 
-        $finalQuiz = $this->createQuizWithQuestions($finalContent->id, [
+        $this->createQuizWithQuestions($finalContent->id, [
             ['text' => 'What does OOP stand for?', 'options' => ['A' => 'Object-Oriented Programming', 'B' => 'Object-Output Programming', 'C' => 'Open-Oriented Programming', 'D' => 'Object-Operation Programming'], 'correct' => ['A']],
             ['text' => 'What keyword is used to call a parent constructor?', 'options' => ['A' => 'this', 'B' => 'super', 'C' => 'parent', 'D' => 'base'], 'correct' => ['B']],
             ['text' => 'Which collection is resizable?', 'options' => ['A' => 'Array', 'B' => 'ArrayList', 'C' => 'String', 'D' => 'int'], 'correct' => ['B']],
             ['text' => 'What is the purpose of serialization?', 'options' => ['A' => 'Convert objects to streams', 'B' => 'Sort collections', 'C' => 'Draw graphics', 'D' => 'Manage input'], 'correct' => ['A']],
             ['text' => 'What is the key benefit of multithreading?', 'options' => ['A' => 'Single-task execution', 'B' => 'Concurrent work', 'C' => 'Reduced syntax', 'D' => 'Better file naming'], 'correct' => ['B']],
-        ]);
-
-        EndQuiz::firstOrCreate([
-            'content_id' => $finalContent->id,
-            'quiz_id' => $finalQuiz->id,
-        ]);
+        ], QuizKind::Content);
 
         $facultyUsers = User::query()
             ->where('role', 'faculty')
@@ -496,9 +478,13 @@ class JavaCourseSeeder extends Seeder
         );
     }
 
-    private function createQuizWithQuestions(int $contentId, array $questions): Quiz
+    private function createQuizWithQuestions(int $contentId, array $questions, QuizKind $kind = QuizKind::Content, ?int $timestampSeconds = null): Quiz
     {
-        $quiz = Quiz::firstOrCreate(['content_id' => $contentId]);
+        $quiz = Quiz::create([
+            'content_id' => $contentId,
+            'kind' => $kind,
+            'timestamp_seconds' => $timestampSeconds,
+        ]);
 
         foreach ($questions as $questionData) {
             Question::firstOrCreate(
@@ -508,13 +494,34 @@ class JavaCourseSeeder extends Seeder
                 ],
                 [
                     'type' => 'multiple_choice',
-                    'options' => $questionData['options'],
-                    'correct_answer' => $questionData['correct'],
+                    'options' => array_values($questionData['options']),
+                    'correct_answer' => array_map(
+                        static fn (string $letter): int => ord($letter) - 65,
+                        $questionData['correct']
+                    ),
                 ]
             );
         }
 
         return $quiz;
+    }
+
+    private function createQuizContentForModule(Module $module, string $title, array $questions): Quiz
+    {
+        $quizContent = Content::firstOrCreate(
+            [
+                'module_id' => $module->id,
+                'title' => $title,
+            ],
+            [
+                'order' => ((int) $module->contents()->max('order')) + 1,
+                'body' => 'Assessment for '.$module->title,
+                'type' => ContentType::Quiz,
+                'content_url' => null,
+            ]
+        );
+
+        return $this->createQuizWithQuestions($quizContent->id, $questions, QuizKind::Content);
     }
 
     /**

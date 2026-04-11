@@ -3,16 +3,16 @@
 namespace Database\Seeders;
 
 use App\Enums\College;
+use App\Enums\ContentType;
 use App\Enums\Department;
+use App\Enums\QuizKind;
 use App\Enums\Role;
 use App\Models\Badge;
 use App\Models\BadgeAssignment;
 use App\Models\Content;
 use App\Models\Course;
-use App\Models\EndQuiz;
 use App\Models\Enrollment;
 use App\Models\Module;
-use App\Models\ModuleQuiz;
 use App\Models\Progress;
 use App\Models\Question;
 use App\Models\Quiz;
@@ -532,7 +532,7 @@ class LmsDataSeeder extends Seeder
             'order' => 1,
             'title' => 'React Course Final Assessment',
             'body' => 'Comprehensive test covering all modules of the React course. Pass score: 75%, Time limit: 60 minutes.',
-            'type' => 'video',
+            'type' => 'quiz',
             'content_url' => null,
             'content_meta' => json_encode([
                 'has_quiz' => true,
@@ -542,7 +542,7 @@ class LmsDataSeeder extends Seeder
             ]),
         ]);
 
-        // Final Quiz Questions (using EndQuiz for final course quiz)
+        // Final Quiz Questions
         $finalQuestions = [
             [
                 'text' => 'What is the virtual DOM and how does it improve performance?',
@@ -596,12 +596,7 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        $finalQuiz = $this->createQuizWithQuestions($finalQuizContent->id, $finalQuestions);
-
-        EndQuiz::create([
-            'content_id' => $finalQuizContent->id,
-            'quiz_id' => $finalQuiz->id,
-        ]);
+        $this->createQuizWithQuestions($finalQuizContent->id, $finalQuestions, QuizKind::Content);
 
         // ============================================
         // ENROLLMENT DATA
@@ -859,7 +854,7 @@ class LmsDataSeeder extends Seeder
             'order' => 1,
             'title' => 'PHP Course Final Assessment',
             'body' => 'Comprehensive test covering all modules. Pass score: 75%, Time limit: 90 minutes.',
-            'type' => 'video',
+            'type' => 'quiz',
             'content_url' => null,
             'content_meta' => json_encode([
                 'has_quiz' => true,
@@ -1168,12 +1163,7 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
-
-        ModuleQuiz::create([
-            'module_id' => $module->id,
-            'quiz_id' => $quiz->id,
-        ]);
+        $this->createQuizContentForModule($module, 'React Fundamentals Assessment', $questions);
     }
 
     /**
@@ -1234,12 +1224,7 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
-
-        ModuleQuiz::create([
-            'module_id' => $module->id,
-            'quiz_id' => $quiz->id,
-        ]);
+        $this->createQuizContentForModule($module, 'React Hooks Assessment', $questions);
     }
 
     /**
@@ -1290,12 +1275,7 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
-
-        ModuleQuiz::create([
-            'module_id' => $module->id,
-            'quiz_id' => $quiz->id,
-        ]);
+        $this->createQuizContentForModule($module, 'React Router Assessment', $questions);
     }
 
     /**
@@ -1346,12 +1326,7 @@ class LmsDataSeeder extends Seeder
             ],
         ];
 
-        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
-
-        ModuleQuiz::create([
-            'module_id' => $module->id,
-            'quiz_id' => $quiz->id,
-        ]);
+        $this->createQuizContentForModule($module, 'Redux Assessment', $questions);
     }
 
     // ============================================
@@ -1597,41 +1572,21 @@ class LmsDataSeeder extends Seeder
             ['text' => 'Which superglobal contains uploaded files?', 'opts' => ['A' => '$_FILES', 'B' => '$_UPLOAD', 'C' => '$_FILE', 'D' => '$FILES'], 'correct' => 'A'],
         ];
 
-        $quiz = $this->createQuizWithQuestions($finalQuizContent->id, $questions);
-
-        EndQuiz::create([
-            'content_id' => $finalQuizContent->id,
-            'quiz_id' => $quiz->id,
-        ]);
+        $this->createQuizWithQuestions($finalQuizContent->id, $questions, QuizKind::Content);
     }
 
     private function createPhpQuizQuestions(Module $module, array $questions): void
     {
-        $quiz = $this->createQuizWithQuestions($module->contents->first()?->id ?? 0, $questions);
-
-        ModuleQuiz::create([
-            'module_id' => $module->id,
-            'quiz_id' => $quiz->id,
-        ]);
+        $this->createQuizContentForModule($module, $module->title.' Assessment', $questions);
     }
 
-    private function createQuizWithQuestions(int $contentId, array $questions): Quiz
+    private function createQuizWithQuestions(int $contentId, array $questions, QuizKind $kind = QuizKind::Content, ?int $timestampSeconds = null): Quiz
     {
-        $firstQuestionData = array_shift($questions);
-
         $quiz = Quiz::create([
             'content_id' => $contentId,
+            'kind' => $kind,
+            'timestamp_seconds' => $timestampSeconds,
         ]);
-
-        $firstQuestion = Question::create([
-            'quiz_id' => $quiz->id,
-            'type' => 'multiple_choice',
-            'question_text' => $firstQuestionData['text'],
-            'options' => array_values($firstQuestionData['options'] ?? $firstQuestionData['opts'] ?? []),
-            'correct_answer' => [$this->toCorrectIndex($firstQuestionData['correct'])],
-        ]);
-
-        $quiz->update(['question_id' => $firstQuestion->id]);
 
         foreach ($questions as $questionData) {
             Question::create([
@@ -1644,6 +1599,23 @@ class LmsDataSeeder extends Seeder
         }
 
         return $quiz;
+    }
+
+    private function createQuizContentForModule(Module $module, string $title, array $questions): Quiz
+    {
+        $quizContent = Content::create([
+            'module_id' => $module->id,
+            'order' => ((int) $module->contents()->max('order')) + 1,
+            'title' => $title,
+            'body' => 'Assessment for '.$module->title,
+            'type' => ContentType::Quiz,
+            'content_url' => null,
+            'content_meta' => json_encode([
+                'has_quiz' => true,
+            ]),
+        ]);
+
+        return $this->createQuizWithQuestions($quizContent->id, $questions, QuizKind::Content);
     }
 
     private function seedDemoCourseEnrollments(User $admin, array $courses): void

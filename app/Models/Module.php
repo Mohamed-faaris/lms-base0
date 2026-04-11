@@ -22,9 +22,4 @@ class Module extends Model
     {
         return $this->hasMany(Content::class);
     }
-
-    public function moduleQuizzes()
-    {
-        return $this->hasMany(ModuleQuiz::class);
-    }
 }

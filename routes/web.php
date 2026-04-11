@@ -5,11 +5,8 @@ use App\Livewire\Admin\Courses\ContentEditor;
 use App\Livewire\Admin\Courses\ContentViewer;
 use App\Livewire\Admin\Courses\Create as CoursesCreate;
 use App\Livewire\Admin\Courses\Edit as CoursesEdit;
-use App\Livewire\Admin\Courses\EndQuizCreator;
-use App\Livewire\Admin\Courses\EndQuizViewer;
 use App\Livewire\Admin\Courses\Index as CoursesIndex;
-use App\Livewire\Admin\Courses\ModuleQuizCreator;
-use App\Livewire\Admin\Courses\ModuleQuizViewer;
+use App\Livewire\Admin\Courses\QuizEditor;
 use App\Livewire\Admin\Courses\Show as CoursesShow;
 use App\Livewire\Admin\Courses\Structure as CoursesStructure;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
@@ -62,14 +59,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/{course}/edit', CoursesEdit::class)->name('edit');
             Route::get('/content/{contentId}', ContentViewer::class)->name('content.show');
             Route::get('/{course}/content/{contentId}/edit', ContentEditor::class)->name('content.edit');
-
-            Route::get('/{course}/end-quiz/create', EndQuizCreator::class)->name('end-quiz.create');
-            Route::get('/{course}/end-quiz/{endQuiz}/edit', EndQuizCreator::class)->name('end-quiz.edit');
-            Route::get('/end-quiz/{endQuizId}', EndQuizViewer::class)->name('end-quiz.show');
-
-            Route::get('/{course}/module-quiz/create', ModuleQuizCreator::class)->name('module-quiz.create');
-            Route::get('/{course}/module-quiz/{moduleQuiz}/edit', ModuleQuizCreator::class)->name('module-quiz.edit');
-            Route::get('/module-quiz/{moduleQuizId}', ModuleQuizViewer::class)->name('module-quiz.show');
+            Route::get('/{course}/content/{content}/quiz', QuizEditor::class)
+                ->defaults('placement', 'content')
+                ->name('content.quiz.edit');
+            Route::get('/{course}/content/{content}/end-quiz', QuizEditor::class)
+                ->defaults('placement', 'end')
+                ->name('content.end-quiz.edit');
+            Route::get('/{course}/content/{content}/timestamped-quiz/create', QuizEditor::class)
+                ->defaults('placement', 'timestamped')
+                ->name('content.timestamped-quiz.create');
+            Route::get('/{course}/content/{content}/timestamped-quiz/{quiz}', QuizEditor::class)
+                ->defaults('placement', 'timestamped')
+                ->name('content.timestamped-quiz.edit');
         });
     });
 

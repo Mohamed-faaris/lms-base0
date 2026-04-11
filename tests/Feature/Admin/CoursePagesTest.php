@@ -1,11 +1,14 @@
 <?php
 
 use App\Enums\ContentType;
+use App\Enums\QuizKind;
+use App\Livewire\Admin\Courses\QuizEditor;
 use App\Livewire\Admin\Courses\Show as ShowCourse;
 use App\Livewire\Admin\Courses\Structure as StructureCourse;
 use App\Models\Content;
 use App\Models\Course;
 use App\Models\Module;
+use App\Models\Quiz;
 use App\Models\Topic;
 use App\Models\User;
 use Livewire\Livewire;
@@ -126,4 +129,135 @@ test('structure page livewire component renders structure controls', function ()
         ->test(StructureCourse::class, ['course' => $course])
         ->assertSee('Authoring Workspace')
         ->assertSee('Add Topic');
+});
+
+test('admin can build a quiz content assessment from the unified quiz editor', function () {
+    $admin = User::factory()->admin()->create();
+    $course = Course::create([
+        'title' => 'Quiz Editor Course',
+        'slug' => 'quiz-editor-course',
+        'description' => 'Course for quiz editor.',
+    ]);
+    $topic = Topic::create([
+        'course_id' => $course->id,
+        'name' => 'Topic One',
+        'description' => 'Topic description.',
+        'order' => 1,
+    ]);
+    $module = Module::create([
+        'topic_id' => $topic->id,
+        'title' => 'Module One',
+        'description' => 'Module description.',
+        'order' => 1,
+    ]);
+    $content = Content::create([
+        'module_id' => $module->id,
+        'order' => 1,
+        'title' => 'Quiz Lesson',
+        'body' => 'Quiz body.',
+        'type' => ContentType::Quiz,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(QuizEditor::class, ['course' => $course, 'content' => $content, 'placement' => 'content'])
+        ->set('questions.0.question_text', 'What is the correct answer?')
+        ->set('questions.0.type', 'multiple_choice')
+        ->set('questions.0.options_text', "Option A\nOption B")
+        ->set('questions.0.correct_answer', 'B')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $quiz = Quiz::query()->where('content_id', $content->id)->where('kind', QuizKind::Content)->first();
+
+    expect($quiz)->not->toBeNull();
+    expect($quiz?->questions()->count())->toBe(1);
+});
+
+test('admin can create a timestamped quiz for video content from the unified editor', function () {
+    $admin = User::factory()->admin()->create();
+    $course = Course::create([
+        'title' => 'Timestamp Course',
+        'slug' => 'timestamp-course',
+        'description' => 'Course for timestamp quiz editor.',
+    ]);
+    $topic = Topic::create([
+        'course_id' => $course->id,
+        'name' => 'Topic One',
+        'description' => 'Topic description.',
+        'order' => 1,
+    ]);
+    $module = Module::create([
+        'topic_id' => $topic->id,
+        'title' => 'Module One',
+        'description' => 'Module description.',
+        'order' => 1,
+    ]);
+    $content = Content::create([
+        'module_id' => $module->id,
+        'order' => 1,
+        'title' => 'Video Lesson',
+        'body' => 'Video body.',
+        'type' => ContentType::Video,
+        'content_url' => 'https://example.com/video',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(QuizEditor::class, ['course' => $course, 'content' => $content, 'placement' => 'timestamped'])
+        ->set('timestamp', '00:05:30')
+        ->set('questions.0.question_text', 'Checkpoint question')
+        ->set('questions.0.type', 'true_false')
+        ->set('questions.0.correct_answer', 'true')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $quiz = Quiz::query()->where('content_id', $content->id)->where('kind', QuizKind::Timestamped)->first();
+
+    expect($quiz)->not->toBeNull();
+    expect($quiz?->timestamp_seconds)->toBe(330);
+});
+
+test('content viewer renders timestamped quizzes without errors', function () {
+    $admin = User::factory()->admin()->create();
+    $course = Course::create([
+        'title' => 'Viewer Timestamp Course',
+        'slug' => 'viewer-timestamp-course',
+        'description' => 'Course for content viewer.',
+    ]);
+    $topic = Topic::create([
+        'course_id' => $course->id,
+        'name' => 'Topic One',
+        'description' => 'Topic description.',
+        'order' => 1,
+    ]);
+    $module = Module::create([
+        'topic_id' => $topic->id,
+        'title' => 'Module One',
+        'description' => 'Module description.',
+        'order' => 1,
+    ]);
+    $content = Content::create([
+        'module_id' => $module->id,
+        'order' => 1,
+        'title' => 'Video Lesson',
+        'body' => 'Video body.',
+        'type' => ContentType::Video,
+        'content_url' => 'https://example.com/video',
+    ]);
+    $quiz = Quiz::create([
+        'content_id' => $content->id,
+        'kind' => QuizKind::Timestamped,
+        'timestamp_seconds' => 330,
+    ]);
+    $quiz->questions()->create([
+        'type' => 'true_false',
+        'question_text' => 'Checkpoint question',
+        'options' => [],
+        'correct_answer' => [0],
+    ]);
+
+    $response = $this->actingAs($admin)->get(route('admin.courses.content.show', $content->id));
+
+    $response->assertSuccessful();
+    $response->assertSee('00:05:30');
+    $response->assertSee('1 questions');
 });

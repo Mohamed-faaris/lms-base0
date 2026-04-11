@@ -11,34 +11,17 @@ return new class extends Migration
         Schema::create('quizzes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('content_id')->constrained()->onDelete('cascade');
-            $table->foreignId('question_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('kind');
+            $table->integer('timestamp_seconds')->nullable();
             $table->timestamps();
 
             $table->index('content_id');
-        });
-
-        Schema::create('module_quiz', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('module_id')->constrained()->onDelete('cascade');
-            $table->foreignId('quiz_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
-        });
-
-        Schema::create('timestamped_quiz', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('content_id')->constrained()->onDelete('cascade');
-            $table->integer('timestamp'); // in seconds
-            $table->foreignId('quiz_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
-
-            $table->index('content_id');
+            $table->index('kind');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('timestamped_quiz');
-        Schema::dropIfExists('module_quiz');
         Schema::dropIfExists('quizzes');
     }
 };

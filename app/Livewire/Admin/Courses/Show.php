@@ -47,9 +47,9 @@ class Show extends Component
         return Course::with(
             'courseMeta',
             'media',
-            'topics.modules.contents.timestampedQuizzes.quiz.question',
-            'topics.modules.contents.endQuiz.quiz.question',
-            'topics.modules.moduleQuizzes.quiz.question',
+            'topics.modules.contents.quiz.questions',
+            'topics.modules.contents.endQuiz.questions',
+            'topics.modules.contents.timestampedQuizzes.questions',
             'enrollments'
         )->findOrFail($courseId);
     }

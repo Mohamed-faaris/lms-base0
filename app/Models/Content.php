@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ContentType;
+use App\Enums\QuizKind;
 use Illuminate\Database\Eloquent\Model;
 
 class Content extends Model
@@ -42,22 +43,27 @@ class Content extends Model
 
     public function endQuiz()
     {
-        return $this->hasOne(EndQuiz::class);
+        return $this->hasOne(Quiz::class)->where('kind', QuizKind::End->value);
     }
 
     public function quizzes()
     {
-        return $this->hasMany(Quiz::class);
+        return $this->hasMany(Quiz::class)->orderBy('timestamp_seconds');
     }
 
     public function quiz()
     {
-        return $this->hasOne(Quiz::class);
+        return $this->hasOne(Quiz::class)->where('kind', QuizKind::Content->value);
+    }
+
+    public function contentQuiz()
+    {
+        return $this->hasOne(Quiz::class)->where('kind', QuizKind::Content->value);
     }
 
     public function timestampedQuizzes()
     {
-        return $this->hasMany(TimestampedQuiz::class);
+        return $this->hasMany(Quiz::class)->where('kind', QuizKind::Timestamped->value)->orderBy('timestamp_seconds');
     }
 
     public function progress()

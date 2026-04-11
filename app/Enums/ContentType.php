@@ -7,6 +7,7 @@ enum ContentType: string
     case Video = 'video';
     case Article = 'article';
     case PPT = 'ppt';
+    case Quiz = 'quiz';
 
     public function label(): string
     {
@@ -14,6 +15,7 @@ enum ContentType: string
             self::Video => 'Video',
             self::Article => 'Article',
             self::PPT => 'Presentation',
+            self::Quiz => 'Quiz',
         };
     }
 }

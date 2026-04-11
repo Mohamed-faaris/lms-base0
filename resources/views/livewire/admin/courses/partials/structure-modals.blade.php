@@ -94,6 +94,7 @@
                 <flux:select.option value="video">Video</flux:select.option>
                 <flux:select.option value="article">Article</flux:select.option>
                 <flux:select.option value="ppt">Presentation</flux:select.option>
+                <flux:select.option value="quiz">Quiz</flux:select.option>
             </flux:select>
         </flux:field>
 
@@ -110,67 +111,6 @@
         <div class="flex justify-end gap-2">
             <flux:button type="button" variant="outline" wire:click="closeContentModal">Cancel</flux:button>
             <flux:button type="submit" variant="primary">{{ $editingContent ? 'Update' : 'Create' }}</flux:button>
-        </div>
-    </form>
-</flux:modal>
-
-{{-- Quiz Modal --}}
-<flux:modal wire:model="showQuizModal" size="lg">
-    <flux:heading>{{ $editingQuiz ? 'Edit Question' : 'Add Question' }}</flux:heading>
-
-    <form wire:submit="saveQuiz" class="mt-4 space-y-4">
-        <flux:field>
-            <flux:label>Question Text</flux:label>
-            <flux:textarea wire:model="quizQuestionText" placeholder="Enter your question" required />
-        </flux:field>
-
-        <flux:field>
-            <flux:label>Question Type</flux:label>
-            <flux:select wire:model="quizType" required>
-                <flux:select.option value="multiple_choice">Multiple Choice</flux:select.option>
-                <flux:select.option value="true_false">True/False</flux:select.option>
-            </flux:select>
-        </flux:field>
-
-        @if ($quizType === 'multiple_choice')
-            <flux:field>
-                <flux:label>Options (one per line)</flux:label>
-                <flux:textarea wire:model="quizOptionsText" placeholder="Option A&#10;Option B&#10;Option C&#10;Option D" />
-            </flux:field>
-        @endif
-
-        <flux:field>
-            <flux:label>Correct Answer</flux:label>
-            @if ($quizType === 'multiple_choice')
-                <flux:input wire:model="quizCorrectAnswer" placeholder="A or B or C or D" />
-            @else
-                <flux:select wire:model="quizCorrectAnswer" required>
-                    <flux:select.option value="true">True</flux:select.option>
-                    <flux:select.option value="false">False</flux:select.option>
-                </flux:select>
-            @endif
-        </flux:field>
-
-        <div class="flex justify-end gap-2">
-            <flux:button type="button" variant="outline" wire:click="closeQuizModal">Cancel</flux:button>
-            <flux:button type="submit" variant="primary">{{ $editingQuiz ? 'Update' : 'Create' }}</flux:button>
-        </div>
-    </form>
-</flux:modal>
-
-{{-- Timestamped Quiz Modal --}}
-<flux:modal wire:model="showTimestampedQuizModal" size="lg">
-    <flux:heading>{{ $editingTimestampedQuiz ? 'Edit Timestamp' : 'Add Timestamp' }}</flux:heading>
-
-    <form wire:submit="saveTimestampedQuiz" class="mt-4 space-y-4">
-        <flux:field>
-            <flux:label>Timestamp (HH:MM:SS)</flux:label>
-            <flux:input wire:model="timestampedQuizTimestamp" placeholder="00:05:30" required />
-        </flux:field>
-
-        <div class="flex justify-end gap-2">
-            <flux:button type="button" variant="outline" wire:click="closeTimestampedQuizModal">Cancel</flux:button>
-            <flux:button type="submit" variant="primary">{{ $editingTimestampedQuiz ? 'Update' : 'Create' }}</flux:button>
         </div>
     </form>
 </flux:modal>

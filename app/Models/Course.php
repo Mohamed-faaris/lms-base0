@@ -79,9 +79,4 @@ class Course extends Model implements HasMedia
     {
         return $this->hasManyThrough(Quiz::class, [Module::class, Content::class]);
     }
-
-    public function endQuizzes()
-    {
-        return $this->hasManyThrough(EndQuiz::class, [Module::class, Content::class]);
-    }
 }

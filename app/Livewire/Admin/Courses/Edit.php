@@ -40,7 +40,7 @@ class Edit extends Component
 
         $this->course = Course::with(
             'courseMeta',
-            'topics.modules.moduleQuizzes',
+            'topics.modules.contents.quiz',
             'topics.modules.contents.timestampedQuizzes',
             'topics.modules.contents.endQuiz',
             'enrollments',
@@ -107,7 +107,7 @@ class Edit extends Component
     public function render(): View
     {
         $this->course->loadMissing(
-            'topics.modules.moduleQuizzes',
+            'topics.modules.contents.quiz',
             'topics.modules.contents.timestampedQuizzes',
             'topics.modules.contents.endQuiz',
             'enrollments',

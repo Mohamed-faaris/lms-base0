@@ -118,23 +118,51 @@
                                                                 <flux:tooltip content="Open full editor" position="top">
                                                                     <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.edit', [$course->id, $content->id]) }}" wire:navigate icon="arrow-top-right-on-square" />
                                                                 </flux:tooltip>
-                                                                @if ($content->type->value === 'video')
-                                                                    @if ($content->endQuiz)
-                                                                        <flux:tooltip content="Edit end quiz" position="top">
-                                                                            <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.end-quiz.edit', [$course->id, $content->endQuiz->id]) }}" wire:navigate icon="clipboard-document-check" />
-                                                                        </flux:tooltip>
-                                                                    @else
-                                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.end-quiz.create', [$course->id, 'contentId' => $content->id]) }}" wire:navigate>Add End Quiz</flux:button>
-                                                                    @endif
+                                                                @if ($content->type->value === 'quiz')
+                                                                    <flux:tooltip content="Edit quiz content" position="top">
+                                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.quiz.edit', [$course->id, $content->id]) }}" wire:navigate icon="clipboard-document-list" />
+                                                                    </flux:tooltip>
+                                                                @elseif ($content->endQuiz)
+                                                                    <flux:tooltip content="Edit end quiz" position="top">
+                                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.end-quiz.edit', [$course->id, $content->id]) }}" wire:navigate icon="clipboard-document-check" />
+                                                                    </flux:tooltip>
+                                                                @else
+                                                                    <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.end-quiz.edit', [$course->id, $content->id]) }}" wire:navigate>Add End Quiz</flux:button>
                                                                 @endif
                                                             </div>
                                                         </div>
 
-                                                        @if ($content->type->value === 'video')
-                                                            <div class="mt-4 flex flex-wrap items-center gap-2">
+                                                        <div class="mt-4 flex flex-wrap items-center gap-2">
+                                                            @if ($content->type->value === 'quiz')
+                                                                <span class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Quiz Questions</span>
+                                                                <flux:badge color="emerald" size="xs">{{ $content->quiz?->questions?->count() ?? 0 }}</flux:badge>
+                                                            @endif
+
+                                                            @if ($content->type->value !== 'quiz')
+                                                                <span class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">End Quiz</span>
+                                                                <flux:badge color="green" size="xs">{{ $content->endQuiz?->questions?->count() ?? 0 }}</flux:badge>
+                                                            @endif
+
+                                                            @if ($content->type->value === 'video')
                                                                 <span class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Timestamped Quizzes</span>
                                                                 <flux:badge color="blue" size="xs">{{ $content->timestampedQuizzes->count() }}</flux:badge>
-                                                                <flux:button size="xs" variant="ghost" wire:click="openTimestampedQuizModal(null, {{ $content->id }})">Add Timestamp</flux:button>
+                                                                <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.content.timestamped-quiz.create', [$course->id, $content->id]) }}" wire:navigate>Add Timestamp</flux:button>
+                                                            @endif
+                                                        </div>
+
+                                                        @if ($content->type->value === 'video' && $content->timestampedQuizzes->isNotEmpty())
+                                                            <div class="mt-4 space-y-2">
+                                                                @foreach ($content->timestampedQuizzes as $timestampedQuiz)
+                                                                    <div class="flex items-center justify-between rounded-xl bg-zinc-50 px-3 py-2 dark:bg-zinc-900" wire:key="timestamped-quiz-{{ $timestampedQuiz->id }}">
+                                                                        <div class="flex items-center gap-3">
+                                                                            <flux:badge color="blue" size="xs">{{ gmdate('H:i:s', $timestampedQuiz->timestamp_seconds ?? 0) }}</flux:badge>
+                                                                            <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $timestampedQuiz->questions->count() }} questions</span>
+                                                                        </div>
+                                                                        <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.content.timestamped-quiz.edit', [$course->id, $content->id, $timestampedQuiz->id]) }}" wire:navigate>
+                                                                            Edit
+                                                                        </flux:button>
+                                                                    </div>
+                                                                @endforeach
                                                             </div>
                                                         @endif
                                                     </div>
@@ -143,38 +171,6 @@
                                                         No content items yet.
                                                     </div>
                                                 @endforelse
-                                            </div>
-
-                                            @php
-                                                $moduleQuizzes = $module->moduleQuizzes ?? collect();
-                                                $moduleQuizzesExpanded = $expandedModules["quiz_{$module->id}"] ?? false;
-                                            @endphp
-
-                                            <div class="mt-4 rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800">
-                                                <button wire:click="toggleModuleQuizzes({{ $module->id }})" class="flex w-full items-center justify-between px-4 py-3 text-left">
-                                                    <div class="flex items-center gap-3">
-                                                        <flux:icon.chevron-down class="h-4 w-4 {{ !$moduleQuizzesExpanded ? '-rotate-90' : '' }} transition-transform" />
-                                                        <span class="font-medium text-zinc-900 dark:text-zinc-100">Module Quizzes</span>
-                                                        <flux:badge color="purple" size="xs">{{ $moduleQuizzes->count() }}</flux:badge>
-                                                    </div>
-                                                    <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.module-quiz.create', [$course->id, 'moduleId' => $module->id]) }}" wire:navigate>Add Quiz</flux:button>
-                                                </button>
-
-                                                @if ($moduleQuizzesExpanded)
-                                                    <div class="border-t border-zinc-200 p-4 dark:border-zinc-700">
-                                                        @forelse ($moduleQuizzes as $moduleQuiz)
-                                                            <div class="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-900" wire:key="structure-module-quiz-{{ $moduleQuiz->id }}">
-                                                                <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $moduleQuiz->quiz?->question ? \Illuminate\Support\Str::limit($moduleQuiz->quiz->question->question_text, 80) : 'No question' }}</span>
-                                                                <div class="flex gap-2">
-                                                                    <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.module-quiz.show', $moduleQuiz->id) }}" wire:navigate>View</flux:button>
-                                                                    <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.module-quiz.edit', [$course->id, $moduleQuiz->id]) }}" wire:navigate>Edit</flux:button>
-                                                                </div>
-                                                            </div>
-                                                        @empty
-                                                            <p class="text-sm text-zinc-500 dark:text-zinc-400">No module quizzes yet.</p>
-                                                        @endforelse
-                                                    </div>
-                                                @endif
                                             </div>
                                         </div>
                                     @endif

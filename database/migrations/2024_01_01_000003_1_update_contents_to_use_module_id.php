@@ -16,7 +16,7 @@ return new class extends Migration
             $table->integer('order');
             $table->string('title');
             $table->text('body')->nullable();
-            $table->enum('type', ['video', 'article', 'ppt']);
+            $table->enum('type', ['video', 'article', 'ppt', 'quiz']);
             $table->string('content_url')->nullable();
             $table->json('content_meta')->nullable();
             $table->timestamps();
@@ -36,7 +36,7 @@ return new class extends Migration
             $table->integer('order');
             $table->string('title');
             $table->text('body')->nullable();
-            $table->enum('type', ['video', 'article', 'ppt']);
+            $table->enum('type', ['video', 'article', 'ppt', 'quiz']);
             $table->string('content_url')->nullable();
             $table->json('content_meta')->nullable();
             $table->timestamps();

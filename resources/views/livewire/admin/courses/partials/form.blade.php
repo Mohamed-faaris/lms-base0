@@ -8,7 +8,7 @@
     $moduleCount = $course?->topics->sum(fn ($topic) => $topic->modules->count()) ?? 0;
     $contentCount = $course?->topics->sum(fn ($topic) => $topic->modules->sum(fn ($module) => $module->contents->count())) ?? 0;
     $enrollmentCount = $course?->enrollments->count() ?? 0;
-    $moduleQuizCount = $course?->topics->sum(fn ($topic) => $topic->modules->sum(fn ($module) => $module->moduleQuizzes->count())) ?? 0;
+    $contentQuizCount = $course?->topics->sum(fn ($topic) => $topic->modules->sum(fn ($module) => $module->contents->filter(fn ($content) => $content->type?->value === 'quiz')->count())) ?? 0;
     $endQuizCount = $course?->topics->sum(fn ($topic) => $topic->modules->sum(fn ($module) => $module->contents->filter(fn ($content) => $content->endQuiz !== null)->count())) ?? 0;
     $timestampedQuizCount = $course?->topics->sum(fn ($topic) => $topic->modules->sum(fn ($module) => $module->contents->sum(fn ($content) => $content->timestampedQuizzes->count()))) ?? 0;
 @endphp
@@ -321,9 +321,9 @@
 
                     <div class="grid gap-3 sm:grid-cols-3">
                         <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
-                            <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Module Quizzes</p>
-                            <p class="mt-2 text-2xl font-semibold text-zinc-950 dark:text-white">{{ $moduleQuizCount }}</p>
-                            <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Scoped to modules with question, options, and answer data.</p>
+                            <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Quiz Content</p>
+                            <p class="mt-2 text-2xl font-semibold text-zinc-950 dark:text-white">{{ $contentQuizCount }}</p>
+                            <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Content items with `type = quiz` and a primary question set.</p>
                         </div>
                         <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
                             <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">End Quizzes</p>
@@ -348,7 +348,7 @@
                 @else
                     <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/30">
                         <p class="text-sm font-semibold text-amber-900 dark:text-amber-300">Create the course first, then continue in the course studio.</p>
-                        <p class="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-400">The next screen is where you add topics, modules, content items, end quizzes, module quizzes, and timestamped quizzes.</p>
+                        <p class="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-400">The next screen is where you add topics, modules, content items, quiz content, end quizzes, and timestamped quizzes.</p>
                     </div>
                 @endif
             </section>
