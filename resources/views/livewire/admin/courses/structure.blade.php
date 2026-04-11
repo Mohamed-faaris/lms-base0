@@ -77,6 +77,10 @@
                     @if ($expandedTopics[$topic->id] ?? true)
                         <div class="space-y-3 p-4">
                             @forelse ($topic->modules as $module)
+                                @php
+                                    $isFirstModule = $module->order === $topic->modules->min('order');
+                                    $isLastModule = $module->order === $topic->modules->max('order');
+                                @endphp
                                 <div class="overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700" wire:key="structure-module-{{ $module->id }}">
                                     <div class="flex items-center gap-3 bg-white px-4 py-3 dark:bg-zinc-800">
                                         <button wire:click="toggleModule({{ $module->id }})" class="flex flex-1 items-center justify-between text-left">
@@ -89,6 +93,24 @@
                                             </div>
                                             <flux:badge color="zinc" size="xs">{{ $module->contents->count() }} content</flux:badge>
                                         </button>
+                                        <flux:tooltip content="Move module up" position="top">
+                                            <flux:button
+                                                size="sm"
+                                                variant="ghost"
+                                                wire:click="moveModuleUp({{ $module->id }})"
+                                                icon="arrow-up"
+                                                :disabled="$isFirstModule"
+                                            />
+                                        </flux:tooltip>
+                                        <flux:tooltip content="Move module down" position="top">
+                                            <flux:button
+                                                size="sm"
+                                                variant="ghost"
+                                                wire:click="moveModuleDown({{ $module->id }})"
+                                                icon="arrow-down"
+                                                :disabled="$isLastModule"
+                                            />
+                                        </flux:tooltip>
                                         <flux:tooltip content="Edit module" position="top">
                                             <flux:button size="sm" variant="ghost" wire:click="openModuleModal({{ $module->id }})" icon="pencil-square" />
                                         </flux:tooltip>
@@ -101,6 +123,10 @@
                                         <div class="border-t border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900/40">
                                             <div class="space-y-3">
                                                 @forelse ($module->contents as $content)
+                                                    @php
+                                                        $isFirstContent = $content->order === $module->contents->min('order');
+                                                        $isLastContent = $content->order === $module->contents->max('order');
+                                                    @endphp
                                                     <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800" wire:key="structure-content-{{ $content->id }}">
                                                         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                                                             <div class="space-y-2">
@@ -115,6 +141,24 @@
                                                                 @endif
                                                             </div>
                                                             <div class="flex flex-wrap gap-2">
+                                                                <flux:tooltip content="Move content up" position="top">
+                                                                    <flux:button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        wire:click="moveContentUp({{ $content->id }})"
+                                                                        icon="arrow-up"
+                                                                        :disabled="$isFirstContent"
+                                                                    />
+                                                                </flux:tooltip>
+                                                                <flux:tooltip content="Move content down" position="top">
+                                                                    <flux:button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        wire:click="moveContentDown({{ $content->id }})"
+                                                                        icon="arrow-down"
+                                                                        :disabled="$isLastContent"
+                                                                    />
+                                                                </flux:tooltip>
                                                                 <flux:tooltip content="Open full editor" position="top">
                                                                     <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.edit', [$course->id, $content->id]) }}" wire:navigate icon="arrow-top-right-on-square" />
                                                                 </flux:tooltip>

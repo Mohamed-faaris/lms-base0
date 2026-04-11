@@ -8,6 +8,7 @@ use App\Models\Module;
 use App\Models\Progress;
 use App\Models\Topic;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Structure extends Component
@@ -140,6 +141,40 @@ class Structure extends Component
     public function toggleModule(int $moduleId): void
     {
         $this->expandedModules[$moduleId] = ! ($this->expandedModules[$moduleId] ?? false);
+    }
+
+    public function moveModuleUp(int $moduleId): void
+    {
+        $module = Module::query()->findOrFail($moduleId);
+        $previousModule = Module::query()
+            ->where('topic_id', $module->topic_id)
+            ->where('order', '<', $module->order)
+            ->orderByDesc('order')
+            ->first();
+
+        if (! $previousModule instanceof Module) {
+            return;
+        }
+
+        $this->swapModelOrder($module, $previousModule);
+        $this->refreshCourse();
+    }
+
+    public function moveModuleDown(int $moduleId): void
+    {
+        $module = Module::query()->findOrFail($moduleId);
+        $nextModule = Module::query()
+            ->where('topic_id', $module->topic_id)
+            ->where('order', '>', $module->order)
+            ->orderBy('order')
+            ->first();
+
+        if (! $nextModule instanceof Module) {
+            return;
+        }
+
+        $this->swapModelOrder($module, $nextModule);
+        $this->refreshCourse();
     }
 
     public function openTopicModal($topic = null): void
@@ -322,10 +357,70 @@ class Structure extends Component
         $this->editingContent = null;
     }
 
+    public function moveContentUp(int $contentId): void
+    {
+        $content = Content::query()->findOrFail($contentId);
+        $previousContent = Content::query()
+            ->where('module_id', $content->module_id)
+            ->where('order', '<', $content->order)
+            ->orderByDesc('order')
+            ->first();
+
+        if (! $previousContent instanceof Content) {
+            return;
+        }
+
+        $this->swapModelOrder($content, $previousContent);
+        $this->refreshCourse();
+    }
+
+    public function moveContentDown(int $contentId): void
+    {
+        $content = Content::query()->findOrFail($contentId);
+        $nextContent = Content::query()
+            ->where('module_id', $content->module_id)
+            ->where('order', '>', $content->order)
+            ->orderBy('order')
+            ->first();
+
+        if (! $nextContent instanceof Content) {
+            return;
+        }
+
+        $this->swapModelOrder($content, $nextContent);
+        $this->refreshCourse();
+    }
+
     public function deleteContent(int $contentId): void
     {
         Content::findOrFail($contentId)->delete();
         $this->refreshCourse();
+    }
+
+    protected function swapModelOrder(Module|Content $currentModel, Module|Content $adjacentModel): void
+    {
+        $currentOrder = $currentModel->order;
+        $adjacentOrder = $adjacentModel->order;
+        $temporaryOrder = $this->getTemporaryOrder($currentModel);
+
+        DB::transaction(function () use ($adjacentModel, $adjacentOrder, $currentModel, $currentOrder, $temporaryOrder): void {
+            $currentModel->update(['order' => $temporaryOrder]);
+            $adjacentModel->update(['order' => $currentOrder]);
+            $currentModel->update(['order' => $adjacentOrder]);
+        });
+    }
+
+    protected function getTemporaryOrder(Module|Content $model): int
+    {
+        if ($model instanceof Module) {
+            return (int) Module::query()
+                ->where('topic_id', $model->topic_id)
+                ->max('order') + 1;
+        }
+
+        return (int) Content::query()
+            ->where('module_id', $model->module_id)
+            ->max('order') + 1;
     }
 
     protected function refreshCourse(): void

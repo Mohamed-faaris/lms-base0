@@ -131,6 +131,100 @@ test('structure page livewire component renders structure controls', function ()
         ->assertSee('Add Topic');
 });
 
+test('admin can move modules up and down within a topic from structure page', function () {
+    $admin = User::factory()->admin()->create();
+    $course = Course::create([
+        'title' => 'Module Reorder Course',
+        'slug' => 'module-reorder-course',
+        'description' => 'Course for module reorder.',
+    ]);
+    $topic = Topic::create([
+        'course_id' => $course->id,
+        'name' => 'Topic One',
+        'description' => 'Topic description.',
+        'order' => 1,
+    ]);
+    $moduleOne = Module::create([
+        'topic_id' => $topic->id,
+        'title' => 'Module One',
+        'description' => 'Module one description.',
+        'order' => 1,
+    ]);
+    $moduleTwo = Module::create([
+        'topic_id' => $topic->id,
+        'title' => 'Module Two',
+        'description' => 'Module two description.',
+        'order' => 2,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(StructureCourse::class, ['course' => $course])
+        ->call('moveModuleUp', $moduleTwo->id)
+        ->assertHasNoErrors();
+
+    expect($moduleOne->fresh()->order)->toBe(2);
+    expect($moduleTwo->fresh()->order)->toBe(1);
+
+    Livewire::actingAs($admin)
+        ->test(StructureCourse::class, ['course' => $course])
+        ->call('moveModuleUp', $moduleTwo->id)
+        ->assertHasNoErrors();
+
+    expect($moduleOne->fresh()->order)->toBe(2);
+    expect($moduleTwo->fresh()->order)->toBe(1);
+});
+
+test('admin can move content including quiz content within a module from structure page', function () {
+    $admin = User::factory()->admin()->create();
+    $course = Course::create([
+        'title' => 'Content Reorder Course',
+        'slug' => 'content-reorder-course',
+        'description' => 'Course for content reorder.',
+    ]);
+    $topic = Topic::create([
+        'course_id' => $course->id,
+        'name' => 'Topic One',
+        'description' => 'Topic description.',
+        'order' => 1,
+    ]);
+    $module = Module::create([
+        'topic_id' => $topic->id,
+        'title' => 'Module One',
+        'description' => 'Module description.',
+        'order' => 1,
+    ]);
+    $videoContent = Content::create([
+        'module_id' => $module->id,
+        'order' => 1,
+        'title' => 'Video Lesson',
+        'body' => 'Video body.',
+        'type' => ContentType::Video,
+    ]);
+    $quizContent = Content::create([
+        'module_id' => $module->id,
+        'order' => 2,
+        'title' => 'Quiz Lesson',
+        'body' => 'Quiz body.',
+        'type' => ContentType::Quiz,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(StructureCourse::class, ['course' => $course])
+        ->call('moveContentUp', $quizContent->id)
+        ->assertHasNoErrors();
+
+    expect($videoContent->fresh()->order)->toBe(2);
+    expect($quizContent->fresh()->order)->toBe(1);
+
+    Livewire::actingAs($admin)
+        ->test(StructureCourse::class, ['course' => $course])
+        ->call('moveContentUp', $quizContent->id)
+        ->assertHasNoErrors();
+
+    expect($videoContent->fresh()->order)->toBe(2);
+    expect($quizContent->fresh()->order)->toBe(1);
+});
+
 test('admin can build a quiz content assessment from the unified quiz editor', function () {
     $admin = User::factory()->admin()->create();
     $course = Course::create([
