@@ -56,7 +56,9 @@ class QuizEditor extends Component
                     'id' => $question->id,
                     'question_text' => $question->question_text,
                     'type' => $question->type,
-                    'options_text' => implode("\n", $question->options ?? []),
+                    'options' => $question->type === 'multiple_choice'
+                        ? array_values($question->options ?? [])
+                        : [],
                     'correct_answer' => $this->formatCorrectAnswer($question),
                 ])
                 ->values()
@@ -78,9 +80,30 @@ class QuizEditor extends Component
             'id' => null,
             'question_text' => '',
             'type' => 'multiple_choice',
-            'options_text' => '',
+            'options' => ['', ''],
             'correct_answer' => '',
         ];
+    }
+
+    public function addOption(int $questionIndex): void
+    {
+        $this->questions[$questionIndex]['options'][] = '';
+    }
+
+    public function removeOption(int $questionIndex, int $optionIndex): void
+    {
+        unset($this->questions[$questionIndex]['options'][$optionIndex]);
+        $this->questions[$questionIndex]['options'] = array_values($this->questions[$questionIndex]['options']);
+
+        if (($this->questions[$questionIndex]['correct_answer'] ?? '') !== '' && (int) $this->questions[$questionIndex]['correct_answer'] === $optionIndex) {
+            $this->questions[$questionIndex]['correct_answer'] = '';
+        } elseif (($this->questions[$questionIndex]['correct_answer'] ?? '') !== '' && (int) $this->questions[$questionIndex]['correct_answer'] > $optionIndex) {
+            $this->questions[$questionIndex]['correct_answer'] = (string) ((int) $this->questions[$questionIndex]['correct_answer'] - 1);
+        }
+
+        if (count($this->questions[$questionIndex]['options']) < 2) {
+            $this->questions[$questionIndex]['options'][] = '';
+        }
     }
 
     public function removeQuestion(int $index): void
@@ -140,9 +163,16 @@ class QuizEditor extends Component
             'questions' => 'required|array|min:1',
             'questions.*.question_text' => 'required|string',
             'questions.*.type' => 'required|in:multiple_choice,true_false',
-            'questions.*.options_text' => 'nullable|string',
             'questions.*.correct_answer' => 'required|string',
         ];
+
+        foreach ($this->questions as $index => $question) {
+            if (($question['type'] ?? 'multiple_choice') === 'multiple_choice') {
+                $rules["questions.{$index}.options"] = 'required|array|min:2';
+                $rules["questions.{$index}.options.*"] = 'required|string|max:255';
+                $rules["questions.{$index}.correct_answer"] = 'required|integer|min:0';
+            }
+        }
 
         if ($this->placementKind() === QuizKind::Timestamped) {
             $rules['timestamp'] = 'required|string';
@@ -213,7 +243,7 @@ class QuizEditor extends Component
             return [];
         }
 
-        return array_values(array_filter(array_map('trim', explode("\n", $questionData['options_text']))));
+        return array_values(array_map(static fn (string $option): string => trim($option), $questionData['options'] ?? []));
     }
 
     protected function normalizeCorrectAnswer(array $questionData): array
@@ -222,12 +252,7 @@ class QuizEditor extends Component
             return [$questionData['correct_answer'] === 'true' ? 0 : 1];
         }
 
-        $answers = array_filter(array_map('trim', explode(',', strtoupper($questionData['correct_answer']))));
-
-        return array_values(array_map(
-            static fn (string $answer): int => ord($answer) - 65,
-            $answers,
-        ));
+        return [(int) $questionData['correct_answer']];
     }
 
     protected function formatCorrectAnswer(Question $question): string
@@ -236,10 +261,7 @@ class QuizEditor extends Component
             return (($question->correct_answer ?? [1])[0] ?? 1) === 0 ? 'true' : 'false';
         }
 
-        return implode(',', array_map(
-            static fn (int $index): string => chr(65 + $index),
-            $question->correct_answer ?? [],
-        ));
+        return (string) (($question->correct_answer ?? [0])[0] ?? 0);
     }
 
     protected function formatTimestamp(int $seconds): string

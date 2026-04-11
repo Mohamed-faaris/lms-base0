@@ -49,17 +49,44 @@
                         </flux:field>
 
                         @if (($questions[$index]['type'] ?? 'multiple_choice') === 'multiple_choice')
-                            <flux:field>
-                                <flux:label>Options</flux:label>
-                                <flux:textarea wire:model="questions.{{ $index }}.options_text" rows="5" placeholder="Option A&#10;Option B&#10;Option C&#10;Option D" />
-                                <flux:error name="questions.{{ $index }}.options_text" />
-                            </flux:field>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <flux:label>Options</flux:label>
+                                    <flux:button type="button" size="sm" variant="ghost" wire:click="addOption({{ $index }})" icon="plus">
+                                        Add Option
+                                    </flux:button>
+                                </div>
 
-                            <flux:field>
-                                <flux:label>Correct Answer</flux:label>
-                                <flux:input wire:model="questions.{{ $index }}.correct_answer" placeholder="A or A,C" />
+                                @foreach ($questions[$index]['options'] ?? [] as $optionIndex => $option)
+                                    <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700" wire:key="question-{{ $index }}-option-{{ $optionIndex }}">
+                                        <div class="flex items-start gap-3">
+                                            <label class="mt-3 flex h-5 w-5 items-center justify-center">
+                                                <input
+                                                    type="radio"
+                                                    wire:model.live="questions.{{ $index }}.correct_answer"
+                                                    value="{{ $optionIndex }}"
+                                                    class="h-4 w-4 border-zinc-300 text-zinc-900 focus:ring-zinc-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+                                                />
+                                            </label>
+
+                                            <div class="flex-1 space-y-2">
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">Option {{ chr(65 + $optionIndex) }}</p>
+                                                    @if (count($questions[$index]['options'] ?? []) > 2)
+                                                        <flux:button type="button" size="xs" variant="ghost" wire:click="removeOption({{ $index }}, {{ $optionIndex }})" icon="trash" />
+                                                    @endif
+                                                </div>
+                                                <flux:input wire:model="questions.{{ $index }}.options.{{ $optionIndex }}" placeholder="Enter option {{ chr(65 + $optionIndex) }}" />
+                                                <flux:error name="questions.{{ $index }}.options.{{ $optionIndex }}" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+
+                                <flux:error name="questions.{{ $index }}.options" />
                                 <flux:error name="questions.{{ $index }}.correct_answer" />
-                            </flux:field>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400">Choose the correct option using the radio button on the left.</p>
+                            </div>
                         @else
                             <flux:field>
                                 <flux:label>Correct Answer</flux:label>

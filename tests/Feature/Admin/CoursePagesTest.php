@@ -162,8 +162,9 @@ test('admin can build a quiz content assessment from the unified quiz editor', f
         ->test(QuizEditor::class, ['course' => $course, 'content' => $content, 'placement' => 'content'])
         ->set('questions.0.question_text', 'What is the correct answer?')
         ->set('questions.0.type', 'multiple_choice')
-        ->set('questions.0.options_text', "Option A\nOption B")
-        ->set('questions.0.correct_answer', 'B')
+        ->set('questions.0.options.0', 'Option A')
+        ->set('questions.0.options.1', 'Option B')
+        ->set('questions.0.correct_answer', '1')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -171,6 +172,8 @@ test('admin can build a quiz content assessment from the unified quiz editor', f
 
     expect($quiz)->not->toBeNull();
     expect($quiz?->questions()->count())->toBe(1);
+    expect($quiz?->questions()->first()?->options)->toBe(['Option A', 'Option B']);
+    expect($quiz?->questions()->first()?->correct_answer)->toBe([1]);
 });
 
 test('admin can create a timestamped quiz for video content from the unified editor', function () {
