@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             KRCTFacultySeeder::class,
             LmsDataSeeder::class,
+            JavaCourseSeeder::class,
         ]);
     }
 }
