@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use PostHog\PostHog;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,6 +25,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configurePostHog();
+    }
+
+    /**
+     * Initialize PostHog analytics.
+     */
+    protected function configurePostHog(): void
+    {
+        if (! config('posthog.disabled') && config('posthog.api_key')) {
+            PostHog::init(
+                config('posthog.api_key'),
+                ['host' => config('posthog.host')]
+            );
+        }
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Courses;
 
 use App\Models\Course;
+use App\Services\PostHogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -98,6 +99,14 @@ class Edit extends Component
         }
 
         $this->course->load('courseMeta', 'media');
+
+        PostHogService::capture((string) auth()->id(), 'course_updated', [
+            'course_id' => $this->course->id,
+            'course_title' => $this->course->title,
+            'course_slug' => $this->course->slug,
+            'category' => $this->category ?: null,
+            'difficulty' => $this->difficulty ?: null,
+        ]);
 
         session()->flash('success', 'Course updated successfully.');
 

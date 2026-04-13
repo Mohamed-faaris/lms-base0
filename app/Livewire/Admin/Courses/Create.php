@@ -3,6 +3,8 @@
 namespace App\Livewire\Admin\Courses;
 
 use App\Models\Course;
+
+use App\Services\PostHogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -73,6 +75,14 @@ class Create extends Component
                 ->usingFileName(Str::uuid().'.'.$this->thumbnailUpload->getClientOriginalExtension())
                 ->toMediaCollection('course-thumbnail');
         }
+
+        PostHogService::capture((string) auth()->id(), 'course_created', [
+            'course_id' => $course->id,
+            'course_title' => $course->title,
+            'course_slug' => $course->slug,
+            'category' => $this->category ?: null,
+            'difficulty' => $this->difficulty ?: null,
+        ]);
 
         session()->flash('success', 'Course created successfully.');
 

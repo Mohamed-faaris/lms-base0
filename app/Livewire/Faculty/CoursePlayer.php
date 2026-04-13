@@ -9,6 +9,7 @@ use App\Models\Progress;
 use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use App\Services\PostHogService;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
@@ -443,7 +444,20 @@ class CoursePlayer extends Component
             'attempted_at' => now(),
         ]);
 
-        if ($this->quizScore < $this->activeQuizPassPercentage) {
+        $passed = $this->quizScore >= $this->activeQuizPassPercentage;
+
+        PostHogService::capture((string) auth()->id(), 'quiz_submitted', [
+            'quiz_id' => $this->activeQuiz->id,
+            'quiz_context' => $this->activeQuizContext,
+            'course_id' => $this->course->id,
+            'course_title' => $this->course->title,
+            'content_id' => $this->currentModule->id,
+            'score' => $this->quizScore,
+            'pass_percentage' => $this->activeQuizPassPercentage,
+            'passed' => $passed,
+        ]);
+
+        if (! $passed) {
             return;
         }
 
@@ -463,6 +477,23 @@ class CoursePlayer extends Component
             ['user_id' => auth()->id(), 'content_id' => $this->currentModule->id],
             ['completed_at' => now()]
         );
+
+        PostHogService::capture((string) auth()->id(), 'lesson_completed', [
+            'course_id' => $this->course->id,
+            'course_title' => $this->course->title,
+            'content_id' => $this->currentModule->id,
+            'content_title' => $this->currentModule->title ?? null,
+            'completed_modules' => $this->completedModules + 1,
+            'total_modules' => $this->totalModules,
+        ]);
+
+        $newCompleted = $this->completedModules + 1;
+        if ($this->totalModules > 0 && $newCompleted >= $this->totalModules) {
+            PostHogService::capture((string) auth()->id(), 'course_completed', [
+                'course_id' => $this->course->id,
+                'course_title' => $this->course->title,
+            ]);
+        }
     }
 
     public function finishMainQuiz(): void
@@ -502,6 +533,11 @@ class CoursePlayer extends Component
             'comment_text' => $validated['newComment'],
         ]);
 
+        PostHogService::capture((string) auth()->id(), 'comment_posted', [
+            'course_id' => $this->course->id,
+            'content_id' => $this->currentModule->id,
+        ]);
+
         $this->newComment = '';
         $this->loadComments();
     }
@@ -524,6 +560,12 @@ class CoursePlayer extends Component
             'parent_comment_id' => $parentComment->id,
             'user_id' => auth()->id(),
             'comment_text' => $replyText,
+        ]);
+
+        PostHogService::capture((string) auth()->id(), 'comment_reply_posted', [
+            'course_id' => $this->course->id,
+            'content_id' => $this->currentModule->id,
+            'parent_comment_id' => $parentComment->id,
         ]);
 
         unset($this->replyDrafts[$commentId]);

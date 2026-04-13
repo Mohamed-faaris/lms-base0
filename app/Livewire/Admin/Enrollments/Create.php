@@ -8,6 +8,7 @@ use App\Enums\Role;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\User;
+use App\Services\PostHogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -199,6 +200,14 @@ class Create extends Component
         $this->createdCount = $createdCount;
         $this->skippedCount = $skippedCount;
         $this->showSuccess = true;
+
+        PostHogService::capture((string) Auth::id(), 'enrollment_batch_created', [
+            'batch_id' => $batchId,
+            'course_id' => (int) $validated['courseId'],
+            'enrolled_count' => $createdCount,
+            'skipped_count' => $skippedCount,
+            'target_mode' => $this->targetMode,
+        ]);
 
         $this->refreshPreview();
     }
