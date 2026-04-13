@@ -144,6 +144,15 @@ class CoursePlayer extends Component
             $meta = is_array($module->content_meta) ? $module->content_meta : [];
             $module->duration = $meta['duration'] ?? '15:00';
             $module->videoId = $meta['youtube_id'] ?? $this->extractYoutubeId($module->content_url) ?? 'dQw4w9WgXcQ';
+            $module->watchRequirementPercent = max(50, min(100, (int) ($meta['watch_requirement_percent'] ?? 90)));
+            $module->startTimeSeconds = max(0, (int) ($meta['start_time_seconds'] ?? 0));
+            $module->endTimeSeconds = max(0, (int) ($meta['end_time_seconds'] ?? 0));
+            $module->seekForwardEnabled = (bool) ($meta['seek_forward_enabled'] ?? false);
+            $module->allowSpeedChange = (bool) ($meta['allow_speed_change'] ?? true);
+            $module->allowCaptions = (bool) ($meta['allow_captions'] ?? true);
+            $module->rewindSeconds = max(5, (int) ($meta['rewind_seconds'] ?? 10));
+            $module->forwardSeconds = max(5, (int) ($meta['forward_seconds'] ?? 10));
+            $module->isVideoLesson = $module->type?->value === 'video' && filled($module->videoId);
 
             return $module;
         });
@@ -208,8 +217,12 @@ class CoursePlayer extends Component
         $this->mobileDrawerOpen = ! $this->mobileDrawerOpen;
     }
 
-    public function startQuiz(): void
+    public function startQuiz(bool $watchRequirementMet = false): void
     {
+        if ($this->currentModule->status !== 'completed' && ! $watchRequirementMet) {
+            return;
+        }
+
         $this->showQuiz = true;
     }
 

@@ -9,7 +9,8 @@ use App\Models\Topic;
 use App\Models\User;
 use Livewire\Livewire;
 
-test('faculty course player renders enrolled course content', function () {
+function buildCoursePlayerFixture(): array
+{
     $staff = User::factory()->staff()->create();
     $course = Course::create([
         'title' => 'Course Player Test',
@@ -37,7 +38,10 @@ test('faculty course player renders enrolled course content', function () {
         'body' => 'Lesson body',
         'type' => 'video',
         'content_url' => 'https://youtube.com/watch?v=test123',
-        'content_meta' => ['youtube_id' => 'test123'],
+        'content_meta' => [
+            'youtube_id' => 'test123',
+            'watch_requirement_percent' => 92,
+        ],
     ]);
 
     Enrollment::create([
@@ -48,9 +52,28 @@ test('faculty course player renders enrolled course content', function () {
         'enrolled_at' => now(),
     ]);
 
+    return [$staff, $course, $content];
+}
+
+test('faculty course player renders controlled lesson content', function () {
+    [$staff, $course, $content] = buildCoursePlayerFixture();
+
     Livewire::actingAs($staff)
         ->test(CoursePlayer::class, ['course' => $course])
-        ->assertSee('Course Modules')
+        ->assertSee('Controlled Playback')
+        ->assertSee('Playback Rules')
         ->assertSee($content->title)
-        ->assertSee('Take Module Quiz');
+        ->assertSee('Seek lock active');
+});
+
+test('faculty course player blocks quiz start until watch requirement is met', function () {
+    [$staff, $course] = buildCoursePlayerFixture();
+
+    Livewire::actingAs($staff)
+        ->test(CoursePlayer::class, ['course' => $course])
+        ->assertSet('showQuiz', false)
+        ->call('startQuiz')
+        ->assertSet('showQuiz', false)
+        ->call('startQuiz', true)
+        ->assertSet('showQuiz', true);
 });
