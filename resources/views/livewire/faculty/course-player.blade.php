@@ -341,16 +341,35 @@
                                     </div>
 
                                     <div class="rounded-[1.5rem] border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-                                        <p class="text-sm font-semibold text-zinc-950 dark:text-white">Interactive Checks</p>
-                                        <div class="mt-4 space-y-3">
-                                            <flux:button variant="outline" class="w-full justify-start" wire:click="toggleFeedback">
-                                                <flux:icon.chat-bubble-left-ellipsis class="mr-2 h-4 w-4" />
-                                                Reflection Prompt
-                                            </flux:button>
-                                            <flux:button variant="outline" class="w-full justify-start" wire:click="togglePuzzle">
-                                                <flux:icon.puzzle-piece class="mr-2 h-4 w-4" />
-                                                Sequence Puzzle
-                                            </flux:button>
+                                        <div class="flex items-center justify-between gap-3">
+                                            <p class="text-sm font-semibold text-zinc-950 dark:text-white">Comments</p>
+                                            <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ $comments->count() }} {{ \Illuminate\Support\Str::plural('comment', $comments->count()) }}</span>
+                                        </div>
+
+                                        <div class="mt-4 space-y-4">
+                                            <div class="space-y-3">
+                                                <flux:textarea wire:model="newComment" placeholder="Add a comment about this lesson..." rows="4" />
+                                                <flux:error name="newComment" />
+                                                <div class="flex justify-end">
+                                                    <flux:button wire:click="postComment" size="sm">Post Comment</flux:button>
+                                                </div>
+                                            </div>
+
+                                            <div class="space-y-3">
+                                                @forelse ($comments as $comment)
+                                                    <div wire:key="comment-{{ $comment->id }}" class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/60">
+                                                        <div class="flex items-center justify-between gap-3">
+                                                            <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ $comment->user?->name ?? 'Unknown user' }}</p>
+                                                            <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $comment->created_at?->diffForHumans() }}</p>
+                                                        </div>
+                                                        <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{{ $comment->comment_text }}</p>
+                                                    </div>
+                                                @empty
+                                                    <div class="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
+                                                        No comments yet. Start the discussion for this lesson.
+                                                    </div>
+                                                @endforelse
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -526,7 +545,7 @@
                         </div>
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-semibold">{{ $module->title }}</p>
-                            <p class="mt-1 text-xs {{ $mobileMetaClasses }}">{{ $module->duration }} • {{ $module->watchRequirementPercent }}% watch</p>
+                            <p class="mt-1 text-xs {{ $mobileMetaClasses }}">{{ $module->duration }} /p>
                         </div>
                     </button>
                 @endforeach
@@ -534,3 +553,4 @@
         </div>
     @endif
 </div>
+s

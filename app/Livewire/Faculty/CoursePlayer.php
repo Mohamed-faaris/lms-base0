@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Faculty;
 
+use App\Models\Comment;
 use App\Models\Content;
 use App\Models\Course;
 use App\Models\Progress;
@@ -37,6 +38,14 @@ class CoursePlayer extends Component
     public bool $showFeedback = false;
 
     public bool $showPuzzle = false;
+
+    public Collection $comments;
+
+    public string $newComment = '';
+
+    public array $replyDrafts = [];
+
+    public ?int $activeReplyCommentId = null;
 
     public array $quizQuestions = [
         [
@@ -156,6 +165,32 @@ class CoursePlayer extends Component
 
             return $module;
         });
+
+        $this->loadComments();
+    }
+
+    protected function loadComments(): void
+    {
+        $comments = Comment::query()
+            ->with('user')
+            ->where('content_id', $this->currentModule->id)
+            ->latest()
+            ->get();
+
+        $groupedComments = $comments->groupBy('parent_comment_id');
+
+        $this->comments = $this->buildCommentThread($groupedComments, null);
+    }
+
+    protected function buildCommentThread(Collection $groupedComments, ?int $parentCommentId): Collection
+    {
+        return ($groupedComments->get($parentCommentId) ?? collect())
+            ->map(function (Comment $comment) use ($groupedComments) {
+                $comment->threadReplies = $this->buildCommentThread($groupedComments, $comment->id);
+
+                return $comment;
+            })
+            ->values();
     }
 
     private function extractYoutubeId(?string $url): ?string
@@ -204,6 +239,10 @@ class CoursePlayer extends Component
             $this->currentModule = $module;
             $this->resetQuiz();
             $this->mobileDrawerOpen = false;
+            $this->newComment = '';
+            $this->replyDrafts = [];
+            $this->activeReplyCommentId = null;
+            $this->loadComments();
         }
     }
 
@@ -284,6 +323,52 @@ class CoursePlayer extends Component
     public function togglePuzzle(): void
     {
         $this->showPuzzle = ! $this->showPuzzle;
+    }
+
+    public function postComment(): void
+    {
+        $validated = $this->validate([
+            'newComment' => 'required|string|max:1000',
+        ]);
+
+        Comment::query()->create([
+            'content_id' => $this->currentModule->id,
+            'user_id' => auth()->id(),
+            'comment_text' => $validated['newComment'],
+        ]);
+
+        $this->newComment = '';
+        $this->loadComments();
+    }
+
+    public function postReply(int $commentId): void
+    {
+        $parentComment = Comment::query()
+            ->where('content_id', $this->currentModule->id)
+            ->findOrFail($commentId);
+
+        $replyText = trim((string) ($this->replyDrafts[$commentId] ?? ''));
+
+        validator(
+            ['reply' => $replyText],
+            ['reply' => 'required|string|max:1000']
+        )->validate();
+
+        Comment::query()->create([
+            'content_id' => $this->currentModule->id,
+            'parent_comment_id' => $parentComment->id,
+            'user_id' => auth()->id(),
+            'comment_text' => $replyText,
+        ]);
+
+        unset($this->replyDrafts[$commentId]);
+        $this->activeReplyCommentId = null;
+        $this->loadComments();
+    }
+
+    public function toggleReplyForm(int $commentId): void
+    {
+        $this->activeReplyCommentId = $this->activeReplyCommentId === $commentId ? null : $commentId;
     }
 
     public function render()

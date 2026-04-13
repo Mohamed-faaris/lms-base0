@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Faculty\CoursePlayer;
+use App\Models\Comment;
 use App\Models\Content;
 use App\Models\Course;
 use App\Models\Enrollment;
@@ -61,7 +62,7 @@ test('faculty course player renders controlled lesson content', function () {
     Livewire::actingAs($staff)
         ->test(CoursePlayer::class, ['course' => $course])
         ->assertSee('Controlled Playback')
-        ->assertSee('Playback Rules')
+        ->assertSee('Comments')
         ->assertSee($content->title)
         ->assertSee('Seek lock active');
 });
@@ -76,4 +77,60 @@ test('faculty course player blocks quiz start until watch requirement is met', f
         ->assertSet('showQuiz', false)
         ->call('startQuiz', true)
         ->assertSet('showQuiz', true);
+});
+
+test('faculty course player allows posting comments for the current lesson', function () {
+    [$staff, $course, $content] = buildCoursePlayerFixture();
+
+    Livewire::actingAs($staff)
+        ->test(CoursePlayer::class, ['course' => $course])
+        ->set('newComment', 'This lesson needs a practical code example.')
+        ->call('postComment')
+        ->assertSet('newComment', '')
+        ->assertSee('This lesson needs a practical code example.');
+
+    expect(Comment::query()->where('content_id', $content->id)->count())->toBe(1);
+});
+
+test('faculty course player allows replying to comments', function () {
+    [$staff, $course, $content] = buildCoursePlayerFixture();
+
+    $comment = Comment::query()->create([
+        'content_id' => $content->id,
+        'user_id' => $staff->id,
+        'comment_text' => 'Initial discussion point.',
+    ]);
+
+    $component = Livewire::actingAs($staff)
+        ->test(CoursePlayer::class, ['course' => $course])
+        ->assertSet('activeReplyCommentId', null)
+        ->call('toggleReplyForm', $comment->id)
+        ->assertSet('activeReplyCommentId', $comment->id)
+        ->set("replyDrafts.{$comment->id}", 'I agree, and here is a follow-up.')
+        ->call('postReply', $comment->id)
+        ->assertSet('activeReplyCommentId', null)
+        ->assertSee('I agree, and here is a follow-up.');
+
+    $reply = Comment::query()
+        ->where('content_id', $content->id)
+        ->where('parent_comment_id', $comment->id)
+        ->firstOrFail();
+
+    $component
+        ->call('toggleReplyForm', $reply->id)
+        ->assertSet('activeReplyCommentId', $reply->id)
+        ->set("replyDrafts.{$reply->id}", 'Replying to the reply, YouTube-style.')
+        ->call('postReply', $reply->id)
+        ->assertSet('activeReplyCommentId', null)
+        ->assertSee('Replying to the reply, YouTube-style.');
+
+    expect(Comment::query()
+        ->where('content_id', $content->id)
+        ->where('parent_comment_id', $comment->id)
+        ->count())->toBe(1);
+
+    expect(Comment::query()
+        ->where('content_id', $content->id)
+        ->where('parent_comment_id', $reply->id)
+        ->count())->toBe(1);
 });
