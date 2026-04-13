@@ -13,6 +13,7 @@ class Quiz extends Model
         'content_id',
         'kind',
         'timestamp_seconds',
+        'score_percentage',
     ];
 
     protected function casts(): array
@@ -20,6 +21,7 @@ class Quiz extends Model
         return [
             'kind' => QuizKind::class,
             'timestamp_seconds' => 'integer',
+            'score_percentage' => 'integer',
         ];
     }
 
@@ -46,5 +48,10 @@ class Quiz extends Model
     public function isTimestampedQuiz(): bool
     {
         return $this->kind === QuizKind::Timestamped;
+    }
+
+    public function passingScore(): int
+    {
+        return max(0, min(100, $this->score_percentage ?? 0));
     }
 }

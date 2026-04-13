@@ -25,6 +25,8 @@ class QuizEditor extends Component
 
     public string $timestamp = '';
 
+    public ?int $scorePercentage = null;
+
     public function mount(Course $course, Content $content, string $placement, ?Quiz $quiz = null): void
     {
         if (! auth()->user()->isAdmin()) {
@@ -67,6 +69,8 @@ class QuizEditor extends Component
             if ($this->placementKind() === QuizKind::Timestamped) {
                 $this->timestamp = $this->formatTimestamp($this->quiz->timestamp_seconds ?? 0);
             }
+
+            $this->scorePercentage = $this->quiz->score_percentage;
         }
 
         if ($this->questions === []) {
@@ -164,6 +168,7 @@ class QuizEditor extends Component
             'questions.*.question_text' => 'required|string',
             'questions.*.type' => 'required|in:multiple_choice,true_false',
             'questions.*.correct_answer' => 'required|string',
+            'scorePercentage' => 'nullable|integer|min:0|max:100',
         ];
 
         foreach ($this->questions as $index => $question) {
@@ -200,6 +205,7 @@ class QuizEditor extends Component
             if ($this->quiz) {
                 $this->quiz->update([
                     'timestamp_seconds' => $this->parseTimestamp($this->timestamp),
+                    'score_percentage' => $this->scorePercentage,
                 ]);
 
                 return $this->quiz->refresh();
@@ -209,6 +215,7 @@ class QuizEditor extends Component
                 'content_id' => $this->content->id,
                 'kind' => $this->placementKind(),
                 'timestamp_seconds' => $this->parseTimestamp($this->timestamp),
+                'score_percentage' => $this->scorePercentage,
             ]);
 
             return $this->quiz;
@@ -221,6 +228,7 @@ class QuizEditor extends Component
             $existingQuiz->update([
                 'kind' => $this->placementKind(),
                 'timestamp_seconds' => null,
+                'score_percentage' => $this->scorePercentage,
             ]);
 
             $this->quiz = $existingQuiz->refresh();
@@ -232,6 +240,7 @@ class QuizEditor extends Component
             'content_id' => $this->content->id,
             'kind' => $this->placementKind(),
             'timestamp_seconds' => null,
+            'score_percentage' => $this->scorePercentage,
         ]);
 
         return $this->quiz;

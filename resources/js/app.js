@@ -54,16 +54,12 @@ window.courseVideoPlayer = function (config) {
         playbackRates: [0.75, 1, 1.25, 1.5, 1.75, 2],
         blockedMessage: '',
         watchUnlocked: config.isCompleted || ! config.isVideoLesson,
+        timestampedQuizOpen: false,
+        completedTimestampedQuizIds: [...(config.completedTimestampedQuizIds ?? [])],
 
         init() {
             this.volume = Number.isFinite(this.volume) ? this.volume : 80;
             this.playbackRate = this.playbackRates.includes(this.playbackRate) ? this.playbackRate : 1;
-            console.debug('[course-player] init', {
-                pageUrl: window.location.href,
-                moduleId: this.moduleId,
-                youtubeId: this.youtubeId,
-                playerElementId: this.playerElementId,
-            });
 
             if (! this.isVideoLesson) {
                 this.maxTime = this.endTimeSeconds > this.startTimeSeconds ? this.endTimeSeconds : this.startTimeSeconds;
@@ -135,19 +131,7 @@ window.courseVideoPlayer = function (config) {
                 iframe.style.height = '100%';
                 iframe.style.position = 'absolute';
                 iframe.style.inset = '0';
-                console.debug('[course-player] iframe', {
-                    pageUrl: window.location.href,
-                    moduleId: this.moduleId,
-                    iframeSrc: iframe.src,
-                });
             }
-            console.debug('[course-player] ready', {
-                pageUrl: window.location.href,
-                moduleId: this.moduleId,
-                youtubeId: this.youtubeId,
-                hasGetCurrentTime: hasPlayerMethod('getCurrentTime'),
-                hasPlayVideo: hasPlayerMethod('playVideo'),
-            });
             this.ready = true;
             this.playerDuration = this.displayDurationFromPlayer();
             this.currentTime = this.startTimeSeconds;
@@ -198,6 +182,8 @@ window.courseVideoPlayer = function (config) {
                 this.sliderValue = this.currentTime;
                 this.maxTime = Math.max(this.maxTime, this.currentTime);
 
+                this.checkTimestampedQuizzes();
+
                 if (this.endTimeSeconds > this.startTimeSeconds && this.currentTime >= this.endTimeSeconds - 0.35) {
                     if (hasPlayerMethod('pauseVideo')) {
                         playerInstance.pauseVideo();
@@ -213,6 +199,31 @@ window.courseVideoPlayer = function (config) {
                     this.unlockWatchGate();
                 }
             }, 250);
+        },
+
+        checkTimestampedQuizzes() {
+            if (! this.isVideoLesson || this.timestampedQuizOpen) {
+                return;
+            }
+
+            const nextCheckpoint = (this.timestampedQuizzes ?? []).find((quiz) => {
+                if (this.completedTimestampedQuizIds.includes(quiz.id)) {
+                    return false;
+                }
+
+                return this.currentTime >= Math.max(this.startTimeSeconds, quiz.timestamp_seconds);
+            });
+
+            if (! nextCheckpoint) {
+                return;
+            }
+
+            if (hasPlayerMethod('pauseVideo')) {
+                playerInstance.pauseVideo();
+            }
+
+            this.timestampedQuizOpen = true;
+            this.$wire.openTimestampedQuiz(nextCheckpoint.id);
         },
 
         displayDurationFromPlayer() {
@@ -360,6 +371,18 @@ window.courseVideoPlayer = function (config) {
             }
 
             this.$wire.startQuiz(this.watchUnlocked || this.isCompleted);
+        },
+
+        handleTimestampedQuizResolved(detail) {
+            const payload = Array.isArray(detail) ? detail[0] : detail;
+            const quizId = payload?.quizId;
+
+            if (typeof quizId === 'number' && ! this.completedTimestampedQuizIds.includes(quizId)) {
+                this.completedTimestampedQuizIds.push(quizId);
+            }
+
+            this.timestampedQuizOpen = false;
+            this.showBlockedMessage('Checkpoint completed. Press play to continue.');
         },
 
         showBlockedMessage(message) {

@@ -112,7 +112,7 @@
         </div>
 
         <div class="min-h-0 flex-1 overflow-y-auto pb-4">
-            @if (! $showQuiz)
+            @if (! $showQuiz || $activeQuizContext === 'timestamped')
                 @php
                     $playerConfig = [
                         'moduleId' => $currentModule->id,
@@ -129,6 +129,8 @@
                         'rewindSeconds' => $currentModule->rewindSeconds,
                         'forwardSeconds' => $currentModule->forwardSeconds,
                         'watchRequirementPercent' => $currentModule->watchRequirementPercent,
+                        'timestampedQuizzes' => $currentModule->timestampedQuizSummaries,
+                        'completedTimestampedQuizIds' => $completedTimestampedQuizIds,
                     ];
                 @endphp
 
@@ -137,6 +139,7 @@
                     data-player-config='@json($playerConfig)'
                     x-data="courseVideoPlayer(JSON.parse($el.dataset.playerConfig))"
                     x-init="init(); return () => destroy()"
+                    x-on:timestamped-quiz-resolved.window="handleTimestampedQuizResolved($event.detail)"
                     class="space-y-4"
                 >
                     <div class="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_24px_80px_-40px_rgba(15,23,42,0.55)] dark:border-zinc-800 dark:bg-zinc-900">
@@ -332,11 +335,11 @@
                                         <button
                                             type="button"
                                             class="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition"
-                                            :class="watchUnlocked || isCompleted ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 hover:bg-blue-500' : 'cursor-not-allowed bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'"
+                                            :class="(watchUnlocked || isCompleted || ! isVideoLesson) ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 hover:bg-blue-500' : 'cursor-not-allowed bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'"
                                             @click="startQuiz"
                                         >
                                             <flux:icon.academic-cap class="h-4 w-4" />
-                                            <span x-text="watchUnlocked || isCompleted ? 'Take Module Quiz' : 'Watch More to Unlock Quiz'"></span>
+                                            <span x-text="(watchUnlocked || isCompleted || ! isVideoLesson) ? @js($currentModule->mainQuizButtonLabel) : 'Watch More to Unlock Quiz'"></span>
                                         </button>
                                     </div>
 
@@ -357,13 +360,7 @@
 
                                             <div class="space-y-3">
                                                 @forelse ($comments as $comment)
-                                                    <div wire:key="comment-{{ $comment->id }}" class="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/60">
-                                                        <div class="flex items-center justify-between gap-3">
-                                                            <p class="text-sm font-semibold text-zinc-950 dark:text-white">{{ $comment->user?->name ?? 'Unknown user' }}</p>
-                                                            <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $comment->created_at?->diffForHumans() }}</p>
-                                                        </div>
-                                                        <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{{ $comment->comment_text }}</p>
-                                                    </div>
+                                                    @include('livewire.faculty.partials.comment-thread', ['comment' => $comment, 'depth' => 0])
                                                 @empty
                                                     <div class="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
                                                         No comments yet. Start the discussion for this lesson.
@@ -376,6 +373,26 @@
                             </div>
                         </div>
                     </div>
+
+                    @if ($showQuiz && $activeQuizContext === 'timestamped' && $activeQuiz)
+                        <div class="fixed inset-0 z-60 flex items-center justify-center bg-zinc-950/80 px-4 backdrop-blur-sm">
+                            <div class="w-full max-w-3xl rounded-[2rem] border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+                                <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ $activeQuizTitle }}</h3>
+                                        <p class="text-sm text-zinc-500 dark:text-zinc-400">
+                                            Pass score: {{ $activeQuizPassPercentage }}%
+                                        </p>
+                                    </div>
+                                    <flux:badge variant="solid" color="blue">Timestamped</flux:badge>
+                                </div>
+
+                                <div class="p-6">
+                                    @include('livewire.faculty.partials.quiz-panel', ['isTimestampedQuiz' => true])
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
                     @if ($showFeedback)
                         <div class="rounded-[1.5rem] border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/40 dark:bg-blue-900/20">
@@ -413,81 +430,14 @@
                 <div class="rounded-[2rem] border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
                     <div class="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
                         <div>
-                            <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Module Quiz</h3>
-                            <p class="text-sm text-zinc-500 dark:text-zinc-400">Pass with at least 80% to complete this lesson.</p>
+                            <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ $activeQuizTitle }}</h3>
+                            <p class="text-sm text-zinc-500 dark:text-zinc-400">Pass with at least {{ $activeQuizPassPercentage }}% to complete this lesson.</p>
                         </div>
-                        <flux:badge variant="solid" color="zinc">Pass: 80%</flux:badge>
+                        <flux:badge variant="solid" color="zinc">Pass: {{ $activeQuizPassPercentage }}%</flux:badge>
                     </div>
 
                     <div class="p-6">
-                        @if (! $quizSubmitted)
-                            <div class="space-y-6">
-                                @foreach ($quizQuestions as $questionIndex => $question)
-                                    <div wire:key="quiz-question-{{ $question['id'] }}" class="space-y-3">
-                                        <p class="font-medium text-zinc-950 dark:text-white">
-                                            {{ $questionIndex + 1 }}. {{ $question['question'] }}
-                                        </p>
-                                        <div class="space-y-2">
-                                            @foreach ($question['options'] as $option)
-                                                <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 p-4 transition hover:border-blue-300 hover:bg-blue-50/70 dark:border-zinc-800 dark:hover:border-blue-800 dark:hover:bg-zinc-800/80">
-                                                    <input
-                                                        type="radio"
-                                                        name="q_{{ $question['id'] }}"
-                                                        value="{{ $option['id'] }}"
-                                                        wire:click="setAnswer('{{ $question['id'] }}', '{{ $option['id'] }}')"
-                                                        @checked(isset($quizAnswers[$question['id']]) && $quizAnswers[$question['id']] === $option['id'])
-                                                        class="h-4 w-4 border-zinc-300 text-blue-600 focus:ring-blue-500"
-                                                    >
-                                                    <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $option['text'] }}</span>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                    </div>
-                                @endforeach
-
-                                <flux:button variant="primary" class="w-full" wire:click="submitQuiz">
-                                    Submit Quiz
-                                </flux:button>
-                            </div>
-                        @else
-                            <div class="space-y-6 py-8 text-center">
-                                @if ($quizScore >= 80)
-                                    <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-                                        <flux:icon.check-circle class="h-12 w-12 text-emerald-600 dark:text-emerald-400" />
-                                    </div>
-                                    <div>
-                                        <h3 class="text-3xl font-bold text-zinc-950 dark:text-white">Module Complete</h3>
-                                        <p class="mt-2 text-zinc-500 dark:text-zinc-400">You passed with {{ $quizScore }}%.</p>
-                                    </div>
-                                    <flux:button variant="primary" wire:click="resetQuiz">
-                                        Continue Learning
-                                    </flux:button>
-                                @else
-                                    <div class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                                        <flux:icon.x-circle class="h-12 w-12 text-red-600 dark:text-red-400" />
-                                    </div>
-                                    <div>
-                                        <h3 class="text-3xl font-bold text-zinc-950 dark:text-white">Score: {{ $quizScore }}%</h3>
-                                        <p class="mt-2 text-zinc-500 dark:text-zinc-400">Review the lesson and try again.</p>
-                                    </div>
-                                    <div class="mx-auto max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left dark:border-amber-900/40 dark:bg-amber-900/20">
-                                        <div class="flex items-start gap-3">
-                                            <flux:icon.exclamation-triangle class="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-                                            <p class="text-sm text-amber-800 dark:text-amber-300">Revisit the lesson notes and controlled playback before retaking the quiz.</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex justify-center gap-3">
-                                        <flux:button variant="outline" wire:click="resetQuiz">
-                                            <flux:icon.arrow-path class="mr-2 h-4 w-4" />
-                                            Review Lesson
-                                        </flux:button>
-                                        <flux:button variant="primary" wire:click="retakeQuiz">
-                                            Retake Quiz
-                                        </flux:button>
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
+                        @include('livewire.faculty.partials.quiz-panel', ['isTimestampedQuiz' => false])
                     </div>
                 </div>
             @endif

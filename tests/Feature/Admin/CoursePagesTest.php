@@ -254,6 +254,7 @@ test('admin can build a quiz content assessment from the unified quiz editor', f
 
     Livewire::actingAs($admin)
         ->test(QuizEditor::class, ['course' => $course, 'content' => $content, 'placement' => 'content'])
+        ->set('scorePercentage', 75)
         ->set('questions.0.question_text', 'What is the correct answer?')
         ->set('questions.0.type', 'multiple_choice')
         ->set('questions.0.options.0', 'Option A')
@@ -265,6 +266,7 @@ test('admin can build a quiz content assessment from the unified quiz editor', f
     $quiz = Quiz::query()->where('content_id', $content->id)->where('kind', QuizKind::Content)->first();
 
     expect($quiz)->not->toBeNull();
+    expect($quiz?->score_percentage)->toBe(75);
     expect($quiz?->questions()->count())->toBe(1);
     expect($quiz?->questions()->first()?->options)->toBe(['Option A', 'Option B']);
     expect($quiz?->questions()->first()?->correct_answer)->toBe([1]);
@@ -300,6 +302,7 @@ test('admin can create a timestamped quiz for video content from the unified edi
 
     Livewire::actingAs($admin)
         ->test(QuizEditor::class, ['course' => $course, 'content' => $content, 'placement' => 'timestamped'])
+        ->set('scorePercentage', 100)
         ->set('timestamp', '00:05:30')
         ->set('questions.0.question_text', 'Checkpoint question')
         ->set('questions.0.type', 'true_false')
@@ -311,6 +314,7 @@ test('admin can create a timestamped quiz for video content from the unified edi
 
     expect($quiz)->not->toBeNull();
     expect($quiz?->timestamp_seconds)->toBe(330);
+    expect($quiz?->score_percentage)->toBe(100);
 });
 
 test('content viewer renders timestamped quizzes without errors', function () {

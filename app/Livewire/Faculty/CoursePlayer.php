@@ -6,6 +6,9 @@ use App\Models\Comment;
 use App\Models\Content;
 use App\Models\Course;
 use App\Models\Progress;
+use App\Models\Question;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
@@ -47,41 +50,19 @@ class CoursePlayer extends Component
 
     public ?int $activeReplyCommentId = null;
 
-    public array $quizQuestions = [
-        [
-            'id' => 'q1',
-            'question' => 'Which of the following best describes active learning?',
-            'options' => [
-                ['id' => 'a', 'text' => 'Listening to lectures passively'],
-                ['id' => 'b', 'text' => 'Engaging students through activities and discussions'],
-                ['id' => 'c', 'text' => 'Reading textbooks only'],
-                ['id' => 'd', 'text' => 'Watching videos without interaction'],
-            ],
-            'correctAnswer' => 'b',
-        ],
-        [
-            'id' => 'q2',
-            'question' => 'What is the primary benefit of formative assessment?',
-            'options' => [
-                ['id' => 'a', 'text' => 'Grading students at the end of a course'],
-                ['id' => 'b', 'text' => 'Providing ongoing feedback for improvement'],
-                ['id' => 'c', 'text' => 'Replacing final exams'],
-                ['id' => 'd', 'text' => 'Reducing teaching workload'],
-            ],
-            'correctAnswer' => 'b',
-        ],
-        [
-            'id' => 'q3',
-            'question' => 'Which strategy promotes higher-order thinking?',
-            'options' => [
-                ['id' => 'a', 'text' => 'Memorization drills'],
-                ['id' => 'b', 'text' => 'Multiple choice tests only'],
-                ['id' => 'c', 'text' => 'Problem-based learning'],
-                ['id' => 'd', 'text' => 'Lecture-only format'],
-            ],
-            'correctAnswer' => 'c',
-        ],
-    ];
+    public ?Quiz $activeQuiz = null;
+
+    public string $activeQuizContext = 'main';
+
+    public string $activeQuizTitle = 'Module Quiz';
+
+    public int $activeQuizPassPercentage = 0;
+
+    public array $quizQuestions = [];
+
+    public array $completedTimestampedQuizIds = [];
+
+    public ?int $activeTimestampedQuizId = null;
 
     public function mount(?Course $course = null): void
     {
@@ -104,24 +85,32 @@ class CoursePlayer extends Component
 
         $this->course->loadMissing('topics.modules.contents');
 
-        $this->modules = $this->course->topics
+        $contentIds = $this->course->topics
             ->sortBy('order')
             ->flatMap(fn ($topic) => $topic->modules->sortBy('order'))
             ->flatMap(fn ($module) => $module->contents->sortBy('order'))
-            ->values();
+            ->pluck('id');
 
         $this->modules = Content::query()
-            ->whereIn('id', $this->modules->pluck('id'))
+            ->with([
+                'quiz.questions',
+                'endQuiz.questions',
+                'timestampedQuizzes.questions',
+            ])
+            ->whereIn('id', $contentIds)
             ->orderBy('id')
             ->get();
 
         $this->totalModules = $this->modules->count();
 
         if ($this->totalModules === 0) {
+            $this->comments = collect();
+
             return;
         }
 
-        $completedContentIds = Progress::where('user_id', $user->id)
+        $completedContentIds = Progress::query()
+            ->where('user_id', $user->id)
             ->whereIn('content_id', $this->modules->pluck('id'))
             ->whereNotNull('completed_at')
             ->pluck('content_id')
@@ -130,27 +119,25 @@ class CoursePlayer extends Component
         $this->completedModules = count($completedContentIds);
         $this->courseProgress = (int) round(($this->completedModules / $this->totalModules) * 100);
 
-        // Find current module (first incomplete, or last if all complete)
-        $firstIncomplete = $this->modules->first(fn ($module) => ! in_array($module->id, $completedContentIds));
-        $this->currentModule = $firstIncomplete ?? $this->modules->last();
+        $firstIncomplete = $this->modules->first(fn ($module) => ! in_array($module->id, $completedContentIds, true));
+        $currentModuleId = $this->currentModule->id ?? ($firstIncomplete?->id ?? $this->modules->last()->id);
 
-        // Format modules for UI
-        $this->modules->transform(function ($module, $key) use ($completedContentIds) {
-            $status = in_array($module->id, $completedContentIds) ? 'completed' : 'locked';
+        $this->modules->transform(function (Content $module, int $key) use ($completedContentIds) {
+            $status = in_array($module->id, $completedContentIds, true) ? 'completed' : 'locked';
 
-            // Allow clicking if it's completed, or if it's the current one being worked on
-            if ($module->id === $this->currentModule->id) {
+            if ($module->id === ($this->currentModule->id ?? null)) {
                 $status = 'in-progress';
             }
 
-            // Allow sequential unlocking
-            $previousCompleted = $key === 0 || in_array($this->modules[$key - 1]->id, $completedContentIds);
+            $previousCompleted = $key === 0 || in_array($this->modules[$key - 1]->id, $completedContentIds, true);
             if ($status === 'locked' && $previousCompleted) {
-                $status = 'unlocked'; // Or treat as in-progress for accessibility
+                $status = 'unlocked';
             }
 
-            $module->status = $status;
             $meta = is_array($module->content_meta) ? $module->content_meta : [];
+            $mainQuiz = $module->type?->value === 'quiz' ? $module->quiz : $module->endQuiz;
+
+            $module->status = $status;
             $module->duration = $meta['duration'] ?? '15:00';
             $module->videoId = $meta['youtube_id'] ?? $this->extractYoutubeId($module->content_url) ?? 'dQw4w9WgXcQ';
             $module->watchRequirementPercent = max(50, min(100, (int) ($meta['watch_requirement_percent'] ?? 90)));
@@ -162,11 +149,67 @@ class CoursePlayer extends Component
             $module->rewindSeconds = max(5, (int) ($meta['rewind_seconds'] ?? 10));
             $module->forwardSeconds = max(5, (int) ($meta['forward_seconds'] ?? 10));
             $module->isVideoLesson = $module->type?->value === 'video' && filled($module->videoId);
+            $module->mainQuiz = $mainQuiz;
+            $module->hasMainQuiz = $mainQuiz instanceof Quiz;
+            $module->mainQuizPassPercentage = $mainQuiz?->passingScore() ?? 0;
+            $module->mainQuizButtonLabel = $mainQuiz instanceof Quiz ? 'Take Module Quiz' : 'Mark Lesson Complete';
+            $module->timestampedQuizSummaries = $module->timestampedQuizzes
+                ->sortBy('timestamp_seconds')
+                ->map(fn (Quiz $quiz) => [
+                    'id' => $quiz->id,
+                    'timestamp_seconds' => $quiz->timestamp_seconds ?? 0,
+                    'score_percentage' => $quiz->passingScore(),
+                ])
+                ->values()
+                ->all();
 
             return $module;
         });
 
+        $this->currentModule = $this->modules->firstWhere('id', $currentModuleId) ?? $this->modules->first();
+        $this->syncCurrentModuleStatus($completedContentIds);
+        $this->completedTimestampedQuizIds = $this->resolveCompletedTimestampedQuizIds();
         $this->loadComments();
+    }
+
+    protected function syncCurrentModuleStatus(array $completedContentIds): void
+    {
+        if (in_array($this->currentModule->id, $completedContentIds, true)) {
+            $this->currentModule->status = 'completed';
+
+            return;
+        }
+
+        $this->currentModule->status = 'in-progress';
+    }
+
+    protected function resolveCompletedTimestampedQuizIds(): array
+    {
+        $timestampedQuizzes = $this->currentModule->timestampedQuizzes ?? collect();
+
+        if ($timestampedQuizzes->isEmpty()) {
+            return [];
+        }
+
+        $attemptsByQuiz = QuizAttempt::query()
+            ->where('user_id', auth()->id())
+            ->whereIn('quiz_id', $timestampedQuizzes->pluck('id'))
+            ->get()
+            ->groupBy('quiz_id');
+
+        return $timestampedQuizzes
+            ->filter(function (Quiz $quiz) use ($attemptsByQuiz) {
+                $attempts = $attemptsByQuiz->get($quiz->id, collect());
+
+                if ($attempts->isEmpty()) {
+                    return false;
+                }
+
+                return $attempts->max('score') >= $quiz->passingScore();
+            })
+            ->pluck('id')
+            ->values()
+            ->all();
     }
 
     protected function loadComments(): void
@@ -232,16 +275,73 @@ class CoursePlayer extends Component
         return null;
     }
 
+    protected function transformQuestions(Quiz $quiz): array
+    {
+        return $quiz->questions
+            ->map(function (Question $question): array {
+                $options = $question->type === 'true_false'
+                    ? [
+                        ['id' => '0', 'text' => 'True'],
+                        ['id' => '1', 'text' => 'False'],
+                    ]
+                    : collect($question->options ?? [])
+                        ->values()
+                        ->map(fn (string $option, int $index) => ['id' => (string) $index, 'text' => $option])
+                        ->all();
+
+                return [
+                    'id' => $question->id,
+                    'question' => $question->question_text,
+                    'type' => $question->type,
+                    'options' => $options,
+                    'correctAnswer' => collect($question->correct_answer ?? [])
+                        ->map(fn ($answer) => (string) $answer)
+                        ->all(),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    protected function loadQuiz(Quiz $quiz, string $context): void
+    {
+        $this->activeQuiz = $quiz->loadMissing('questions');
+        $this->activeQuizContext = $context;
+        $this->activeTimestampedQuizId = $context === 'timestamped' ? $quiz->id : null;
+        $this->activeQuizPassPercentage = $quiz->passingScore();
+        $this->activeQuizTitle = $context === 'timestamped' ? 'Checkpoint Quiz' : 'Module Quiz';
+        $this->quizQuestions = $this->transformQuestions($this->activeQuiz);
+        $this->quizAnswers = [];
+        $this->quizScore = null;
+        $this->quizSubmitted = false;
+        $this->showQuiz = true;
+    }
+
+    protected function clearQuizState(): void
+    {
+        $this->showQuiz = false;
+        $this->quizSubmitted = false;
+        $this->quizScore = null;
+        $this->quizAnswers = [];
+        $this->quizQuestions = [];
+        $this->activeQuiz = null;
+        $this->activeQuizContext = 'main';
+        $this->activeQuizTitle = 'Module Quiz';
+        $this->activeQuizPassPercentage = 0;
+        $this->activeTimestampedQuizId = null;
+    }
+
     public function selectModule(int $moduleId): void
     {
         $module = $this->modules->firstWhere('id', $moduleId);
         if ($module && $module->status !== 'locked') {
             $this->currentModule = $module;
-            $this->resetQuiz();
+            $this->clearQuizState();
             $this->mobileDrawerOpen = false;
             $this->newComment = '';
             $this->replyDrafts = [];
             $this->activeReplyCommentId = null;
+            $this->completedTimestampedQuizIds = $this->resolveCompletedTimestampedQuizIds();
             $this->loadComments();
         }
     }
@@ -258,16 +358,47 @@ class CoursePlayer extends Component
 
     public function startQuiz(bool $watchRequirementMet = false): void
     {
-        if ($this->currentModule->status !== 'completed' && ! $watchRequirementMet) {
+        $this->loadCourseData();
+
+        if ($this->currentModule->isVideoLesson && $this->currentModule->status !== 'completed' && ! $watchRequirementMet) {
             return;
         }
 
-        $this->showQuiz = true;
+        if (! $this->currentModule->hasMainQuiz) {
+            $this->completeCurrentModule();
+            $this->loadCourseData();
+
+            return;
+        }
+
+        $this->loadQuiz($this->currentModule->mainQuiz, 'main');
+    }
+
+    public function openTimestampedQuiz(int $quizId): void
+    {
+        $this->loadCourseData();
+
+        if (in_array($quizId, $this->completedTimestampedQuizIds, true)) {
+            return;
+        }
+
+        $quiz = $this->currentModule->timestampedQuizzes
+            ->firstWhere('id', $quizId);
+
+        if (! $quiz instanceof Quiz) {
+            return;
+        }
+
+        $this->loadQuiz($quiz, 'timestamped');
     }
 
     public function resetQuiz(): void
     {
-        $this->showQuiz = false;
+        $this->clearQuizState();
+    }
+
+    public function retakeQuiz(): void
+    {
         $this->quizSubmitted = false;
         $this->quizScore = null;
         $this->quizAnswers = [];
@@ -278,41 +409,75 @@ class CoursePlayer extends Component
         $this->quizAnswers[$questionId] = $answerId;
     }
 
+    protected function allQuestionsAnswered(): bool
+    {
+        return count($this->quizAnswers) >= count($this->quizQuestions);
+    }
+
+    protected function calculateQuizScore(): int
+    {
+        $correctAnswers = collect($this->quizQuestions)
+            ->filter(function (array $question) {
+                $selectedAnswer = $this->quizAnswers[(string) $question['id']] ?? null;
+
+                return $selectedAnswer !== null && in_array((string) $selectedAnswer, $question['correctAnswer'], true);
+            })
+            ->count();
+
+        return (int) round(($correctAnswers / max(count($this->quizQuestions), 1)) * 100);
+    }
+
     public function submitQuiz(): void
     {
-        if (count($this->quizAnswers) < count($this->quizQuestions)) {
+        if (! $this->activeQuiz instanceof Quiz || ! $this->allQuestionsAnswered()) {
             return;
         }
 
-        $correct = 0;
-        foreach ($this->quizQuestions as $q) {
-            if (isset($this->quizAnswers[$q['id']]) && $this->quizAnswers[$q['id']] === $q['correctAnswer']) {
-                $correct++;
-            }
-        }
-        $this->quizScore = (int) round(($correct / count($this->quizQuestions)) * 100);
+        $this->quizScore = $this->calculateQuizScore();
         $this->quizSubmitted = true;
 
-        if ($this->quizScore >= 80) {
-            $this->markCurrentModuleComplete();
+        QuizAttempt::query()->create([
+            'user_id' => auth()->id(),
+            'quiz_id' => $this->activeQuiz->id,
+            'score' => $this->quizScore,
+            'attempted_at' => now(),
+        ]);
+
+        if ($this->quizScore < $this->activeQuizPassPercentage) {
+            return;
         }
+
+        if ($this->activeQuizContext === 'timestamped') {
+            $this->completedTimestampedQuizIds[] = $this->activeQuiz->id;
+            $this->completedTimestampedQuizIds = array_values(array_unique($this->completedTimestampedQuizIds));
+
+            return;
+        }
+
+        $this->completeCurrentModule();
     }
 
-    public function markCurrentModuleComplete(): void
+    protected function completeCurrentModule(): void
     {
-        $user = auth()->user();
-        Progress::updateOrCreate(
-            ['user_id' => $user->id, 'content_id' => $this->currentModule->id],
+        Progress::query()->updateOrCreate(
+            ['user_id' => auth()->id(), 'content_id' => $this->currentModule->id],
             ['completed_at' => now()]
         );
+    }
+
+    public function finishMainQuiz(): void
+    {
+        $this->clearQuizState();
         $this->loadCourseData();
     }
 
-    public function retakeQuiz(): void
+    public function continueTimestampedQuiz(): void
     {
-        $this->quizSubmitted = false;
-        $this->quizScore = null;
-        $this->quizAnswers = [];
+        if ($this->activeTimestampedQuizId) {
+            $this->dispatch('timestamped-quiz-resolved', quizId: $this->activeTimestampedQuizId);
+        }
+
+        $this->clearQuizState();
     }
 
     public function toggleFeedback(): void

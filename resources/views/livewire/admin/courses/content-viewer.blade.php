@@ -96,6 +96,7 @@
                                     <flux:icon.video-camera class="w-4 h-4 text-blue-500" />
                                     <span class="text-sm font-mono">{{ gmdate('H:i:s', $tsQuiz->timestamp_seconds ?? 0) }}</span>
                                     <flux:badge size="xs">{{ $tsQuiz->questions->count() }} questions</flux:badge>
+                                    <flux:badge size="xs" color="amber">Pass {{ $tsQuiz->passingScore() }}%</flux:badge>
                                 </div>
                                 <flux:button size="xs" variant="ghost" href="{{ route('admin.courses.content.timestamped-quiz.edit', [$content->module->topic->course->id, $content->id, $tsQuiz->id]) }}" wire:navigate>
                                     Edit
@@ -117,6 +118,7 @@
                         <flux:icon.clipboard-document-check class="w-5 h-5 text-green-500" />
                         <flux:heading level="2" size="lg">End Quiz</flux:heading>
                         <flux:badge color="green">End of Video</flux:badge>
+                        <flux:badge color="amber">Pass {{ $content->endQuiz->passingScore() }}%</flux:badge>
                     </div>
                     <flux:button size="sm" href="{{ route('admin.courses.content.end-quiz.edit', [$content->module->topic->course->id, $content->id]) }}" wire:navigate>
                         Edit
@@ -169,6 +171,7 @@
                     <div class="flex items-center gap-2">
                         <flux:icon.clipboard-document-list class="w-5 h-5 text-green-500" />
                         <flux:heading level="2" size="lg">Quiz Questions</flux:heading>
+                        <flux:badge color="amber">Pass {{ $content->quiz->passingScore() }}%</flux:badge>
                     </div>
                 </div>
                 @if ($content->quiz->questions->count() > 0)

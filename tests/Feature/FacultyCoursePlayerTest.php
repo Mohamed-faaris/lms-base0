@@ -6,6 +6,9 @@ use App\Models\Content;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Module;
+use App\Models\Question;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use App\Models\Topic;
 use App\Models\User;
 use Livewire\Livewire;
@@ -68,7 +71,21 @@ test('faculty course player renders controlled lesson content', function () {
 });
 
 test('faculty course player blocks quiz start until watch requirement is met', function () {
-    [$staff, $course] = buildCoursePlayerFixture();
+    [$staff, $course, $content] = buildCoursePlayerFixture();
+
+    $quiz = Quiz::create([
+        'content_id' => $content->id,
+        'kind' => 'end',
+        'score_percentage' => 80,
+    ]);
+
+    Question::create([
+        'quiz_id' => $quiz->id,
+        'type' => 'true_false',
+        'question_text' => 'Checkpoint question',
+        'options' => [],
+        'correct_answer' => [0],
+    ]);
 
     Livewire::actingAs($staff)
         ->test(CoursePlayer::class, ['course' => $course])
@@ -133,4 +150,44 @@ test('faculty course player allows replying to comments', function () {
         ->where('content_id', $content->id)
         ->where('parent_comment_id', $reply->id)
         ->count())->toBe(1);
+});
+
+test('faculty course player uses real quiz questions and stores attempts', function () {
+    [$staff, $course, $content] = buildCoursePlayerFixture();
+
+    $quiz = Quiz::create([
+        'content_id' => $content->id,
+        'kind' => 'end',
+        'score_percentage' => 50,
+    ]);
+
+    $questionOne = Question::create([
+        'quiz_id' => $quiz->id,
+        'type' => 'true_false',
+        'question_text' => 'React is a library.',
+        'options' => [],
+        'correct_answer' => [0],
+    ]);
+
+    $questionTwo = Question::create([
+        'quiz_id' => $quiz->id,
+        'type' => 'multiple_choice',
+        'question_text' => 'Which hook manages state?',
+        'options' => ['useState', 'useFetch'],
+        'correct_answer' => [0],
+    ]);
+
+    Livewire::actingAs($staff)
+        ->test(CoursePlayer::class, ['course' => $course])
+        ->call('startQuiz', true)
+        ->assertSet('showQuiz', true)
+        ->assertSee('React is a library.')
+        ->assertSee('Which hook manages state?')
+        ->call('setAnswer', (string) $questionOne->id, '0')
+        ->call('setAnswer', (string) $questionTwo->id, '0')
+        ->call('submitQuiz')
+        ->assertSet('quizScore', 100)
+        ->assertSet('quizSubmitted', true);
+
+    expect(QuizAttempt::query()->where('quiz_id', $quiz->id)->where('user_id', $staff->id)->count())->toBe(1);
 });

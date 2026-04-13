@@ -10,6 +10,7 @@ class QuizAttempt extends Model
         'user_id',
         'quiz_id',
         'score',
+        'attempted_at',
     ];
 
     public $timestamps = false;

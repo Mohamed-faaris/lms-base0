@@ -129,6 +129,15 @@
                         </flux:field>
                     </div>
                 @endif
+
+                <div class="mt-5">
+                    <flux:field>
+                        <flux:label>Passing Score Percentage</flux:label>
+                        <flux:input type="number" min="0" max="100" wire:model="scorePercentage" placeholder="0" />
+                        <flux:error name="scorePercentage" />
+                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Leave empty to allow continuation at 0%.</p>
+                    </flux:field>
+                </div>
             </section>
 
             <section class="rounded-[1.75rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">

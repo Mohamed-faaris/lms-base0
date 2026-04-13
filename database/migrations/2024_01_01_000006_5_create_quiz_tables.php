@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('content_id')->constrained()->onDelete('cascade');
             $table->string('kind');
             $table->integer('timestamp_seconds')->nullable();
+            $table->unsignedTinyInteger('score_percentage')->nullable();
             $table->timestamps();
 
             $table->index('content_id');
