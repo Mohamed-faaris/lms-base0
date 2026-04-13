@@ -35,9 +35,11 @@ const ensureYoutubeIframeApi = (() => {
 })();
 
 window.courseVideoPlayer = function (config) {
+    let playerInstance = null;
+    const hasPlayerMethod = (methodName) => typeof playerInstance?.[methodName] === 'function';
+
     return {
         ...config,
-        player: null,
         pollInterval: null,
         hideNoticeTimeout: null,
         playing: false,
@@ -56,6 +58,12 @@ window.courseVideoPlayer = function (config) {
         init() {
             this.volume = Number.isFinite(this.volume) ? this.volume : 80;
             this.playbackRate = this.playbackRates.includes(this.playbackRate) ? this.playbackRate : 1;
+            console.debug('[course-player] init', {
+                pageUrl: window.location.href,
+                moduleId: this.moduleId,
+                youtubeId: this.youtubeId,
+                playerElementId: this.playerElementId,
+            });
 
             if (! this.isVideoLesson) {
                 this.maxTime = this.endTimeSeconds > this.startTimeSeconds ? this.endTimeSeconds : this.startTimeSeconds;
@@ -71,8 +79,10 @@ window.courseVideoPlayer = function (config) {
                     return;
                 }
 
-                this.player = new window.YT.Player(this.playerElementId, {
+                playerInstance = new window.YT.Player(this.playerElementId, {
                     videoId: this.youtubeId,
+                    width: '100%',
+                    height: '100%',
                     playerVars: {
                         controls: 0,
                         disablekb: 1,
@@ -84,7 +94,7 @@ window.courseVideoPlayer = function (config) {
                         end: this.endTimeSeconds > this.startTimeSeconds ? this.endTimeSeconds : undefined,
                     },
                     events: {
-                        onReady: () => this.handlePlayerReady(),
+                        onReady: (event) => this.handlePlayerReady(event),
                         onStateChange: (event) => this.handlePlayerStateChange(event),
                     },
                 });
@@ -95,8 +105,8 @@ window.courseVideoPlayer = function (config) {
             window.clearInterval(this.pollInterval);
             window.clearTimeout(this.hideNoticeTimeout);
 
-            if (this.player?.destroy) {
-                this.player.destroy();
+            if (hasPlayerMethod('destroy')) {
+                playerInstance.destroy();
             }
         },
 
@@ -117,14 +127,36 @@ window.courseVideoPlayer = function (config) {
             return Math.min(100, Math.round((watchedSeconds / playableSeconds) * 100));
         },
 
-        handlePlayerReady() {
+        handlePlayerReady(event) {
+            playerInstance = event?.target ?? playerInstance;
+            const iframe = hasPlayerMethod('getIframe') ? playerInstance.getIframe() : null;
+            if (iframe) {
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.position = 'absolute';
+                iframe.style.inset = '0';
+                console.debug('[course-player] iframe', {
+                    pageUrl: window.location.href,
+                    moduleId: this.moduleId,
+                    iframeSrc: iframe.src,
+                });
+            }
+            console.debug('[course-player] ready', {
+                pageUrl: window.location.href,
+                moduleId: this.moduleId,
+                youtubeId: this.youtubeId,
+                hasGetCurrentTime: hasPlayerMethod('getCurrentTime'),
+                hasPlayVideo: hasPlayerMethod('playVideo'),
+            });
             this.ready = true;
             this.playerDuration = this.displayDurationFromPlayer();
             this.currentTime = this.startTimeSeconds;
             this.sliderValue = this.currentTime;
             this.maxTime = this.startTimeSeconds;
 
-            this.player.setVolume(this.volume);
+            if (hasPlayerMethod('setVolume')) {
+                playerInstance.setVolume(this.volume);
+            }
             this.applyPlaybackRate(this.playbackRate);
             this.applyCaptions();
             this.startPolling();
@@ -145,11 +177,11 @@ window.courseVideoPlayer = function (config) {
             window.clearInterval(this.pollInterval);
 
             this.pollInterval = window.setInterval(() => {
-                if (! this.player || ! this.ready) {
+                if (! this.ready || ! hasPlayerMethod('getCurrentTime')) {
                     return;
                 }
 
-                const rawTime = this.player.getCurrentTime();
+                const rawTime = playerInstance.getCurrentTime();
                 const currentTime = Number.isFinite(rawTime) ? rawTime : this.startTimeSeconds;
                 const boundedTime = Math.max(this.startTimeSeconds, currentTime);
 
@@ -167,7 +199,9 @@ window.courseVideoPlayer = function (config) {
                 this.maxTime = Math.max(this.maxTime, this.currentTime);
 
                 if (this.endTimeSeconds > this.startTimeSeconds && this.currentTime >= this.endTimeSeconds - 0.35) {
-                    this.player.pauseVideo();
+                    if (hasPlayerMethod('pauseVideo')) {
+                        playerInstance.pauseVideo();
+                    }
                     this.seekTo(this.endTimeSeconds);
                     this.maxTime = this.endTimeSeconds;
                     this.currentTime = this.endTimeSeconds;
@@ -186,7 +220,7 @@ window.courseVideoPlayer = function (config) {
                 return this.endTimeSeconds;
             }
 
-            const duration = this.player?.getDuration?.() ?? 0;
+            const duration = hasPlayerMethod('getDuration') ? playerInstance.getDuration() : 0;
 
             return Number.isFinite(duration) && duration > 0 ? duration : this.startTimeSeconds + 1;
         },
@@ -217,28 +251,30 @@ window.courseVideoPlayer = function (config) {
         },
 
         seekTo(nextTime) {
-            if (! this.player || ! this.ready) {
+            if (! this.ready || ! hasPlayerMethod('seekTo')) {
                 return;
             }
 
             const boundedTime = Math.max(this.startTimeSeconds, Math.min(nextTime, this.displayDuration));
-            this.player.seekTo(boundedTime, true);
+            playerInstance.seekTo(boundedTime, true);
             this.currentTime = boundedTime;
             this.sliderValue = boundedTime;
         },
 
         handlePlayPause() {
-            if (! this.player || ! this.ready) {
+            if (! this.ready) {
                 return;
             }
 
-            if (this.playing) {
-                this.player.pauseVideo();
+            if (this.playing && hasPlayerMethod('pauseVideo')) {
+                playerInstance.pauseVideo();
 
                 return;
             }
 
-            this.player.playVideo();
+            if (hasPlayerMethod('playVideo')) {
+                playerInstance.playVideo();
+            }
         },
 
         handleRewind() {
@@ -257,8 +293,8 @@ window.courseVideoPlayer = function (config) {
             this.volume = Number.parseInt(event.target.value, 10);
             window.localStorage.setItem('course-player-volume', String(this.volume));
 
-            if (this.player?.setVolume) {
-                this.player.setVolume(this.volume);
+            if (hasPlayerMethod('setVolume')) {
+                playerInstance.setVolume(this.volume);
             }
         },
 
@@ -269,11 +305,11 @@ window.courseVideoPlayer = function (config) {
         },
 
         applyPlaybackRate(rate) {
-            if (! this.player?.setPlaybackRate) {
+            if (! hasPlayerMethod('setPlaybackRate')) {
                 return;
             }
 
-            this.player.setPlaybackRate(rate);
+            playerInstance.setPlaybackRate(rate);
         },
 
         toggleCaptions() {
@@ -283,15 +319,15 @@ window.courseVideoPlayer = function (config) {
         },
 
         applyCaptions() {
-            if (! this.player) {
+            if (! playerInstance) {
                 return;
             }
 
             try {
-                if (this.captionsEnabled) {
-                    this.player.loadModule('captions');
-                } else {
-                    this.player.unloadModule('captions');
+                if (this.captionsEnabled && hasPlayerMethod('loadModule')) {
+                    playerInstance.loadModule('captions');
+                } else if (hasPlayerMethod('unloadModule')) {
+                    playerInstance.unloadModule('captions');
                 }
             } catch (error) {
                 console.debug('Caption toggle unavailable', error);
