@@ -23,7 +23,7 @@
             </div>
         </div>
 
-        <div class="space-y-2 overflow-y-auto p-3">
+        <div class="space-y-2 overflow-y-auto p-3 max-h-[calc(100vh-16rem)]">
             @foreach ($modules as $index => $module)
                 @php
                     $isCurrentModule = $currentModule->id === $module->id;
@@ -503,4 +503,4 @@
         </div>
     @endif
 </div>
-s
+

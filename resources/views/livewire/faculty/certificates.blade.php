@@ -111,15 +111,17 @@
 
         {{-- History Tab Content --}}
         @if($activeTab === 'history')
-            <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-x-auto">
-                <table class="min-w-full text-left">
-                    <thead class="bg-zinc-100 dark:bg-zinc-800">
+            <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-x-auto w-full">
+                <div class="min-w-full">
+                    <table class="min-w-full w-full table-fixed text-left border-separate border-spacing-0">
+                        <thead class="bg-zinc-100 dark:bg-zinc-800">
                         <tr>
                             <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Course</th>
                             <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Completion Date</th>
                             <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Score</th>
                             <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Duration</th>
                             <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Certificate ID</th>
+                            <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -141,10 +143,22 @@
                                 <td class="px-6 py-4 text-sm font-mono text-zinc-500 dark:text-zinc-400">
                                     {{ $course['certificateId'] }}
                                 </td>
+                                <td class="px-6 py-4">
+                                    <flux:button
+                                        variant="ghost"
+                                        size="sm"
+                                        href="{{ route('faculty.course-player', ['course' => $course['id']]) }}"
+                                        wire:navigate
+                                        class="px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]"
+                                    >
+                                        View Course
+                                    </flux:button>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             </div>
         @endif
     </div>
