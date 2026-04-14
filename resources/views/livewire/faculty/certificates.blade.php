@@ -36,7 +36,10 @@
         @if($activeTab === 'certificates')
             <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 @forelse($completedCourses as $course)
-                    <div class="group flex flex-col rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 hover:-translate-y-1 relative">
+                    <div
+                        wire:key="certificate-card-{{ $course['id'] }}"
+                        class="group relative flex flex-col rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 hover:-translate-y-1"
+                    >
                         
                         {{-- Certificate Thumbnail --}}
                         <div class="aspect-[4/3] bg-gradient-to-br from-slate-100 to-blue-50 dark:from-slate-800/80 dark:to-blue-900/20 p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
@@ -80,11 +83,11 @@
                                 </div>
                             </div>
                             <div class="flex gap-3 mt-auto">
-                                <flux:button variant="outline" class="flex-1 font-semibold group-hover:border-blue-200 dark:group-hover:border-blue-800 transition-colors" wire:click="viewCertificate({{ $course['id'] }})">
+                                <flux:button variant="outline" class="flex-1 font-semibold group-hover:border-blue-200 dark:group-hover:border-blue-800 transition-colors" wire:click="viewCertificate({{ $course['id'] }})" wire:loading.attr="disabled" wire:target="viewCertificate({{ $course['id'] }})">
                                     <flux:icon.eye class="mr-2 h-4 w-4 text-zinc-400 group-hover:text-blue-500" />
                                     View
                                 </flux:button>
-                                <flux:button variant="primary" class="flex-1 font-semibold shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40" wire:click="viewCertificate({{ $course['id'] }})">
+                                <flux:button variant="primary" class="flex-1 font-semibold shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40" wire:click="downloadCertificate({{ $course['id'] }})" wire:loading.attr="disabled" wire:target="downloadCertificate({{ $course['id'] }})">
                                     <flux:icon.arrow-down-tray class="mr-2 h-4 w-4" />
                                     Download
                                 </flux:button>
@@ -108,41 +111,40 @@
 
         {{-- History Tab Content --}}
         @if($activeTab === 'history')
-            <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 shadow-sm">
-                <div class="space-y-0 relative before:absolute before:inset-0 before:ml-[1.1rem] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-zinc-200 dark:before:via-zinc-800 before:to-transparent">
-                    @foreach($progressHistory as $index => $item)
-                        <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active py-5">
-                            
-                            {{-- Timeline Icon --}}
-                            <div class="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-zinc-900 bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-transform duration-300 group-hover:scale-110">
-                                @if(str_contains($item['action'], 'Earned'))
-                                    <flux:icon.trophy class="h-4 w-4" />
-                                @elseif(str_contains($item['action'], 'Quiz'))
-                                    <flux:icon.clipboard-document-check class="h-4 w-4" />
-                                @else
-                                    <flux:icon.check-circle class="h-4 w-4" />
-                                @endif
-                            </div>
-                            
-                            {{-- Timeline Content Card --}}
-                            <div class="w-[calc(100%-3rem)] md:w-[calc(50%-2.5rem)] p-5 rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20 shadow-sm transition-all duration-300 hover:shadow-md hover:bg-white dark:hover:bg-zinc-800 hover:border-blue-200 dark:hover:border-blue-900/50">
-                                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-2">
-                                    <div>
-                                        <p class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-1">{{ $item['date'] }}</p>
-                                        <h4 class="font-bold text-zinc-900 dark:text-zinc-100 text-lg">{{ $item['action'] }}</h4>
-                                    </div>
-                                    <flux:badge color="amber" class="shrink-0 font-bold self-start">
-                                        +{{ $item['xp'] }} XP
-                                    </flux:badge>
-                                </div>
-                                <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-                                    <flux:icon.book-open class="h-4 w-4" />
-                                    {{ $item['course'] }}
-                                </p>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+            <div class="rounded-3xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-x-auto">
+                <table class="min-w-full text-left">
+                    <thead class="bg-zinc-100 dark:bg-zinc-800">
+                        <tr>
+                            <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Course</th>
+                            <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Completion Date</th>
+                            <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Score</th>
+                            <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Duration</th>
+                            <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Certificate ID</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                        @foreach($completedCourses as $course)
+                            <tr class="odd:bg-white even:bg-zinc-50 dark:odd:bg-zinc-950 dark:even:bg-zinc-900">
+                                <td class="px-6 py-4">
+                                    <p class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $course['name'] }}</p>
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Certificate of Completion</p>
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                                    {{ $course['completedDate'] }}
+                                </td>
+                                <td class="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                                    {{ $course['score'] }}%
+                                </td>
+                                <td class="px-6 py-4 text-sm text-zinc-600 dark:text-zinc-300">
+                                    {{ $course['duration'] }}
+                                </td>
+                                <td class="px-6 py-4 text-sm font-mono text-zinc-500 dark:text-zinc-400">
+                                    {{ $course['certificateId'] }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         @endif
     </div>

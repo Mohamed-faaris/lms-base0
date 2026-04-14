@@ -8,6 +8,8 @@ class Certificates extends Component
 {
     public array $completedCourses = [];
 
+    public array $completedCoursesIndex = [];
+
     public array $progressHistory = [];
 
     public bool $showCertificateModal = false;
@@ -24,7 +26,7 @@ class Certificates extends Component
         $this->recipientName = $user->name ?? '';
 
         // Mock data matching the sample
-        $this->completedCourses = [
+        $rawCompletedCourses = [
             [
                 'id' => 1,
                 'name' => 'Teaching Methodologies',
@@ -53,6 +55,12 @@ class Certificates extends Component
                 'hasCertificate' => true,
             ],
         ];
+        $this->completedCourses = $rawCompletedCourses;
+        $this->completedCoursesIndex = [];
+
+        foreach ($rawCompletedCourses as $course) {
+            $this->completedCoursesIndex[$course['id']] = $course;
+        }
 
         $this->progressHistory = [
             ['date' => 'Jan 29, 2026', 'action' => 'Completed Module 6', 'course' => 'Digital Pedagogy', 'xp' => 100],
@@ -68,11 +76,24 @@ class Certificates extends Component
 
     public function viewCertificate(int $courseId): void
     {
-        $selectedCourse = collect($this->completedCourses)->firstWhere('id', $courseId);
-
-        $this->selectedCourse = is_array($selectedCourse) ? $selectedCourse : null;
+        $this->selectedCourse = $this->completedCoursesIndex[$courseId] ?? null;
         $this->showCertificateModal = $this->selectedCourse !== null;
         $this->recipientName = auth()->user()->name ?? '';
+    }
+
+    public function downloadCertificate(int $courseId): void
+    {
+        $course = $this->completedCoursesIndex[$courseId] ?? null;
+
+        if (! $course) {
+            return;
+        }
+
+        $this->dispatchBrowserEvent('certificate-download', [
+            'courseId' => $courseId,
+            'name' => $course['name'],
+            'certificateId' => $course['certificateId'],
+        ]);
     }
 
     public function closeCertificate(): void
