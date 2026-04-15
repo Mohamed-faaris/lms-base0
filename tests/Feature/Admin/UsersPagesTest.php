@@ -29,9 +29,9 @@ test('admin can view the users index and open a profile', function () {
 
     $response->assertSuccessful();
     $response->assertSee('Users');
-    $response->assertSee($faculty->name);
-    $response->assertSee($staff->name);
-    $response->assertSee(route('admin.users.profile', $faculty));
+    // DataTables loads users via AJAX, check table structure exists
+    $response->assertSee('users-table');
+    $response->assertSee('users-search');
     $response->assertDontSee($adminUser->name);
     $response->assertDontSee($adminUser->email);
 });

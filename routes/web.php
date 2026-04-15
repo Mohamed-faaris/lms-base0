@@ -44,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('dashboard', AdminDashboard::class)->name('dashboard');
         Route::get('users', AdminUsersIndex::class)->name('users.index');
+        Route::get('users/datatable', \App\Http\Controllers\Admin\UsersDataTableController::class)->name('users.datatable');
         Route::get('users/{user}', AdminUserProfile::class)->name('users.profile');
         Route::get('enrollments', AdminEnrollments::class)->name('enrollments.index');
         Route::get('enrollments/create', EnrollmentBatchCreate::class)->name('enrollments.create');
