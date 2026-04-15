@@ -29,6 +29,8 @@ class Show extends Component
 
     public bool $showRevokeBatchModal = false;
 
+    public bool $showGlobalDeadlineModal = false;
+
     public bool $showLearnerDeadlineModal = false;
 
     public string $revokeBatchConfirmation = '';
@@ -38,6 +40,8 @@ class Show extends Component
     public string $selectedLearnerName = '';
 
     public string $selectedLearnerDeadlineDays = '1';
+
+    public string $globalDeadlineDays = '30';
 
     /** @var array<int, string> */
     public array $learnerDeadlineDays = [];
@@ -64,6 +68,44 @@ class Show extends Component
         $this->resetValidation('revokeBatchConfirmation');
         $this->revokeBatchConfirmation = '';
         $this->showRevokeBatchModal = false;
+    }
+
+    public function openGlobalDeadlineModal(): void
+    {
+        $this->resetValidation('globalDeadlineDays');
+        $enrollments = $this->resolveBatchEnrollments();
+
+        if ($enrollments->isNotEmpty()) {
+            $maxDeadline = (int) $enrollments->max('deadline');
+            $this->globalDeadlineDays = (string) max(1, $this->normalizeDeadlineDayDifference($maxDeadline - now()->timestamp));
+        }
+
+        $this->showGlobalDeadlineModal = true;
+    }
+
+    public function closeGlobalDeadlineModal(): void
+    {
+        $this->resetValidation('globalDeadlineDays');
+        $this->globalDeadlineDays = '30';
+        $this->showGlobalDeadlineModal = false;
+    }
+
+    public function saveGlobalDeadline(): Redirector
+    {
+        $validated = $this->validate([
+            'globalDeadlineDays' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $days = (int) $validated['globalDeadlineDays'];
+
+        $this->batchQuery()->update([
+            'deadline' => now()->addDays($days)->timestamp,
+        ]);
+
+        $this->syncEditableFields();
+        session()->flash('success', 'Global deadline updated for all learners.');
+
+        return redirect()->route('admin.enrollments.show', $this->batchKey);
     }
 
     public function openLearnerDeadlineModal(int $userId): void

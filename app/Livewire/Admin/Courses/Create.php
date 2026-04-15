@@ -3,7 +3,6 @@
 namespace App\Livewire\Admin\Courses;
 
 use App\Models\Course;
-
 use App\Services\PostHogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;

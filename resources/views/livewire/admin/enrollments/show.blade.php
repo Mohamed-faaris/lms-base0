@@ -27,6 +27,14 @@
         </div>
 
         <div class="flex flex-wrap gap-2">
+            <flux:button
+                variant="outline"
+                icon="calendar-days"
+                wire:click="openGlobalDeadlineModal"
+            >
+                Edit Deadline
+            </flux:button>
+
             <flux:button href="{{ route('admin.enrollments.index') }}" variant="outline" wire:navigate>
                 Back to List
             </flux:button>
@@ -256,6 +264,37 @@
                 </table>
             </div>
         </div>
+
+        <flux:modal wire:model="showGlobalDeadlineModal" class="max-w-lg">
+            <div class="space-y-4">
+                <div>
+                    <flux:heading size="lg">Update global deadline</flux:heading>
+                    <flux:text class="mt-2">
+                        Set a new deadline for all {{ $batch['learnersCount'] }} learners in this batch.
+                    </flux:text>
+                </div>
+
+                <flux:field>
+                    <flux:label>Deadline in Days</flux:label>
+                    <flux:input wire:model="globalDeadlineDays" type="number" min="1" />
+                    <flux:error name="globalDeadlineDays" />
+                </flux:field>
+
+                <div class="flex justify-end gap-2">
+                    <flux:button
+                        type="button"
+                        variant="outline"
+                        wire:click="closeGlobalDeadlineModal"
+                    >
+                        Cancel
+                    </flux:button>
+
+                    <flux:button variant="primary" icon="archive-box-arrow-down" wire:click="saveGlobalDeadline">
+                        Save Deadline
+                    </flux:button>
+                </div>
+            </div>
+        </flux:modal>
 
         <flux:modal wire:model="showLearnerDeadlineModal" class="max-w-lg">
             <div class="space-y-4">
