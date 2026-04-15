@@ -11,18 +11,20 @@
     {{-- Tabs --}}
     <div class="mb-6 border-b border-zinc-200 dark:border-zinc-700">
         <nav class="flex gap-4">
-            <button
-                wire:click="setTab('overview')"
+            <a
+                href="{{ route('admin.courses.analyze', ['course' => $course->id, 'activeTab' => 'overview']) }}"
+                wire:navigate
                 class="pb-3 px-1 text-sm font-medium border-b-2 transition-colors {{ $activeTab === 'overview' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300' }}"
             >
                 Overview
-            </button>
-            <button
-                wire:click="setTab('enrollments')"
+            </a>
+            <a
+                href="{{ route('admin.courses.analyze', ['course' => $course->id, 'activeTab' => 'enrollments']) }}"
+                wire:navigate
                 class="pb-3 px-1 text-sm font-medium border-b-2 transition-colors {{ $activeTab === 'enrollments' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300' }}"
             >
                 Enrollments
-            </button>
+            </a>
         </nav>
     </div>
 
@@ -227,22 +229,27 @@
         </style>
         @script
         <script>
-            let analyzeEnrollmentsTable;
+            var analyzeEnrollmentsTable;
 
             const initializeAnalyzeEnrollmentsTable = function() {
+                if (typeof jQuery === 'undefined' || typeof DataTable === 'undefined') {
+                    setTimeout(initializeAnalyzeEnrollmentsTable, 100);
+                    return;
+                }
+
                 const tableElement = document.getElementById('analyze-enrollments-table');
 
                 if (!tableElement) {
                     return;
                 }
 
-                if (analyzeEnrollmentsTable) {
-                    analyzeEnrollmentsTable.destroy();
-                    analyzeEnrollmentsTable = null;
+                if ($.fn.DataTable.isDataTable(tableElement)) {
+                    $(tableElement).DataTable().destroy();
+                    tableElement.querySelector('tbody').innerHTML = '';
                 }
 
                 analyzeEnrollmentsTable = new DataTable(tableElement, {
-                    processing: true,
+                    destroy: true,
                     serverSide: true,
                     dom: 't',
                     ajax: {

@@ -8,12 +8,14 @@ use App\Models\Progress;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Analyze extends Component
 {
     public Course $course;
 
+    #[Url]
     public string $activeTab = 'overview';
 
     public array $stats = [];
@@ -183,9 +185,18 @@ class Analyze extends Component
 
     public function setTab(string $tab): void
     {
-        $this->activeTab = $tab;
+        if ($this->activeTab !== $tab) {
+            $this->activeTab = $tab;
+        }
 
         if ($tab === 'enrollments') {
+            $this->dispatch('analyze-enrollments-tab-opened');
+        }
+    }
+
+    public function updatedActiveTab(string $value): void
+    {
+        if ($value === 'enrollments') {
             $this->dispatch('analyze-enrollments-tab-opened');
         }
     }

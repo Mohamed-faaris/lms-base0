@@ -94,16 +94,24 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
     <script>
-        let table;
+        var coursesTable;
 
-        const initializeCoursesTable = function() {
-            if (table) {
-                table.destroy();
-                table = null;
+        function initializeCoursesTable() {
+            if (typeof jQuery === 'undefined' || typeof DataTable === 'undefined') {
+                setTimeout(initializeCoursesTable, 100);
+                return;
             }
 
-            table = new DataTable('#courses-table', {
-                processing: true,
+            const coursesTableElement = document.getElementById('courses-table');
+            if (!coursesTableElement) return;
+
+            if ($.fn.DataTable.isDataTable('#courses-table')) {
+                $('#courses-table').DataTable().destroy();
+                coursesTableElement.querySelector('tbody').innerHTML = '';
+            }
+
+            coursesTable = new DataTable('#courses-table', {
+                destroy: true,
                 serverSide: true,
                 dom: 't',
                 ajax: {
@@ -137,13 +145,13 @@
             });
 
             $('#courses-search').off('keyup.courses').on('keyup.courses', function() {
-                table.search(this.value).draw();
+                coursesTable.search(this.value).draw();
             });
 
             $('#length-select').off('change.courses').on('change.courses', function() {
-                table.page.len(this.value).draw();
+                coursesTable.page.len(this.value).draw();
             });
-        };
+        }
 
         initializeCoursesTable();
         document.addEventListener('livewire:navigated', initializeCoursesTable);
@@ -197,7 +205,7 @@
         }
 
         function goToPage(page) {
-            table.page(page).draw(false);
+            coursesTable.page(page).draw(false);
         }
     </script>
 </div>
