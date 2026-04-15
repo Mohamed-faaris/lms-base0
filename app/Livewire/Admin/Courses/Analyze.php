@@ -5,7 +5,9 @@ namespace App\Livewire\Admin\Courses;
 use App\Models\Content;
 use App\Models\Course;
 use App\Models\Progress;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 use Livewire\Component;
 
 class Analyze extends Component
@@ -21,6 +23,8 @@ class Analyze extends Component
     public array $progressData = [];
 
     public array $completionData = [];
+
+    public array $moduleData = [];
 
     public function mount(Course $course): void
     {
@@ -79,6 +83,19 @@ class Analyze extends Component
             $this->stats['avgProgress'] = (int) round($totalProgress / $enrollments->count());
         }
 
+        $this->moduleData = $this->course->topics
+            ->flatMap(function ($topic): array {
+                return $topic->modules->map(function ($module) use ($topic): array {
+                    return [
+                        'name' => $module->title,
+                        'topic_name' => $topic->name,
+                        'content_count' => $module->contents->count(),
+                        'quiz_count' => $module->contents->sum(fn ($content) => $content->quizzes->count()),
+                    ];
+                })->all();
+            })
+            ->all();
+
         $this->enrollmentData = $enrollments->map(function ($enrollment) use ($enrollmentProgress): array {
             return [
                 'user_name' => $enrollment->user?->name ?? 'Unknown',
@@ -92,7 +109,7 @@ class Analyze extends Component
         $this->calculateCompletionTimeline($enrollments, $contentIds);
     }
 
-    protected function getContentsThroughTopics()
+    protected function getContentsThroughTopics(): Collection
     {
         $topicIds = $this->course->topics->pluck('id');
 
@@ -167,9 +184,13 @@ class Analyze extends Component
     public function setTab(string $tab): void
     {
         $this->activeTab = $tab;
+
+        if ($tab === 'enrollments') {
+            $this->dispatch('analyze-enrollments-tab-opened');
+        }
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.admin.courses.analyze');
     }

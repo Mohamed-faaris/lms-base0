@@ -133,8 +133,13 @@
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
     <script>
         let table;
-        
-        document.addEventListener('DOMContentLoaded', function() {
+
+        const initializeUsersTable = function() {
+            if (table) {
+                table.destroy();
+                table = null;
+            }
+
             table = new DataTable('#users-table', {
                 processing: true,
                 serverSide: true,
@@ -172,21 +177,21 @@
                 }
             });
 
-            // Search
-            $('#users-search').on('keyup', function() {
+            $('#users-search').off('keyup.users').on('keyup.users', function() {
                 table.search(this.value).draw();
             });
 
-            // Length change
-            $('#length-select').on('change', function() {
+            $('#length-select').off('change.users').on('change.users', function() {
                 table.page.len(this.value).draw();
             });
 
-            // Filter changes
-            $('#filter-role, #filter-college, #filter-department').on('change', function() {
+            $('#filter-role, #filter-college, #filter-department').off('change.users').on('change.users', function() {
                 table.draw();
             });
-        });
+        };
+
+        initializeUsersTable();
+        document.addEventListener('livewire:navigated', initializeUsersTable);
 
         function resetFilters() {
             $('#users-search').val('');

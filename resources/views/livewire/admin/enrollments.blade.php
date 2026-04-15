@@ -109,8 +109,13 @@
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
     <script>
         let table;
-        
-        document.addEventListener('DOMContentLoaded', function() {
+
+        const initializeEnrollmentsTable = function() {
+            if (table) {
+                table.destroy();
+                table = null;
+            }
+
             table = new DataTable('#enrollments-table', {
                 processing: true,
                 serverSide: true,
@@ -149,21 +154,21 @@
                 }
             });
 
-            // Search
-            $('#enrollments-search').on('keyup', function() {
+            $('#enrollments-search').off('keyup.enrollments').on('keyup.enrollments', function() {
                 table.search(this.value).draw();
             });
 
-            // Length change
-            $('#length-select').on('change', function() {
+            $('#length-select').off('change.enrollments').on('change.enrollments', function() {
                 table.page.len(this.value).draw();
             });
 
-            // Filter changes
-            $('#filter-course').on('change', function() {
+            $('#filter-course').off('change.enrollments').on('change.enrollments', function() {
                 table.draw();
             });
-        });
+        };
+
+        initializeEnrollmentsTable();
+        document.addEventListener('livewire:navigated', initializeEnrollmentsTable);
 
         function updateTableInfo(settings) {
             const api = new DataTable.Api(settings);

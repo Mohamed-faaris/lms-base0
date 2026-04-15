@@ -60,6 +60,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/{course}', CoursesShow::class)->name('show');
             Route::get('/{course}/structure', CoursesStructure::class)->name('structure');
             Route::get('/{course}/analyze', CoursesAnalyze::class)->name('analyze');
+            Route::get('/{course}/analyze/datatable', \App\Http\Controllers\Admin\CourseAnalyzeEnrollmentsDataTableController::class)->name('analyze.datatable');
             Route::get('/{course}/enroll', EnrollmentBatchCreate::class)->name('enroll');
             Route::get('/{course}/edit', CoursesEdit::class)->name('edit');
             Route::get('/content/{contentId}', ContentViewer::class)->name('content.show');

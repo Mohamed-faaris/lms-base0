@@ -95,12 +95,17 @@
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
     <script>
         let table;
-        
-        document.addEventListener('DOMContentLoaded', function() {
+
+        const initializeCoursesTable = function() {
+            if (table) {
+                table.destroy();
+                table = null;
+            }
+
             table = new DataTable('#courses-table', {
                 processing: true,
                 serverSide: true,
-                dom: 't', // Only show table, hide everything else
+                dom: 't',
                 ajax: {
                     url: "{{ route('admin.courses.index.datatable') }}",
                     type: 'GET'
@@ -131,16 +136,17 @@
                 }
             });
 
-            // Search
-            $('#courses-search').on('keyup', function() {
+            $('#courses-search').off('keyup.courses').on('keyup.courses', function() {
                 table.search(this.value).draw();
             });
 
-            // Length change
-            $('#length-select').on('change', function() {
+            $('#length-select').off('change.courses').on('change.courses', function() {
                 table.page.len(this.value).draw();
             });
-        });
+        };
+
+        initializeCoursesTable();
+        document.addEventListener('livewire:navigated', initializeCoursesTable);
 
         function updateTableInfo(settings) {
             const api = new DataTable.Api(settings);

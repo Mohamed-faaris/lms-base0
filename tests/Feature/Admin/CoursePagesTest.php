@@ -2,12 +2,15 @@
 
 use App\Enums\ContentType;
 use App\Enums\QuizKind;
+use App\Livewire\Admin\Courses\Analyze as AnalyzeCourse;
 use App\Livewire\Admin\Courses\QuizEditor;
 use App\Livewire\Admin\Courses\Show as ShowCourse;
 use App\Livewire\Admin\Courses\Structure as StructureCourse;
 use App\Models\Content;
 use App\Models\Course;
+use App\Models\Enrollment;
 use App\Models\Module;
+use App\Models\Progress;
 use App\Models\Quiz;
 use App\Models\Topic;
 use App\Models\User;
@@ -71,6 +74,98 @@ test('course show page renders all nested content in a read-first layout', funct
     $response->assertSee('Module Alpha');
     $response->assertSee('Video Lesson');
     $response->assertSee('Article Lesson');
+});
+
+test('course analyze page shows module summaries and enrollment progress stats', function () {
+    $admin = User::factory()->admin()->create();
+    $course = Course::create([
+        'title' => 'Analyze Course',
+        'slug' => 'analyze-course',
+        'description' => 'Course for analyze page.',
+    ]);
+    $topic = Topic::create([
+        'course_id' => $course->id,
+        'name' => 'Topic Alpha',
+        'description' => 'Topic description.',
+        'order' => 1,
+    ]);
+    $module = Module::create([
+        'topic_id' => $topic->id,
+        'title' => 'Module Alpha',
+        'description' => 'Module description.',
+        'order' => 1,
+    ]);
+    $videoContent = Content::create([
+        'module_id' => $module->id,
+        'order' => 1,
+        'title' => 'Video Lesson',
+        'body' => 'Video lesson body.',
+        'type' => ContentType::Video,
+        'content_url' => 'https://example.com/video',
+    ]);
+    $quizContent = Content::create([
+        'module_id' => $module->id,
+        'order' => 2,
+        'title' => 'Quiz Lesson',
+        'body' => 'Quiz lesson body.',
+        'type' => ContentType::Quiz,
+    ]);
+
+    Quiz::create([
+        'content_id' => $videoContent->id,
+        'kind' => QuizKind::Timestamped,
+        'timestamp_seconds' => 120,
+        'score_percentage' => 80,
+    ]);
+    Quiz::create([
+        'content_id' => $quizContent->id,
+        'kind' => QuizKind::Content,
+        'score_percentage' => 75,
+    ]);
+
+    $learner = User::factory()->staff()->create();
+    $completedLearner = User::factory()->faculty()->create();
+
+    Enrollment::create([
+        'user_id' => $learner->id,
+        'course_id' => $course->id,
+        'enrolled_by' => $admin->id,
+        'batch_id' => 'analyze-batch-1',
+        'deadline' => now()->addDays(10)->timestamp,
+        'enrolled_at' => now(),
+    ]);
+    Enrollment::create([
+        'user_id' => $completedLearner->id,
+        'course_id' => $course->id,
+        'enrolled_by' => $admin->id,
+        'batch_id' => 'analyze-batch-2',
+        'deadline' => now()->addDays(10)->timestamp,
+        'enrolled_at' => now(),
+    ]);
+
+    Progress::create([
+        'user_id' => $completedLearner->id,
+        'content_id' => $videoContent->id,
+    ])->update(['completed_at' => now()]);
+    Progress::create([
+        'user_id' => $completedLearner->id,
+        'content_id' => $quizContent->id,
+    ])->update(['completed_at' => now()]);
+
+    Livewire::actingAs($admin)
+        ->test(AnalyzeCourse::class, ['course' => $course])
+        ->assertSee('Content Breakdown')
+        ->assertSee('Videos')
+        ->assertSee('Articles')
+        ->assertSee('Quizzes')
+        ->assertDontSee('Progress')
+        ->set('activeTab', 'enrollments')
+        ->assertSee('Progress Distribution')
+        ->assertSee('Completion Timeline')
+        ->assertSee('Enrollments')
+        ->assertSee('Completed')
+        ->assertSee('In Progress')
+        ->assertSee('Not Started');
 });
 
 test('admin can quick edit content from the course show page', function () {
