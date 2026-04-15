@@ -8,7 +8,6 @@ use App\Models\CourseMeta;
 use App\Models\Enrollment;
 use App\Models\Feedback;
 use App\Models\Module;
-use App\Models\Progress;
 use App\Models\Quiz;
 use App\Models\SpeedLog;
 use App\Models\Topic;
@@ -45,7 +44,7 @@ test('java course seeder builds a full playlist backed course', function () {
 
     expect(Quiz::query()->whereHas('content.module.topic', fn ($query) => $query->where('course_id', $course->id))->where('kind', QuizKind::Content)->count())->toBeGreaterThanOrEqual(6);
     expect(Quiz::query()->whereHas('content.module.topic', fn ($query) => $query->where('course_id', $course->id))->where('kind', QuizKind::Timestamped)->count())->toBeGreaterThanOrEqual($videoCount);
-    expect(Progress::query()->count())->toBeGreaterThanOrEqual(1);
+    expect(\App\Models\Progress::query()->count())->toBe(0);
     expect(Enrollment::query()->where('course_id', $course->id)->count())->toBeGreaterThanOrEqual(1);
     expect(Xp::query()->count())->toBeGreaterThanOrEqual(1);
     expect(XpLog::query()->count())->toBeGreaterThanOrEqual(1);

@@ -13,7 +13,6 @@ use App\Models\Content;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Module;
-use App\Models\Progress;
 use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\Streak;
@@ -603,30 +602,15 @@ class LmsDataSeeder extends Seeder
         // ============================================
 
         $faculties = [
-            ['user' => $faculty1, 'progress' => 85, 'xp' => 2450, 'streak' => 15],
-            ['user' => $faculty2, 'progress' => 62, 'xp' => 1800, 'streak' => 7],
-            ['user' => $faculty3, 'progress' => 45, 'xp' => 950, 'streak' => 3],
-            ['user' => $faculty4, 'progress' => 93, 'xp' => 3200, 'streak' => 22],
-            ['user' => $faculty5, 'progress' => 28, 'xp' => 650, 'streak' => 1],
+            ['user' => $faculty1, 'xp' => 2450, 'streak' => 15],
+            ['user' => $faculty2, 'xp' => 1800, 'streak' => 7],
+            ['user' => $faculty3, 'xp' => 950, 'streak' => 3],
+            ['user' => $faculty4, 'xp' => 3200, 'streak' => 22],
+            ['user' => $faculty5, 'xp' => 650, 'streak' => 1],
         ];
-
-        // Get all course content (modules + videos)
-        $allModules = Module::whereHas('topic', function ($query) use ($reactCourse) {
-            $query->where('course_id', $reactCourse->id);
-        })->with('contents')->get();
-
-        $allContent = [];
-        foreach ($allModules as $module) {
-            $allContent[] = $module;
-            foreach ($module->contents as $content) {
-                $allContent[] = $content;
-            }
-        }
-        $totalContent = count($allContent);
 
         foreach ($faculties as $facultyData) {
             $user = $facultyData['user'];
-            $progressPercent = $facultyData['progress'];
             $xpValue = $facultyData['xp'];
             $streakDays = $facultyData['streak'];
             $reactBatchId = 1001;
@@ -637,29 +621,13 @@ class LmsDataSeeder extends Seeder
                 [
                     'batch_id' => $reactBatchId,
                     'enrolled_by' => $admin->id,
-                    'deadline' => now()->addDays(30)->timestamp,
+                    'deadline' => DatabaseSeeder::SEEDED_ENROLLMENT_DEADLINE,
                     'enrolled_at' => now()->subDays(30),
                 ]
             );
 
             if (! $enrollment->batch_id) {
                 $enrollment->update(['batch_id' => $reactBatchId]);
-            }
-
-            // Calculate completed content based on progress percentage
-            $completedCount = (int) round(($progressPercent / 100) * $totalContent);
-
-            // Create progress records (ignore duplicates)
-            for ($i = 0; $i < $completedCount; $i++) {
-                if (isset($allContent[$i])) {
-                    $contentItem = $allContent[$i];
-                    $contentId = $contentItem instanceof Module ? $contentItem->id : $contentItem->id;
-
-                    Progress::firstOrCreate(
-                        ['user_id' => $user->id, 'content_id' => $contentId],
-                        ['completed_at' => now()->subDays(rand(1, 25))]
-                    );
-                }
             }
 
             // Create XP record (update if exists)
@@ -868,29 +836,15 @@ class LmsDataSeeder extends Seeder
 
         // PHP Course Enrollments
         $phpEnrollments = [
-            ['user' => $faculty1, 'progress' => 72, 'addXp' => 1200],
-            ['user' => $faculty2, 'progress' => 88, 'addXp' => 800],
-            ['user' => $faculty3, 'progress' => 34, 'addXp' => 450],
-            ['user' => $faculty4, 'progress' => 55, 'addXp' => 1500],
-            ['user' => $faculty5, 'progress' => 91, 'addXp' => 600],
+            ['user' => $faculty1, 'addXp' => 1200],
+            ['user' => $faculty2, 'addXp' => 800],
+            ['user' => $faculty3, 'addXp' => 450],
+            ['user' => $faculty4, 'addXp' => 1500],
+            ['user' => $faculty5, 'addXp' => 600],
         ];
-
-        $phpAllModules = Module::whereHas('topic', function ($query) use ($phpCourse) {
-            $query->where('course_id', $phpCourse->id);
-        })->with('contents')->get();
-
-        $phpAllContent = [];
-        foreach ($phpAllModules as $module) {
-            $phpAllContent[] = $module;
-            foreach ($module->contents as $content) {
-                $phpAllContent[] = $content;
-            }
-        }
-        $phpTotalContent = count($phpAllContent);
 
         foreach ($phpEnrollments as $phpData) {
             $user = $phpData['user'];
-            $progressPercent = $phpData['progress'];
             $addXp = $phpData['addXp'];
             $phpBatchId = 1002;
 
@@ -900,27 +854,13 @@ class LmsDataSeeder extends Seeder
                 [
                     'batch_id' => $phpBatchId,
                     'enrolled_by' => $admin->id,
-                    'deadline' => now()->addDays(30)->timestamp,
+                    'deadline' => DatabaseSeeder::SEEDED_ENROLLMENT_DEADLINE,
                     'enrolled_at' => now()->subDays(25),
                 ]
             );
 
             if (! $enrollment->batch_id) {
                 $enrollment->update(['batch_id' => $phpBatchId]);
-            }
-
-            // Create PHP progress
-            $completedCount = (int) round(($progressPercent / 100) * $phpTotalContent);
-            for ($i = 0; $i < $completedCount; $i++) {
-                if (isset($phpAllContent[$i])) {
-                    $contentItem = $phpAllContent[$i];
-                    $contentId = $contentItem instanceof Module ? $contentItem->id : $contentItem->id;
-
-                    Progress::firstOrCreate(
-                        ['user_id' => $user->id, 'content_id' => $contentId],
-                        ['completed_at' => now()->subDays(rand(1, 20))]
-                    );
-                }
             }
 
             // Update XP
@@ -1637,7 +1577,7 @@ class LmsDataSeeder extends Seeder
                     [
                         'batch_id' => $batchId,
                         'enrolled_by' => $admin->id,
-                        'deadline' => now()->addDays(21 + $index + ($courseIndex * 7))->timestamp,
+                        'deadline' => DatabaseSeeder::SEEDED_ENROLLMENT_DEADLINE,
                         'enrolled_at' => now()->subDays(14 - $courseIndex),
                     ]
                 );

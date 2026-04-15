@@ -11,7 +11,6 @@ use App\Models\CourseMeta;
 use App\Models\Enrollment;
 use App\Models\Feedback;
 use App\Models\Module;
-use App\Models\Progress;
 use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\SpeedLog;
@@ -407,13 +406,12 @@ class JavaCourseSeeder extends Seeder
             return;
         }
 
-        $contentTrail = collect($createdContents)->pluck('id')->all();
         $progressPlans = [
-            ['progress' => 100, 'xp' => 4200, 'days' => 28],
-            ['progress' => 82, 'xp' => 3100, 'days' => 22],
-            ['progress' => 65, 'xp' => 2200, 'days' => 16],
-            ['progress' => 48, 'xp' => 1500, 'days' => 12],
-            ['progress' => 30, 'xp' => 900, 'days' => 8],
+            ['xp' => 4200],
+            ['xp' => 3100],
+            ['xp' => 2200],
+            ['xp' => 1500],
+            ['xp' => 900],
         ];
 
         foreach ($facultyUsers->take(count($progressPlans)) as $index => $user) {
@@ -424,18 +422,10 @@ class JavaCourseSeeder extends Seeder
                 [
                     'enrolled_by' => $admin->id,
                     'batch_id' => 3001,
-                    'deadline' => now()->addDays(30)->timestamp,
+                    'deadline' => DatabaseSeeder::SEEDED_ENROLLMENT_DEADLINE,
                     'enrolled_at' => now()->subDays(30),
                 ]
             );
-
-            $completedCount = (int) round((count($contentTrail) * $plan['progress']) / 100);
-            foreach (array_slice($contentTrail, 0, $completedCount) as $contentId) {
-                Progress::firstOrCreate(
-                    ['user_id' => $user->id, 'content_id' => $contentId],
-                    ['completed_at' => now()->subDays(random_int(1, $plan['days']))]
-                );
-            }
 
             Xp::updateOrCreate(
                 ['user_id' => $user->id],

@@ -53,7 +53,7 @@ test('database seeder enrolls all faculty and staff into demo courses', function
             expect($enrollment->batch_id)->not->toBeNull();
             expect((int) $enrollment->batch_id)->toBeGreaterThan(0);
             expect($enrollment->enrolled_by)->not->toBeNull();
-            expect($enrollment->deadline)->toBeGreaterThan(now()->timestamp);
+            expect((int) $enrollment->deadline)->toBe(DatabaseSeeder::SEEDED_ENROLLMENT_DEADLINE);
             expect($enrollment->enrolled_at)->not->toBeNull();
         }
     }
