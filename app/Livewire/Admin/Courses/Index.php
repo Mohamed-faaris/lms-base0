@@ -46,6 +46,6 @@ class Index extends Component
         $course = Course::findOrFail($id);
         $course->delete();
 
-        session()->flash('success', 'Course deleted successfully.');
+        response()->json(['success' => true, 'message' => 'Course deleted successfully.']);
     }
 }

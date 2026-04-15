@@ -53,6 +53,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/', CoursesIndex::class)->name('index');
             Route::get('/datatable', \App\Http\Controllers\Admin\CoursesDataTableController::class)->name('index.datatable');
             Route::get('/create', CoursesCreate::class)->name('create');
+            Route::delete('/{course}', \App\Http\Controllers\Admin\CourseDeleteController::class)->name('destroy');
+            Route::get('/{course}', CoursesShow::class)->name('show');
             Route::get('/{course}', CoursesShow::class)->name('show');
             Route::get('/{course}/structure', CoursesStructure::class)->name('structure');
             Route::get('/{course}/analyze', CoursesAnalyze::class)->name('analyze');
