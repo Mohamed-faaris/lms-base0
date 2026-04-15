@@ -15,20 +15,9 @@
         </div>
     @endif
 
-    {{-- Filters --}}
-    <div class="flex flex-col sm:flex-row gap-4 mb-6">
-        <div class="flex-1">
-            <flux:input 
-                wire:model.live="search" 
-                placeholder="Search courses..." 
-                icon="magnifying-glass"
-            />
-        </div>
-    </div>
-
     {{-- Table --}}
     <div class="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-        <table class="w-full">
+        <table id="courses-table" class="w-full display">
             <thead class="bg-zinc-50 dark:bg-zinc-900/50">
                 <tr>
                     <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">ID</th>
@@ -40,44 +29,27 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                @forelse ($courses as $course)
-                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-                        <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $course->id }}</td>
-                        <td class="px-4 py-3">
-                            <a href="{{ route('admin.courses.show', $course->id) }}" class="text-sm font-medium text-zinc-900 dark:text-zinc-100 hover:text-blue-600 dark:hover:text-blue-400">
-                                {{ $course->title }}
-                            </a>
-                        </td>
-                        <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $course->slug }}</td>
-                        <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $course->enrollments_count }}</td>
-                        <td class="px-4 py-3 text-sm text-zinc-500 dark:text-zinc-400">{{ $course->created_at->format('M d, Y') }}</td>
-                        <td class="px-4 py-3 text-right">
-                            <div class="flex items-center justify-end gap-2">
-                                <flux:button variant="ghost" size="sm" href="{{ route('admin.courses.show', $course->id) }}" wire:navigate>
-                                    View
-                                </flux:button>
-                                <flux:button variant="ghost" size="sm" href="{{ route('admin.courses.edit', $course->id) }}" wire:navigate>
-                                    Edit
-                                </flux:button>
-                                <flux:button variant="ghost" size="sm" wire:click="deleteCourse({{ $course->id }})" onclick="return confirm('Are you sure you want to delete this course?')">
-                                    <span class="text-red-600">Delete</span>
-                                </flux:button>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
-                            No courses found.
-                        </td>
-                    </tr>
-                @endforelse
             </tbody>
         </table>
     </div>
 
-    {{-- Pagination --}}
-    <div class="mt-4">
-        {{ $courses->links() }}
-    </div>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            new DataTable('#courses-table', {
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('admin.courses.index.datatable') }}",
+                columns: [
+                    { data: 'id', name: 'id' },
+                    { data: 'title', name: 'title' },
+                    { data: 'slug', name: 'slug' },
+                    { data: 'enrollments_count', name: 'enrollments_count' },
+                    { data: 'created_at', name: 'created_at' },
+                    { data: 'actions', name: 'actions', orderable: false, searchable: false }
+                ]
+            });
+        });
+    </script>
 </div>

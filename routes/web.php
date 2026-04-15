@@ -51,6 +51,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::prefix('courses')->name('courses.')->group(function () {
             Route::get('/', CoursesIndex::class)->name('index');
+            Route::get('/datatable', \App\Http\Controllers\Admin\CoursesDataTableController::class)->name('index.datatable');
             Route::get('/create', CoursesCreate::class)->name('create');
             Route::get('/{course}', CoursesShow::class)->name('show');
             Route::get('/{course}/structure', CoursesStructure::class)->name('structure');
