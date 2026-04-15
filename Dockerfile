@@ -10,7 +10,6 @@ RUN composer install \
     --no-progress \
     --prefer-dist \
     --optimize-autoloader \
-    --ignore-platform-req=ext-exif \
     --no-scripts
 
 FROM node:22-bookworm-slim AS frontend
@@ -82,4 +81,4 @@ USER laravel
 
 EXPOSE 8000
 
-CMD ["sh", "-lc", "php artisan migrate:fresh --seed --force && exec php artisan serve --host=0.0.0.0 --port=8000"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
