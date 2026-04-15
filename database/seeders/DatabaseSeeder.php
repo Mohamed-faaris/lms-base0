@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             KRCTFacultySeeder::class,
             LmsDataSeeder::class,
             JavaCourseSeeder::class,
+            HundredSecondsCourseSeeder::class,
         ]);
     }
 }
