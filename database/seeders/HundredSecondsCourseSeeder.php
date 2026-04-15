@@ -293,7 +293,7 @@ class HundredSecondsCourseSeeder extends Seeder
 
             $contentOrder = 1;
             foreach ($topicData['contents'] as $video) {
-                Content::firstOrCreate(
+                $content = Content::firstOrCreate(
                     ['module_id' => $module->id, 'order' => $contentOrder],
                     [
                         'title' => $video['title'],
@@ -307,6 +307,8 @@ class HundredSecondsCourseSeeder extends Seeder
                         ],
                     ]
                 );
+
+                $this->createVideoQuiz($content, $video['title']);
                 $contentOrder++;
             }
 
@@ -368,6 +370,43 @@ class HundredSecondsCourseSeeder extends Seeder
                 ]
             );
         }
+    }
+
+    private function createVideoQuiz(Content $content, string $videoTitle): void
+    {
+        $quiz = Quiz::firstOrCreate(
+            ['content_id' => $content->id],
+            ['kind' => QuizKind::Content]
+        );
+
+        $questions = $this->generateVideoQuestions($videoTitle);
+        foreach ($questions as $questionData) {
+            Question::firstOrCreate(
+                [
+                    'quiz_id' => $quiz->id,
+                    'question_text' => $questionData['text'],
+                ],
+                [
+                    'type' => 'multiple_choice',
+                    'options' => array_values($questionData['options']),
+                    'correct_answer' => array_map(
+                        static fn (string $letter): int => ord($letter) - 65,
+                        $questionData['correct']
+                    ),
+                ]
+            );
+        }
+    }
+
+    private function generateVideoQuestions(string $videoTitle): array
+    {
+        $cleanTitle = str_replace([' in 100 Seconds', ' in 01100100 Seconds', ' in 100 seconds', ' Explained in 100 Seconds', ' in NaN Seconds'], '', $videoTitle);
+
+        return [
+            ['text' => 'What is '.$cleanTitle.'?', 'options' => ['A' => 'A programming concept', 'B' => 'A framework', 'C' => 'A database', 'D' => 'An operating system'], 'correct' => ['A']],
+            ['text' => 'Why is '.$cleanTitle.' important?', 'options' => ['A' => 'It improves performance', 'B' => 'It is essential for modern development', 'C' => 'It is only for beginners', 'D' => 'It is obsolete'], 'correct' => ['B']],
+            ['text' => 'How is '.$cleanTitle.' used in practice?', 'options' => ['A' => 'Only in large projects', 'B' => 'In various applications and systems', 'C' => 'Only in tutorials', 'D' => 'It is not used anymore'], 'correct' => ['B']],
+        ];
     }
 
     private function generateTopicQuestions(string $topicName): array
