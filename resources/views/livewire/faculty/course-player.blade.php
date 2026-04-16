@@ -285,14 +285,14 @@
                                                              </label>
                                                          </template>
 
-                                                        <template x-if="allowCaptions">
-                                                            <flux:button size="sm" variant="outline" @click="toggleCaptions">
-                                                                <span class="inline-flex items-center gap-2">
-                                                                    <flux:icon.chat-bubble-bottom-center-text class="h-4 w-4" />
-                                                                    <span x-text="captionsEnabled ? 'Captions on' : 'Captions off'"></span>
-                                                                </span>
-                                                            </flux:button>
-                                                        </template>
+                                                         <template x-if="allowCaptions">
+                                                             <flux:button size="sm" variant="outline" @click="toggleCaptions" :disabled="!captionsAvailable" :class="{ 'opacity-50 cursor-not-allowed': !captionsAvailable }">
+                                                                 <span class="inline-flex items-center gap-2">
+                                                                     <flux:icon.chat-bubble-bottom-center-text class="h-4 w-4" />
+                                                                     <span x-text="captionsAvailable ? (captionsEnabled ? 'Captions on' : 'Captions off') : 'No captions'""></span>
+                                                                 </span>
+                                                             </flux:button>
+                                                         </template>
 
                                                         <flux:button size="sm" variant="outline" @click="toggleFullscreen">
                                                             <flux:icon.arrows-pointing-out class="h-4 w-4" />

@@ -51,6 +51,7 @@ window.courseVideoPlayer = function (config) {
         volume: Number.parseInt(window.localStorage.getItem('course-player-volume') ?? '80', 10),
         playbackRate: Number.parseFloat(window.localStorage.getItem('course-player-rate') ?? '1'),
         captionsEnabled: window.localStorage.getItem('course-player-captions') === '1',
+        captionsAvailable: true, // Assume available until proven otherwise
         playbackRates: [0.75, 1, 1.25, 1.5, 1.75, 2],
         blockedMessage: '',
         watchUnlocked: config.isCompleted || ! config.isVideoLesson,
@@ -164,7 +165,27 @@ window.courseVideoPlayer = function (config) {
                 }
             }, 200);
 
-            this.applyCaptions();
+            // Check if captions are available and apply them
+            setTimeout(() => {
+                if (hasPlayerMethod('getOptions')) {
+                    const options = playerInstance.getOptions();
+                    console.log('Player options available:', options);
+                    if (options.includes('cc') || options.includes('captions')) {
+                        console.log('Captions are supported by this player');
+                        this.captionsAvailable = true;
+                        this.applyCaptions();
+                    } else {
+                        console.log('Captions not supported by this player');
+                        this.captionsAvailable = false;
+                    }
+                } else {
+                    // Fallback: assume captions are available
+                    console.log('Cannot check caption availability, assuming available');
+                    this.captionsAvailable = true;
+                    this.applyCaptions();
+                }
+            }, 1000);
+
             this.startPolling();
         },
 
@@ -356,14 +377,45 @@ window.courseVideoPlayer = function (config) {
                 return;
             }
 
+            console.log('Applying captions:', this.captionsEnabled);
+
             try {
-                if (this.captionsEnabled && hasPlayerMethod('loadModule')) {
-                    playerInstance.loadModule('captions');
-                } else if (hasPlayerMethod('unloadModule')) {
-                    playerInstance.unloadModule('captions');
+                // Try multiple approaches to toggle captions in YouTube IFrame API
+
+                if (hasPlayerMethod('setOption')) {
+                    // Method 1: Try setting CC track
+                    try {
+                        if (this.captionsEnabled) {
+                            playerInstance.setOption('cc', 'track', { languageCode: 'en' });
+                        } else {
+                            playerInstance.setOption('cc', 'track', null);
+                        }
+                    } catch (e1) {
+                        // Method 2: Try captions module approach
+                        try {
+                            if (this.captionsEnabled && hasPlayerMethod('loadModule')) {
+                                playerInstance.loadModule('captions');
+                            } else if (!this.captionsEnabled && hasPlayerMethod('unloadModule')) {
+                                playerInstance.unloadModule('captions');
+                            }
+                        } catch (e2) {
+                            console.warn('All caption toggle methods failed');
+                        }
+                    }
                 }
+
+                // Provide user feedback
+                this.showBlockedMessage(
+                    this.captionsEnabled
+                        ? 'Attempted to enable captions. If not visible, use YouTube player controls.'
+                        : 'Attempted to disable captions.'
+                );
+
             } catch (error) {
-                console.debug('Caption toggle unavailable', error);
+                console.error('Caption toggle failed:', error);
+                // Reset the UI state if the operation failed
+                this.captionsEnabled = !this.captionsEnabled;
+                this.showBlockedMessage('Caption toggle failed. Please use YouTube player controls.');
             }
         },
 
