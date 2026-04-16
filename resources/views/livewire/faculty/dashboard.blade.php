@@ -115,7 +115,7 @@
                      $isUrgent = $course->isUrgent;
                      $isOverdue = $course->isOverdue;
                      $isCompleted = $course->status === 'completed';
-                     $thumbnailUrl = $course->getFirstMediaUrl('course-thumbnail') ?: $course->courseMeta?->thumbnail;
+                     $thumbnailUrl = $course->thumbnailUrl;
                  @endphp
                  <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer">
                      <div class="flex items-center gap-3 mb-1">

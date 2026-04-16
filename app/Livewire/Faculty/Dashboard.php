@@ -116,6 +116,7 @@ class Dashboard extends Component
                     'deadlineCompactLabel' => $deadlineMeta['compactLabel'],
                     'xpReward' => $enrollment->xp_reward ?? 500,
                     'status' => $status,
+                    'thumbnailUrl' => $course ? ($course->getFirstMediaUrl('course-thumbnail') ?: $course->courseMeta?->thumbnail) : null,
                 ];
             });
     }
