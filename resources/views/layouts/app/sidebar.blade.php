@@ -52,6 +52,12 @@
             <flux:spacer />
 
             <flux:sidebar.nav>
+                @if(auth()->user()->role->value === 'faculty')
+                    <flux:sidebar.item icon="bell" :href="route('faculty.notifications')" :current="request()->routeIs('faculty.notifications')" wire:navigate>
+                        {{ __('Notifications') }}
+                    </flux:sidebar.item>
+                @endif
+
                 <!-- <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
                     {{ __('Repository') }}
                 </flux:sidebar.item> -->
