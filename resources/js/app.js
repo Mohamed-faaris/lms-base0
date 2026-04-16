@@ -357,10 +357,33 @@ window.courseVideoPlayer = function (config) {
             }
 
             try {
-                if (this.captionsEnabled && hasPlayerMethod('loadModule')) {
-                    playerInstance.loadModule('captions');
-                } else if (hasPlayerMethod('unloadModule')) {
-                    playerInstance.unloadModule('captions');
+                if (this.captionsEnabled) {
+                    // Try to enable captions by setting a track
+                    if (hasPlayerMethod('setOption')) {
+                        // Try to set to English, or get available tracks if possible
+                        try {
+                            const tracklist = playerInstance.getOption('captions', 'tracklist');
+                            if (tracklist && tracklist.length > 0) {
+                                // Use the first available track
+                                playerInstance.setOption('captions', 'track', {languageCode: tracklist[0].languageCode});
+                            } else {
+                                // Fallback to English
+                                playerInstance.setOption('captions', 'track', {languageCode: 'en'});
+                            }
+                        } catch (e) {
+                            // If getOption fails, try setting to English
+                            playerInstance.setOption('captions', 'track', {languageCode: 'en'});
+                        }
+                    } else if (hasPlayerMethod('loadModule')) {
+                        playerInstance.loadModule('captions');
+                    }
+                } else {
+                    // Disable captions
+                    if (hasPlayerMethod('setOption')) {
+                        playerInstance.setOption('captions', 'track', {});
+                    } else if (hasPlayerMethod('unloadModule')) {
+                        playerInstance.unloadModule('captions');
+                    }
                 }
             } catch (error) {
                 console.debug('Caption toggle unavailable', error);
