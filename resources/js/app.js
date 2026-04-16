@@ -42,6 +42,7 @@ window.courseVideoPlayer = function (config) {
         ...config,
         pollInterval: null,
         hideNoticeTimeout: null,
+        visibilityChangeHandler: null,
         playing: false,
         ready: false,
         currentTime: config.startTimeSeconds,
@@ -103,16 +104,54 @@ window.courseVideoPlayer = function (config) {
                     },
                 });
             });
+
+            // Add visibility change listener to pause video when tab is not active
+            this.visibilityChangeHandler = () => {
+                // Check for hidden state across different browsers
+                const isHidden = document.hidden || document.webkitHidden || document.mozHidden || document.msHidden;
+
+                console.log('Visibility change detected:', {
+                    hidden: isHidden,
+                    ready: this.ready,
+                    isVideoLesson: this.isVideoLesson,
+                    playing: this.playing
+                });
+
+                if (! this.ready || ! this.isVideoLesson) {
+                    return;
+                }
+
+                if (isHidden && this.playing && hasPlayerMethod('pauseVideo')) {
+                    console.log('Pausing video due to tab becoming hidden');
+                    playerInstance.pauseVideo();
+                }
+            };
+
+            // Add event listeners for different browser prefixes
+            const visibilityEvents = ['visibilitychange', 'webkitvisibilitychange', 'mozvisibilitychange', 'msvisibilitychange'];
+            visibilityEvents.forEach(event => {
+                document.addEventListener(event, this.visibilityChangeHandler);
+            });
         },
 
         destroy() {
             window.clearInterval(this.pollInterval);
             window.clearTimeout(this.hideNoticeTimeout);
 
+            // Remove visibility change listeners
+            if (this.visibilityChangeHandler) {
+                const visibilityEvents = ['visibilitychange', 'webkitvisibilitychange', 'mozvisibilitychange', 'msvisibilitychange'];
+                visibilityEvents.forEach(event => {
+                    document.removeEventListener(event, this.visibilityChangeHandler);
+                });
+            }
+
             if (hasPlayerMethod('destroy')) {
                 playerInstance.destroy();
             }
         },
+
+
 
         get sliderMax() {
             return this.displayDuration;
@@ -357,10 +396,33 @@ window.courseVideoPlayer = function (config) {
             }
 
             try {
-                if (this.captionsEnabled && hasPlayerMethod('loadModule')) {
-                    playerInstance.loadModule('captions');
-                } else if (hasPlayerMethod('unloadModule')) {
-                    playerInstance.unloadModule('captions');
+                if (this.captionsEnabled) {
+                    // Try to enable captions by setting a track
+                    if (hasPlayerMethod('setOption')) {
+                        // Try to set to English, or get available tracks if possible
+                        try {
+                            const tracklist = playerInstance.getOption('captions', 'tracklist');
+                            if (tracklist && tracklist.length > 0) {
+                                // Use the first available track
+                                playerInstance.setOption('captions', 'track', {languageCode: tracklist[0].languageCode});
+                            } else {
+                                // Fallback to English
+                                playerInstance.setOption('captions', 'track', {languageCode: 'en'});
+                            }
+                        } catch (e) {
+                            // If getOption fails, try setting to English
+                            playerInstance.setOption('captions', 'track', {languageCode: 'en'});
+                        }
+                    } else if (hasPlayerMethod('loadModule')) {
+                        playerInstance.loadModule('captions');
+                    }
+                } else {
+                    // Disable captions
+                    if (hasPlayerMethod('setOption')) {
+                        playerInstance.setOption('captions', 'track', {});
+                    } else if (hasPlayerMethod('unloadModule')) {
+                        playerInstance.unloadModule('captions');
+                    }
                 }
             } catch (error) {
                 console.debug('Caption toggle unavailable', error);
