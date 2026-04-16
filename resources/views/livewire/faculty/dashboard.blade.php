@@ -99,40 +99,51 @@
         </div>
     </div>
 
-    {{-- Assigned Courses --}}
-    <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-        <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">My Courses</h3>
-            <flux:button variant="ghost" size="sm" href="{{ route('faculty.courses') }}" wire:navigate>
-                View All
-                <flux:icon.chevron-right class="ml-1 h-4 w-4" />
-            </flux:button>
-        </div>
-        <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
-            @forelse($enrolledCourses as $course)
-                @php
-                    $daysLeft = $course->daysLeft;
-                    $isUrgent = $course->isUrgent;
-                    $isOverdue = $course->isOverdue;
-                    $isCompleted = $course->status === 'completed';
-                @endphp
-                <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-1">
-                            <flux:icon.book-open class="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                            <p class="font-medium text-zinc-900 dark:text-zinc-100 truncate">{{ $course->name }}</p>
-                            @if($isCompleted)
-                                <flux:badge color="emerald" size="sm">Completed</flux:badge>
-                            @endif
-                        </div>
-                        <div class="flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
-                            <span>{{ $course->completedModules }}/{{ $course->modules }} modules</span>
-                            <span class="flex items-center gap-1">
-                                <flux:icon.bolt class="h-3 w-3" />
-                                {{ $course->xpReward }} XP
-                            </span>
-                        </div>
-                    </div>
+     {{-- Assigned Courses --}}
+     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
+         <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
+             <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">My Courses</h3>
+             <flux:button variant="ghost" size="sm" href="{{ route('faculty.courses') }}" wire:navigate>
+                 View All
+                 <flux:icon.chevron-right class="ml-1 h-4 w-4" />
+             </flux:button>
+         </div>
+         <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
+             @forelse($enrolledCourses as $course)
+                 @php
+                     $daysLeft = $course->daysLeft;
+                     $isUrgent = $course->isUrgent;
+                     $isOverdue = $course->isOverdue;
+                     $isCompleted = $course->status === 'completed';
+                     $thumbnailUrl = $course->getFirstMediaUrl('course-thumbnail') ?: $course->courseMeta?->thumbnail;
+                 @endphp
+                 <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer">
+                     <div class="flex items-center gap-3 mb-1">
+                         @if($thumbnailUrl)
+                             <div class="h-10 w-10 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-700 flex-shrink-0">
+                                 <img src="{{ $thumbnailUrl }}" alt="{{ $course->name }}" class="h-full w-full object-cover" />
+                             </div>
+                         @else
+                             <div class="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                                 <flux:icon.book-open class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                             </div>
+                         @endif
+                         <div class="flex-1 min-w-0">
+                             <div class="flex items-center gap-2">
+                                 <p class="font-medium text-zinc-900 dark:text-zinc-100 truncate">{{ $course->name }}</p>
+                                 @if($isCompleted)
+                                     <flux:badge color="emerald" size="sm">Completed</flux:badge>
+                                 @endif
+                             </div>
+                             <div class="flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                                 <span>{{ $course->completedModules }}/{{ $course->modules }} modules</span>
+                                 <span class="flex items-center gap-1">
+                                     <flux:icon.bolt class="h-3 w-3" />
+                                     {{ $course->xpReward }} XP
+                                 </span>
+                             </div>
+                         </div>
+                     </div>
 
                     <div class="flex items-center gap-4 sm:w-[200px]">
                         <div class="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
