@@ -12,7 +12,7 @@ class FcmChannel
             return;
         }
 
-        $message = $notification->toFcm($notifiable);
+        $message = call_user_func([$notification, 'toFcm'], $notifiable);
 
         if ($message === null) {
             return;

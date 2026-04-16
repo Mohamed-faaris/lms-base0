@@ -6,6 +6,7 @@ use App\Concerns\NormalizesEnrollmentDeadline;
 use App\Models\Content;
 use App\Models\Enrollment;
 use App\Models\Progress;
+use App\Notifications\EnrollmentManualNotification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -42,6 +43,16 @@ class Show extends Component
     public string $selectedLearnerDeadlineDays = '1';
 
     public string $globalDeadlineDays = '30';
+
+    public string $sendNotificationType = 'all';
+
+    public string $sendNotificationMessage = 'Please review your course progress and continue learning.';
+
+    public bool $sendEmail = true;
+
+    public bool $sendPush = true;
+
+    public bool $showSendNotificationModal = false;
 
     /** @var array<int, string> */
     public array $learnerDeadlineDays = [];
@@ -90,6 +101,24 @@ class Show extends Component
         $this->showGlobalDeadlineModal = false;
     }
 
+    public function openSendNotificationModal(): void
+    {
+        $this->sendNotificationType = 'all';
+        $this->sendNotificationMessage = 'Please review your course progress and continue learning.';
+        $this->sendEmail = true;
+        $this->sendPush = true;
+        $this->showSendNotificationModal = true;
+    }
+
+    public function closeSendNotificationModal(): void
+    {
+        $this->sendNotificationType = 'all';
+        $this->sendNotificationMessage = 'Please review your course progress and continue learning.';
+        $this->sendEmail = true;
+        $this->sendPush = true;
+        $this->showSendNotificationModal = false;
+    }
+
     public function saveGlobalDeadline(): Redirector
     {
         $validated = $this->validate([
@@ -108,121 +137,56 @@ class Show extends Component
         return redirect()->route('admin.enrollments.show', $this->batchKey);
     }
 
-    public function openLearnerDeadlineModal(int $userId): void
+    public function sendManualNotification(): void
     {
-        $enrollment = $this->batchQuery()
-            ->with('user')
-            ->where('user_id', $userId)
-            ->firstOrFail();
+        $enrollments = $this->resolveBatchEnrollments();
+        $progressByUser = $this->progressByUser($enrollments);
+        $filteredEnrollments = $this->filteredLearnerEnrollments($enrollments, $progressByUser);
 
-        $this->resetValidation('selectedLearnerDeadlineDays');
-        $this->selectedLearnerId = $userId;
-        $this->selectedLearnerName = $enrollment->user?->name ?? 'this learner';
-        $this->selectedLearnerDeadlineDays = $this->learnerDeadlineDays[$userId]
-            ?? (string) max(1, $this->normalizeDeadlineDayDifference((int) $enrollment->deadline - now()->timestamp));
-        $this->showLearnerDeadlineModal = true;
-    }
+        $sentCount = 0;
+        $course = $enrollments->first()?->course;
+        $courseTitle = $course?->title ?? 'Unknown Course';
+        $courseId = (int) ($course?->id ?? 0);
+        $batchKey = $this->batchKey;
 
-    public function closeLearnerDeadlineModal(): void
-    {
-        $this->resetValidation('selectedLearnerDeadlineDays');
-        $this->selectedLearnerId = null;
-        $this->selectedLearnerName = '';
-        $this->selectedLearnerDeadlineDays = '1';
-        $this->showLearnerDeadlineModal = false;
-    }
+        foreach ($filteredEnrollments as $enrollment) {
+            $progress = $progressByUser[$enrollment->user_id] ?? 0;
 
-    public function setSort(string $field): void
-    {
-        if ($this->sortBy === $field) {
-            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+            $shouldSend = match ($this->sendNotificationType) {
+                '0-24' => $progress >= 0 && $progress < 25,
+                '25-49' => $progress >= 25 && $progress < 50,
+                '50-74' => $progress >= 50 && $progress < 75,
+                '75-99' => $progress >= 75 && $progress < 100,
+                '100' => $progress === 100,
+                default => true,
+            };
 
-            return;
+            if ($shouldSend && $enrollment->user) {
+                $enrollment->user->notify(new EnrollmentManualNotification(
+                    $courseId,
+                    $courseTitle,
+                    $this->sendNotificationMessage,
+                    $this->sendEmail,
+                    $this->sendPush
+                ));
+                $sentCount++;
+            }
         }
 
-        $this->sortBy = $field;
-        $this->sortDirection = 'asc';
+        session()->flash('success', "Notifications sent to {$sentCount} learner(s).");
     }
 
-    public function setProgressFilter(string $filter): void
+    protected function getDaysUntilDeadline(Enrollment $enrollment): int
     {
-        $this->progressFilter = $filter;
-    }
-
-    public function saveLearnerDeadline(int $userId): Redirector
-    {
-        $validated = $this->validate([
-            "learnerDeadlineDays.{$userId}" => ['required', 'integer', 'min:1'],
-        ]);
-
-        $days = (int) $validated['learnerDeadlineDays'][$userId];
-
-        $this->batchQuery()
-            ->where('user_id', $userId)
-            ->update([
-                'deadline' => now()->addDays($days)->timestamp,
-            ]);
-
-        session()->flash('success', 'Learner deadline updated successfully.');
-
-        return redirect()->route('admin.enrollments.show', $this->batchKey);
-    }
-
-    public function saveSelectedLearnerDeadline(): Redirector
-    {
-        if ($this->selectedLearnerId === null) {
-            abort(404);
+        if (! $enrollment->deadline) {
+            return PHP_INT_MAX;
         }
 
-        $validated = $this->validate([
-            'selectedLearnerDeadlineDays' => ['required', 'integer', 'min:1'],
-        ]);
+        $deadlineTimestamp = is_numeric($enrollment->deadline)
+            ? $enrollment->deadline
+            : Carbon::parse($enrollment->deadline)->timestamp;
 
-        $days = (int) $validated['selectedLearnerDeadlineDays'];
-
-        $this->batchQuery()
-            ->where('user_id', $this->selectedLearnerId)
-            ->update([
-                'deadline' => now()->addDays($days)->timestamp,
-            ]);
-
-        session()->flash('success', 'Learner deadline updated successfully.');
-
-        return redirect()->route('admin.enrollments.show', $this->batchKey);
-    }
-
-    public function revokeLearner(int $userId): Redirector
-    {
-        $this->batchQuery()
-            ->where('user_id', $userId)
-            ->delete();
-
-        if ($this->resolveBatchEnrollments()->isEmpty()) {
-            session()->flash('success', 'Learner removed from the batch.');
-
-            return redirect()->route('admin.enrollments.index');
-        }
-
-        $this->syncEditableFields();
-        session()->flash('success', 'Learner removed from the batch.');
-
-        return redirect()->route('admin.enrollments.show', $this->batchKey);
-    }
-
-    public function revokeBatch(): Redirector
-    {
-        $this->validate([
-            'revokeBatchConfirmation' => ['required', 'in:CONFIRM'],
-        ], [
-            'revokeBatchConfirmation.required' => 'Type CONFIRM to revoke this batch.',
-            'revokeBatchConfirmation.in' => 'Type CONFIRM exactly to revoke this batch.',
-        ]);
-
-        $this->batchQuery()->delete();
-
-        session()->flash('success', 'Batch revoked successfully.');
-
-        return redirect()->route('admin.enrollments.index');
+        return Carbon::now()->diffInDays(Carbon::createFromTimestamp($deadlineTimestamp), false);
     }
 
     public function render(): View

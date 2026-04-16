@@ -35,6 +35,14 @@
                 Edit Deadline
             </flux:button>
 
+            <flux:button
+                variant="outline"
+                icon="bell"
+                wire:click="openSendNotificationModal"
+            >
+                Send Notifications
+            </flux:button>
+
             <flux:button href="{{ route('admin.enrollments.index') }}" variant="outline" wire:navigate>
                 Back to List
             </flux:button>
@@ -353,6 +361,53 @@
 
                     <flux:button variant="danger" wire:click="revokeBatch">
                         Revoke Entire Batch
+                    </flux:button>
+                </div>
+            </div>
+        </flux:modal>
+
+        <flux:modal wire:model="showSendNotificationModal" class="max-w-lg">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading level="2">Send Notifications</flux:heading>
+                    <flux:text class="mt-2">Send notifications by progress range and choose email or push delivery.</flux:text>
+                </div>
+
+                <flux:field label="Notification Type">
+                    <flux:select wire:model="sendNotificationType">
+                        <option value="all">All Learners</option>
+                        <option value="0-24">0% - 24%</option>
+                        <option value="25-49">25% - 49%</option>
+                        <option value="50-74">50% - 74%</option>
+                        <option value="75-99">75% - 99%</option>
+                        <option value="100">100%</option>
+                    </flux:select>
+                </flux:field>
+
+                <flux:field label="Message">
+                    <flux:textarea wire:model="sendNotificationMessage" rows="4" />
+                    <flux:error name="sendNotificationMessage" />
+                </flux:field>
+
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <flux:field>
+                        <flux:label>Send Email</flux:label>
+                        <flux:switch wire:model="sendEmail" />
+                    </flux:field>
+
+                    <flux:field>
+                        <flux:label>Send Push</flux:label>
+                        <flux:switch wire:model="sendPush" />
+                    </flux:field>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <flux:button variant="ghost" wire:click="closeSendNotificationModal">
+                        Cancel
+                    </flux:button>
+
+                    <flux:button wire:click="sendManualNotification">
+                        Send Notifications
                     </flux:button>
                 </div>
             </div>
