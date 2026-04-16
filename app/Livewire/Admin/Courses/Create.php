@@ -29,6 +29,16 @@ class Create extends Component
 
     public string $outcomes = '';
 
+    public string $requirements = '';
+
+    public string $tags = '';
+
+    public string $instructor = '';
+
+    public bool $featured = false;
+
+    public bool $published = false;
+
     public $thumbnailUpload = null;
 
     public function mount(): void
@@ -57,6 +67,11 @@ class Create extends Component
             'thumbnailUpload' => 'nullable|image|max:10240',
             'audience' => 'nullable|string|max:2000',
             'outcomes' => 'nullable|string|max:2000',
+            'requirements' => 'nullable|string|max:2000',
+            'tags' => 'nullable|string|max:500',
+            'instructor' => 'nullable|string|max:255',
+            'featured' => 'nullable|boolean',
+            'published' => 'nullable|boolean',
         ]);
 
         $course = Course::create([
@@ -81,6 +96,7 @@ class Create extends Component
             'course_slug' => $course->slug,
             'category' => $this->category ?: null,
             'difficulty' => $this->difficulty ?: null,
+            'published' => $this->published,
         ]);
 
         session()->flash('success', 'Course created successfully.');
@@ -104,6 +120,11 @@ class Create extends Component
             'data' => [
                 'audience' => $this->normalizeLines($this->audience),
                 'outcomes' => $this->normalizeLines($this->outcomes),
+                'requirements' => $this->normalizeLines($this->requirements),
+                'tags' => $this->normalizeTags($this->tags),
+                'instructor' => $this->instructor ?: null,
+                'featured' => $this->featured,
+                'published' => $this->published,
             ],
         ];
     }
@@ -113,6 +134,18 @@ class Create extends Component
         return array_values(array_filter(
             array_map(static fn (string $line): string => trim($line), preg_split('/\r\n|\r|\n/', $value) ?: []),
             static fn (string $line): bool => $line !== '',
+        ));
+    }
+
+    protected function normalizeTags(string $value): array
+    {
+        if (empty(trim($value))) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(static fn (string $tag): string => trim($tag), explode(',', $value)),
+            static fn (string $tag): bool => $tag !== '',
         ));
     }
 }

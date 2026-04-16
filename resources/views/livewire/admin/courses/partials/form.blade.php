@@ -2,6 +2,8 @@
     $previewSlug = $slug !== '' ? $slug : \Illuminate\Support\Str::slug($title);
     $previewAudience = array_values(array_filter(preg_split('/\r\n|\r|\n/', $audience) ?: []));
     $previewOutcomes = array_values(array_filter(preg_split('/\r\n|\r|\n/', $outcomes) ?: []));
+    $previewRequirements = array_values(array_filter(preg_split('/\r\n|\r|\n/', $requirements) ?: []));
+    $previewTags = array_values(array_filter(array_map('trim', explode(',', $tags)) ?: []));
     $existingThumbnailUrl = $course?->getFirstMediaUrl('course-thumbnail') ?: $course?->courseMeta?->thumbnail;
     $previewThumbnailUrl = $thumbnailUpload?->temporaryUrl() ?? $existingThumbnailUrl;
     $topicCount = $course?->topics->count() ?? 0;
@@ -11,6 +13,7 @@
     $contentQuizCount = $course?->topics->sum(fn ($topic) => $topic->modules->sum(fn ($module) => $module->contents->filter(fn ($content) => $content->type?->value === 'quiz')->count())) ?? 0;
     $endQuizCount = $course?->topics->sum(fn ($topic) => $topic->modules->sum(fn ($module) => $module->contents->filter(fn ($content) => $content->endQuiz !== null)->count())) ?? 0;
     $timestampedQuizCount = $course?->topics->sum(fn ($topic) => $topic->modules->sum(fn ($module) => $module->contents->sum(fn ($content) => $content->timestampedQuizzes->count()))) ?? 0;
+    $courseId = $course?->id;
 @endphp
 
 <div class="mx-auto max-w-7xl space-y-6">
@@ -64,7 +67,7 @@
 
             <div class="flex items-start justify-end">
                 @if ($isEditing)
-                    <flux:button href="{{ route('admin.courses.show', $course->id) }}" wire:navigate variant="outline">
+                    <flux:button href="{{ route('admin.courses.show', $courseId) }}" wire:navigate variant="outline">
                         Open Course
                     </flux:button>
                 @endif
@@ -175,6 +178,61 @@
                         <flux:textarea wire:model.live.debounce.300ms="outcomes" rows="5" placeholder="Design a complete learning sequence&#10;Align activities with outcomes&#10;Measure engagement effectively" />
                         <flux:error name="outcomes" />
                     </flux:field>
+
+                    <flux:field>
+                        <flux:label>Requirements</flux:label>
+                        <flux:textarea wire:model.live.debounce.300ms="requirements" rows="3" placeholder="Basic understanding of HTML&#10;Familiarity with CSS&#10;No prior JavaScript needed" />
+                        <flux:error name="requirements" />
+                    </flux:field>
+                </div>
+            </section>
+
+            <section class="rounded-[1.75rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+                <div class="mb-6">
+                    <flux:heading level="2" size="lg">Organization</flux:heading>
+                    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Help learners find this course through categorization and search.</p>
+                </div>
+
+                <div class="grid gap-5">
+                    <flux:field>
+                        <flux:label>Tags</flux:label>
+                        <flux:input wire:model.live.debounce.300ms="tags" placeholder="javascript, react, web development, frontend" />
+                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Separate tags with commas</p>
+                        <flux:error name="tags" />
+                    </flux:field>
+
+                    <flux:field>
+                        <flux:label>Instructor</flux:label>
+                        <flux:input wire:model.live.debounce.300ms="instructor" placeholder="John Doe" />
+                        <flux:error name="instructor" />
+                    </flux:field>
+                </div>
+            </section>
+
+            <section class="rounded-[1.75rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+                <div class="mb-6">
+                    <flux:heading level="2" size="lg">Publishing</flux:heading>
+                    <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Control course visibility and prominence.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <label class="flex items-center justify-between rounded-xl border border-zinc-200 p-4 cursor-pointer hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900/50">
+                        <div>
+                            <span class="block text-sm font-medium text-zinc-900 dark:text-zinc-100">Published</span>
+                            <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400"> learners can enroll and access course content</span>
+                        </div>
+                        <input type="checkbox" wire:model="published" class="sr-only peer">
+                        <div class="relative w-11 h-6 bg-zinc-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-zinc-600 peer-checked:bg-blue-600"></div>
+                    </label>
+
+                    <label class="flex items-center justify-between rounded-xl border border-zinc-200 p-4 cursor-pointer hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900/50">
+                        <div>
+                            <span class="block text-sm font-medium text-zinc-900 dark:text-zinc-100">Featured</span>
+                            <span class="mt-1 block text-xs text-zinc-500 dark:text-zinc-400">show on homepage and course listings</span>
+                        </div>
+                        <input type="checkbox" wire:model="featured" class="sr-only peer">
+                        <div class="relative w-11 h-6 bg-zinc-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-zinc-600 peer-checked:bg-blue-600"></div>
+                    </label>
                 </div>
             </section>
         </div>
@@ -205,6 +263,14 @@
                             @if ($difficulty !== '')
                                 <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">{{ $difficulty }}</span>
                             @endif
+                            @if ($published)
+                                <span class="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800 dark:bg-green-950/40 dark:text-green-300">Published</span>
+                            @else
+                                <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">Draft</span>
+                            @endif
+                            @if ($featured)
+                                <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-800 dark:bg-purple-950/40 dark:text-purple-300">Featured</span>
+                            @endif
                         </div>
 
                         <div>
@@ -223,6 +289,24 @@
                             <p class="mt-2 break-all font-mono text-sm text-zinc-900 dark:text-zinc-100">/{{ $previewSlug !== '' ? $previewSlug : 'course-slug' }}</p>
                         </div>
                     </div>
+
+                    @if ($instructor !== '')
+                        <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Instructor</p>
+                            <p class="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">{{ $instructor }}</p>
+                        </div>
+                    @endif
+
+                    @if (count($previewTags) > 0)
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Tags</p>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                @foreach ($previewTags as $tag)
+                                    <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">{{ $tag }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="space-y-4">
                         <div>
@@ -248,6 +332,19 @@
                                 @endforelse
                             </div>
                         </div>
+
+                        @if (count($previewRequirements) > 0)
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">Requirements</p>
+                                <div class="mt-3 space-y-2">
+                                    @foreach ($previewRequirements as $index => $item)
+                                        <div wire:key="preview-requirement-{{ $index }}" class="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-200">
+                                            {{ $item }}
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </section>
@@ -281,7 +378,7 @@
 
                 @if ($isEditing)
                     <p class="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
-                        Last updated {{ $course->updated_at->format('M d, Y') }}. Keep metadata and structure aligned before enrolling another cohort.
+                        Last updated {{ $course?->updated_at->format('M d, Y') }}. Keep metadata and structure aligned before enrolling another cohort.
                     </p>
                 @else
                     <p class="mt-4 text-sm text-zinc-500 dark:text-zinc-400">
@@ -291,8 +388,7 @@
             </section>
 
             <section class="rounded-[1.75rem] border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
-                <flux:heading level="2" size="lg">Authoring Graph</flux:heading>
-                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">This course depends on several related models. They’re mapped here so the form stops hiding the real authoring surface.</p>
+                <flux:heading level="2" size="lg">Course Structure</flux:heading>
 
                 <div class="mt-5 space-y-3">
                     <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
@@ -300,7 +396,6 @@
                             <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Topics</p>
                             <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">{{ $topicCount }}</span>
                         </div>
-                        <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Attributes: `name`, `description`, `order`</p>
                     </div>
 
                     <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
@@ -308,7 +403,6 @@
                             <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Modules</p>
                             <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">{{ $moduleCount }}</span>
                         </div>
-                        <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Attributes: `title`, `description`, `order`</p>
                     </div>
 
                     <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
@@ -316,39 +410,35 @@
                             <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Content Items</p>
                             <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">{{ $contentCount }}</span>
                         </div>
-                        <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Attributes: `title`, `type`, `body`, `content_url`, `content_meta`, `order`</p>
                     </div>
 
                     <div class="grid gap-3 sm:grid-cols-3">
                         <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
                             <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Quiz Content</p>
                             <p class="mt-2 text-2xl font-semibold text-zinc-950 dark:text-white">{{ $contentQuizCount }}</p>
-                            <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Content items with `type = quiz` and a primary question set.</p>
                         </div>
                         <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
                             <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">End Quizzes</p>
                             <p class="mt-2 text-2xl font-semibold text-zinc-950 dark:text-white">{{ $endQuizCount }}</p>
-                            <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Attached to content with question text, options, and correct answers.</p>
                         </div>
                         <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
                             <p class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Timestamped Quizzes</p>
                             <p class="mt-2 text-2xl font-semibold text-zinc-950 dark:text-white">{{ $timestampedQuizCount }}</p>
-                            <p class="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">Video checkpoints with `timestamp` plus quiz relationships.</p>
                         </div>
                     </div>
                 </div>
 
-                @if ($isEditing)
+                @if ($isEditing && $courseId)
                     <div class="mt-5 flex flex-col gap-3">
-                        <flux:button href="{{ route('admin.courses.show', $course->id) }}" wire:navigate variant="primary" class="w-full justify-center">
+                        <flux:button href="{{ route('admin.courses.structure', $courseId) }}" wire:navigate variant="primary" class="w-full justify-center">
                             Manage Structure And Assessments
                         </flux:button>
-                        <p class="text-xs leading-5 text-zinc-500 dark:text-zinc-400">Use the course page for topic/module/content editing and quiz creation. This form now owns course identity and catalog metadata.</p>
                     </div>
-                @else
-                    <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950/30">
-                        <p class="text-sm font-semibold text-amber-900 dark:text-amber-300">Create the course first, then continue in the course studio.</p>
-                        <p class="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-400">The next screen is where you add topics, modules, content items, quiz content, end quizzes, and timestamped quizzes.</p>
+                @elseif (!$isEditing)
+                    <div class="mt-5 flex flex-col gap-3">
+                        <flux:button type="submit" variant="primary" class="w-full justify-center">
+                            Create Course
+                        </flux:button>
                     </div>
                 @endif
             </section>
@@ -364,8 +454,8 @@
                     <flux:button href="{{ $cancelUrl }}" wire:navigate variant="outline" class="w-full justify-center">
                         Cancel
                     </flux:button>
-                    @if ($isEditing)
-                        <flux:button href="{{ route('admin.courses.analyze', $course->id) }}" wire:navigate variant="ghost" class="w-full justify-center">
+                    @if ($isEditing && $courseId)
+                        <flux:button href="{{ route('admin.courses.analyze', $courseId) }}" wire:navigate variant="ghost" class="w-full justify-center">
                             Analyze Course
                         </flux:button>
                     @endif

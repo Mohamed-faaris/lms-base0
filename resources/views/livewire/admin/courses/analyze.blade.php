@@ -11,18 +11,20 @@
     {{-- Tabs --}}
     <div class="mb-6 border-b border-zinc-200 dark:border-zinc-700">
         <nav class="flex gap-4">
-            <button
-                wire:click="setTab('overview')"
+            <a
+                href="{{ route('admin.courses.analyze', ['course' => $course->id, 'activeTab' => 'overview']) }}"
+                wire:navigate
                 class="pb-3 px-1 text-sm font-medium border-b-2 transition-colors {{ $activeTab === 'overview' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300' }}"
             >
                 Overview
-            </button>
-            <button
-                wire:click="setTab('enrollments')"
+            </a>
+            <a
+                href="{{ route('admin.courses.analyze', ['course' => $course->id, 'activeTab' => 'enrollments']) }}"
+                wire:navigate
                 class="pb-3 px-1 text-sm font-medium border-b-2 transition-colors {{ $activeTab === 'enrollments' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300' }}"
             >
                 Enrollments
-            </button>
+            </a>
         </nav>
     </div>
 
@@ -65,19 +67,40 @@
             <table class="w-full">
                 <thead class="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Module Name</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Topic</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Content</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Quizzes</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Module</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Videos</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Quizzes</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Progress</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
                     @forelse ($moduleData as $module)
                         <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                            <td class="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 font-medium">{{ $module['name'] }}</td>
-                            <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $module['topic_name'] }}</td>
-                            <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $module['content_count'] }}</td>
-                            <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $module['quiz_count'] }}</td>
+                            <td class="px-4 py-3">
+                                <div class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $module['name'] }}</div>
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $module['topic_name'] }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-center text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ $module['content_count'] }}
+                            </td>
+                            <td class="px-4 py-3 text-center text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ $module['quiz_count'] }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs text-green-600 dark:text-green-400">{{ $module['completed_count'] }} done</span>
+                                    <span class="text-xs text-yellow-600 dark:text-yellow-400">{{ $module['in_progress_count'] }} in progress</span>
+                                </div>
+                                <div class="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden flex">
+                                    @php
+                                        $total = $module['completed_count'] + $module['in_progress_count'] + $module['not_started_count'];
+                                        $donePct = $total > 0 ? ($module['completed_count'] / $total * 100) : 0;
+                                        $progressPct = $total > 0 ? ($module['in_progress_count'] / $total * 100) : 0;
+                                    @endphp
+                                    <div class="h-full bg-green-500" style="width: {{ $donePct }}%"></div>
+                                    <div class="h-full bg-yellow-500" style="width: {{ $progressPct }}%"></div>
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>
@@ -227,126 +250,120 @@
         </style>
         @script
         <script>
-            (function() {
-                'use strict';
+            var analyzeEnrollmentsTable;
 
-                var analyzeEnrollmentsTable;
+            const initializeAnalyzeEnrollmentsTable = function() {
+                if (typeof jQuery === 'undefined' || typeof DataTable === 'undefined') {
+                    setTimeout(initializeAnalyzeEnrollmentsTable, 100);
+                    return;
+                }
 
-                function initializeAnalyzeEnrollmentsTable() {
-                    var tableElement = document.getElementById('analyze-enrollments-table');
+                const tableElement = document.getElementById('analyze-enrollments-table');
 
-                    if (!tableElement) {
-                        return;
-                    }
+                if (!tableElement) {
+                    return;
+                }
 
-                    if (analyzeEnrollmentsTable) {
-                        try { analyzeEnrollmentsTable.destroy(); } catch(e) {}
-                        analyzeEnrollmentsTable = null;
-                    }
+                if ($.fn.DataTable.isDataTable(tableElement)) {
+                    $(tableElement).DataTable().destroy();
+                    tableElement.querySelector('tbody').innerHTML = '';
+                }
 
-                    analyzeEnrollmentsTable = new DataTable(tableElement, {
-                        processing: true,
-                        serverSide: true,
-                        dom: 't',
-                        ajax: {
-                            url: "{{ route('admin.courses.analyze.datatable', $course->id) }}",
-                            type: 'GET',
-                            data: function(d) {
-                                d.search = $('#analyze-enrollments-search').val();
-                            }
-                        },
-                        columns: [
-                            { data: 'user', name: 'user' },
-                            { data: 'enrolled_at', name: 'enrolled_at', searchable: false },
-                            { data: 'status', name: 'status', searchable: false }
-                        ],
-                        language: {
-                            search: '',
-                            searchPlaceholder: 'Search enrollments...',
-                            info: 'Showing _START_ to _END_ of _TOTAL_ enrollments',
-                            infoEmpty: 'No enrollments found',
-                            infoFiltered: '(filtered from _MAX_ total)',
-                            processing: '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Processing...</span>',
-                            emptyTable: 'No enrollments found',
-                            zeroRecords: 'No matching enrollments found'
-                        },
-                        order: [[1, 'desc']],
-                        pageLength: 10,
-                        drawCallback: function(settings) {
-                            updateAnalyzeTableInfo(settings);
-                            updateAnalyzePagination(settings);
+                analyzeEnrollmentsTable = new DataTable(tableElement, {
+                    destroy: true,
+                    serverSide: true,
+                    dom: 't',
+                    ajax: {
+                        url: "{{ route('admin.courses.analyze.datatable', $course->id) }}",
+                        type: 'GET',
+                        data: function(d) {
+                            d.search = $('#analyze-enrollments-search').val();
                         }
-                    });
+                    },
+                    columns: [
+                        { data: 'user', name: 'user' },
+                        { data: 'enrolled_at', name: 'enrolled_at', searchable: false },
+                        { data: 'status', name: 'status', searchable: false }
+                    ],
+                    language: {
+                        search: '',
+                        searchPlaceholder: 'Search enrollments...',
+                        info: 'Showing _START_ to _END_ of _TOTAL_ enrollments',
+                        infoEmpty: 'No enrollments found',
+                        infoFiltered: '(filtered from _MAX_ total)',
+                        processing: '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Processing...</span>',
+                        emptyTable: 'No enrollments found',
+                        zeroRecords: 'No matching enrollments found'
+                    },
+                    order: [[1, 'desc']],
+                    pageLength: 10,
+                    drawCallback: function(settings) {
+                        updateAnalyzeTableInfo(settings);
+                        updateAnalyzePagination(settings);
+                    }
+                });
 
-                    $('#analyze-enrollments-search').off('keyup.analyze').on('keyup.analyze', function() {
-                        analyzeEnrollmentsTable.search(this.value).draw();
-                    });
+                $('#analyze-enrollments-search').off('keyup.analyze').on('keyup.analyze', function() {
+                    analyzeEnrollmentsTable.search(this.value).draw();
+                });
 
-                    $('#analyze-length-select').off('change.analyze').on('change.analyze', function() {
-                        analyzeEnrollmentsTable.page.len(this.value).draw();
-                    });
+                $('#analyze-length-select').off('change.analyze').on('change.analyze', function() {
+                    analyzeEnrollmentsTable.page.len(this.value).draw();
+                });
+            };
+
+            initializeAnalyzeEnrollmentsTable();
+
+            function updateAnalyzeTableInfo(settings) {
+                const api = new DataTable.Api(settings);
+                const info = api.page.info();
+                const infoEl = document.getElementById('analyze-table-info');
+
+                if (infoEl) {
+                    infoEl.textContent = info.pages === 0 ? '0 enrollments' : `${info.start + 1}-${info.end} of ${info.recordsTotal}`;
+                }
+            }
+
+            function updateAnalyzePagination(settings) {
+                const api = new DataTable.Api(settings);
+                const info = api.page.info();
+                const container = document.getElementById('analyze-table-pagination');
+
+                if (!container) {
+                    return;
                 }
 
-                document.addEventListener('livewire:init', initializeAnalyzeEnrollmentsTable);
-                document.addEventListener('livewire:navigated', initializeAnalyzeEnrollmentsTable);
+                let html = '';
 
-                if (document.readyState === 'complete') {
-                    initializeAnalyzeEnrollmentsTable();
-                } else {
-                    window.addEventListener('load', initializeAnalyzeEnrollmentsTable);
-                }
+                const prevClass = info.page === 0
+                    ? 'opacity-50 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
+                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-700 bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300';
 
-                function updateAnalyzeTableInfo(settings) {
-                    var api = new DataTable.Api(settings);
-                    var info = api.page.info();
-                    var infoEl = document.getElementById('analyze-table-info');
+                html += `<button class="px-3 py-1.5 text-sm rounded-lg border ${prevClass}" ${info.page === 0 ? 'disabled' : ''} onclick="goToAnalyzePage(${info.page - 1})">Previous</button>`;
 
-                    if (infoEl) {
-                        infoEl.textContent = info.pages === 0 ? '0 enrollments' : (info.start + 1) + '-' + info.end + ' of ' + info.recordsTotal;
+                for (let i = 0; i < info.pages; i++) {
+                    if (i === 0 || i === info.pages - 1 || (i >= info.page - 1 && i <= info.page + 1)) {
+                        const pageClass = i === info.page
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-600';
+                        html += `<button class="px-3 py-1.5 text-sm rounded-lg border ${pageClass}" onclick="goToAnalyzePage(${i})">${i + 1}</button>`;
+                    } else if (i === info.page - 2 || i === info.page + 2) {
+                        html += `<span class="px-2 text-zinc-400">...</span>`;
                     }
                 }
 
-                function updateAnalyzePagination(settings) {
-                    var api = new DataTable.Api(settings);
-                    var info = api.page.info();
-                    var container = document.getElementById('analyze-table-pagination');
+                const nextClass = info.page >= info.pages - 1
+                    ? 'opacity-50 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
+                    : 'hover:bg-zinc-100 dark:hover:bg-zinc-700 bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300';
 
-                    if (!container) {
-                        return;
-                    }
+                html += `<button class="px-3 py-1.5 text-sm rounded-lg border ${nextClass}" ${info.page >= info.pages - 1 ? 'disabled' : ''} onclick="goToAnalyzePage(${info.page + 1})">Next</button>`;
 
-                    var html = '';
+                container.innerHTML = html;
+            }
 
-                    var prevClass = info.page === 0
-                        ? 'opacity-50 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
-                        : 'hover:bg-zinc-100 dark:hover:bg-zinc-700 bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300';
-
-                    html += '<button class="px-3 py-1.5 text-sm rounded-lg border ' + prevClass + '" ' + (info.page === 0 ? 'disabled' : '') + ' onclick="goToAnalyzePage(' + (info.page - 1) + ')">Previous</button>';
-
-                    for (var i = 0; i < info.pages; i++) {
-                        if (i === 0 || i === info.pages - 1 || (i >= info.page - 1 && i <= info.page + 1)) {
-                            var pageClass = i === info.page
-                                ? 'bg-blue-600 text-white border-blue-600'
-                                : 'bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-600';
-                            html += '<button class="px-3 py-1.5 text-sm rounded-lg border ' + pageClass + '" onclick="goToAnalyzePage(' + i + ')">' + (i + 1) + '</button>';
-                        } else if (i === info.page - 2 || i === info.page + 2) {
-                            html += '<span class="px-2 text-zinc-400">...</span>';
-                        }
-                    }
-
-                    var nextClass = info.page >= info.pages - 1
-                        ? 'opacity-50 cursor-not-allowed bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
-                        : 'hover:bg-zinc-100 dark:hover:bg-zinc-700 bg-white dark:bg-zinc-700 border-zinc-200 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300';
-
-                    html += '<button class="px-3 py-1.5 text-sm rounded-lg border ' + nextClass + '" ' + (info.page >= info.pages - 1 ? 'disabled' : '') + ' onclick="goToAnalyzePage(' + (info.page + 1) + ')">Next</button>';
-
-                    container.innerHTML = html;
-                }
-
-                window.goToAnalyzePage = function(page) {
-                    analyzeEnrollmentsTable.page(page).draw(false);
-                };
-            })();
+            function goToAnalyzePage(page) {
+                analyzeEnrollmentsTable.page(page).draw(false);
+            }
         </script>
         @endscript
     @endif

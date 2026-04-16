@@ -132,16 +132,23 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
     <script>
-        let table;
+        var usersTable;
 
-        const initializeUsersTable = function() {
-            if (table) {
-                table.destroy();
-                table = null;
+        function initializeUsersTable() {
+            if (typeof jQuery === 'undefined' || typeof DataTable === 'undefined') {
+                setTimeout(initializeUsersTable, 100);
+                return;
             }
 
-            table = new DataTable('#users-table', {
-                processing: true,
+            const usersTableElement = document.getElementById('users-table');
+            if (!usersTableElement) return;
+
+            if ($.fn.DataTable.isDataTable('#users-table')) {
+                $('#users-table').DataTable().destroy();
+            }
+
+            usersTable = new DataTable('#users-table', {
+                destroy: true,
                 serverSide: true,
                 dom: 't',
                 ajax: {
@@ -178,17 +185,17 @@
             });
 
             $('#users-search').off('keyup.users').on('keyup.users', function() {
-                table.search(this.value).draw();
+                usersTable.search(this.value).draw();
             });
 
             $('#length-select').off('change.users').on('change.users', function() {
-                table.page.len(this.value).draw();
+                usersTable.page.len(this.value).draw();
             });
 
             $('#filter-role, #filter-college, #filter-department').off('change.users').on('change.users', function() {
-                table.draw();
+                usersTable.draw();
             });
-        };
+        }
 
         initializeUsersTable();
         document.addEventListener('livewire:navigated', initializeUsersTable);
@@ -198,7 +205,7 @@
             $('#filter-role').val('');
             $('#filter-college').val('');
             $('#filter-department').val('');
-            table.search('').draw();
+            usersTable.search('').draw();
         }
 
         function updateTableInfo(settings) {
@@ -250,7 +257,7 @@
         }
 
         function goToPage(page) {
-            table.page(page).draw(false);
+            usersTable.page(page).draw(false);
         }
     </script>
 </div>

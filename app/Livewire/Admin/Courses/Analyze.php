@@ -8,12 +8,14 @@ use App\Models\Progress;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Analyze extends Component
 {
     public Course $course;
 
+    #[Url]
     public string $activeTab = 'overview';
 
     public array $stats = [];
@@ -86,11 +88,38 @@ class Analyze extends Component
         $this->moduleData = $this->course->topics
             ->flatMap(function ($topic): array {
                 return $topic->modules->map(function ($module) use ($topic): array {
+                    $contentIds = $module->contents->pluck('id');
+                    $totalContents = $contentIds->count();
+                    $quizzes = $module->contents->where('type', 'quiz')->count();
+                    $videos = $module->contents->where('type', 'video')->count();
+
+                    $completedCount = 0;
+                    $inProgressCount = 0;
+                    foreach ($this->course->enrollments as $enrollment) {
+                        $completed = Progress::where('user_id', $enrollment->user_id)
+                            ->whereIn('content_id', $contentIds)
+                            ->whereNotNull('completed_at')
+                            ->count();
+
+                        if ($totalContents > 0) {
+                            $progress = ($completed / $totalContents) * 100;
+                            if ($progress === 100) {
+                                $completedCount++;
+                            } elseif ($progress > 0) {
+                                $inProgressCount++;
+                            }
+                        }
+                    }
+
                     return [
                         'name' => $module->title,
                         'topic_name' => $topic->name,
-                        'content_count' => $module->contents->count(),
-                        'quiz_count' => $module->contents->sum(fn ($content) => $content->quizzes->count()),
+                        'content_count' => $videos,
+                        'quiz_count' => $quizzes,
+                        'total_content' => $totalContents,
+                        'completed_count' => $completedCount,
+                        'in_progress_count' => $inProgressCount,
+                        'not_started_count' => $this->course->enrollments->count() - $completedCount - $inProgressCount,
                     ];
                 })->all();
             })
@@ -183,9 +212,18 @@ class Analyze extends Component
 
     public function setTab(string $tab): void
     {
-        $this->activeTab = $tab;
+        if ($this->activeTab !== $tab) {
+            $this->activeTab = $tab;
+        }
 
         if ($tab === 'enrollments') {
+            $this->dispatch('analyze-enrollments-tab-opened');
+        }
+    }
+
+    public function updatedActiveTab(string $value): void
+    {
+        if ($value === 'enrollments') {
             $this->dispatch('analyze-enrollments-tab-opened');
         }
     }

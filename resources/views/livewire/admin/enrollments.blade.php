@@ -108,16 +108,23 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
     <script>
-        let table;
+        var enrollmentsTable;
 
-        const initializeEnrollmentsTable = function() {
-            if (table) {
-                table.destroy();
-                table = null;
+        function initializeEnrollmentsTable() {
+            if (typeof jQuery === 'undefined' || typeof DataTable === 'undefined') {
+                setTimeout(initializeEnrollmentsTable, 100);
+                return;
             }
 
-            table = new DataTable('#enrollments-table', {
-                processing: true,
+            const enrollmentsTableElement = document.getElementById('enrollments-table');
+            if (!enrollmentsTableElement) return;
+
+            if ($.fn.DataTable.isDataTable('#enrollments-table')) {
+                $('#enrollments-table').DataTable().destroy();
+            }
+
+            enrollmentsTable = new DataTable('#enrollments-table', {
+                destroy: true,
                 serverSide: true,
                 dom: 't',
                 ajax: {
@@ -155,17 +162,17 @@
             });
 
             $('#enrollments-search').off('keyup.enrollments').on('keyup.enrollments', function() {
-                table.search(this.value).draw();
+                enrollmentsTable.search(this.value).draw();
             });
 
             $('#length-select').off('change.enrollments').on('change.enrollments', function() {
-                table.page.len(this.value).draw();
+                enrollmentsTable.page.len(this.value).draw();
             });
 
             $('#filter-course').off('change.enrollments').on('change.enrollments', function() {
-                table.draw();
+                enrollmentsTable.draw();
             });
-        };
+        }
 
         initializeEnrollmentsTable();
         document.addEventListener('livewire:navigated', initializeEnrollmentsTable);
@@ -219,13 +226,13 @@
         }
 
         function goToPage(page) {
-            table.page(page).draw(false);
+            enrollmentsTable.page(page).draw(false);
         }
 
         function resetFilters() {
             $('#enrollments-search').val('');
             $('#filter-course').val('');
-            table.search('').draw();
+            enrollmentsTable.search('').draw();
         }
     </script>
 </div>

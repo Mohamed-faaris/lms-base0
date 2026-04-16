@@ -31,6 +31,16 @@ class Edit extends Component
 
     public string $outcomes = '';
 
+    public string $requirements = '';
+
+    public string $tags = '';
+
+    public string $instructor = '';
+
+    public bool $featured = false;
+
+    public bool $published = false;
+
     public $thumbnailUpload = null;
 
     public function mount(Course $course): void
@@ -47,6 +57,7 @@ class Edit extends Component
             'enrollments',
             'media',
         )->findOrFail($course->id);
+
         $this->title = $this->course->title;
         $this->slug = $this->course->slug ?? '';
         $this->description = $this->course->description ?? '';
@@ -55,6 +66,11 @@ class Edit extends Component
         $this->duration = $this->course->courseMeta?->duration ?? '';
         $this->audience = implode(PHP_EOL, $this->course->courseMeta?->data['audience'] ?? []);
         $this->outcomes = implode(PHP_EOL, $this->course->courseMeta?->data['outcomes'] ?? []);
+        $this->requirements = implode(PHP_EOL, $this->course->courseMeta?->data['requirements'] ?? []);
+        $this->tags = implode(', ', $this->course->courseMeta?->data['tags'] ?? []);
+        $this->instructor = $this->course->courseMeta?->data['instructor'] ?? '';
+        $this->featured = $this->course->courseMeta?->data['featured'] ?? false;
+        $this->published = $this->course->courseMeta?->data['published'] ?? false;
     }
 
     public function updatedTitle(string $value): void
@@ -76,6 +92,11 @@ class Edit extends Component
             'thumbnailUpload' => 'nullable|image|max:10240',
             'audience' => 'nullable|string|max:2000',
             'outcomes' => 'nullable|string|max:2000',
+            'requirements' => 'nullable|string|max:2000',
+            'tags' => 'nullable|string|max:500',
+            'instructor' => 'nullable|string|max:255',
+            'featured' => 'nullable|boolean',
+            'published' => 'nullable|boolean',
         ]);
 
         $this->course->update([
@@ -106,6 +127,7 @@ class Edit extends Component
             'course_slug' => $this->course->slug,
             'category' => $this->category ?: null,
             'difficulty' => $this->difficulty ?: null,
+            'published' => $this->published,
         ]);
 
         session()->flash('success', 'Course updated successfully.');
@@ -137,6 +159,11 @@ class Edit extends Component
             'data' => [
                 'audience' => $this->normalizeLines($this->audience),
                 'outcomes' => $this->normalizeLines($this->outcomes),
+                'requirements' => $this->normalizeLines($this->requirements),
+                'tags' => $this->normalizeTags($this->tags),
+                'instructor' => $this->instructor ?: null,
+                'featured' => $this->featured,
+                'published' => $this->published,
             ],
         ];
     }
@@ -146,6 +173,18 @@ class Edit extends Component
         return array_values(array_filter(
             array_map(static fn (string $line): string => trim($line), preg_split('/\r\n|\r|\n/', $value) ?: []),
             static fn (string $line): bool => $line !== '',
+        ));
+    }
+
+    protected function normalizeTags(string $value): array
+    {
+        if (empty(trim($value))) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(static fn (string $tag): string => trim($tag), explode(',', $value)),
+            static fn (string $tag): bool => $tag !== '',
         ));
     }
 }
