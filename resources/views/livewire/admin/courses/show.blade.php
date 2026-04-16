@@ -94,7 +94,7 @@
                                 <flux:button size="sm" variant="ghost" wire:click="startQuickEdit('topic', {{ $topic->id }})" icon="pencil-square" />
                             </flux:tooltip>
                             <flux:tooltip content="Open structure" position="top">
-                                <flux:button size="sm" variant="outline" href="{{ route('admin.courses.structure', $course->id) }}" wire:navigate icon="squares-2x2" />
+                                <flux:button size="sm" variant="outline" href="{{ route('admin.courses.show', $course->id) }}" wire:navigate icon="squares-2x2" />
                             </flux:tooltip>
                         </div>
                     </div>
@@ -129,7 +129,7 @@
                                         <flux:tooltip content="Quick edit module" position="top">
                                             <flux:button size="sm" variant="ghost" wire:click="startQuickEdit('module', {{ $module->id }})" icon="pencil-square" />
                                         </flux:tooltip>
-                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.structure', $course->id) }}" wire:navigate>Open Structure</flux:button>
+                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.show', $course->id) }}" wire:navigate>Open Structure</flux:button>
                                     </div>
                                 </div>
 
@@ -266,7 +266,7 @@
                 <flux:heading level="2" size="lg">Editing Guidance</flux:heading>
                 <div class="mt-4 space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
                     <p>Use this page to read through the whole course and make lightweight text changes without leaving the viewer.</p>
-                    <p>Use <a href="{{ route('admin.courses.structure', $course->id) }}" wire:navigate class="font-medium text-blue-600 hover:underline dark:text-blue-400">Structure</a> for adding or reorganizing topics, modules, content, and assessments.</p>
+                    <p>Use <a href="{{ route('admin.courses.show', $course->id) }}" wire:navigate class="font-medium text-blue-600 hover:underline dark:text-blue-400">Structure</a> for adding or reorganizing topics, modules, content, and assessments.</p>
                     <p>Use <a href="{{ route('admin.courses.edit', $course->id) }}" wire:navigate class="font-medium text-blue-600 hover:underline dark:text-blue-400">Edit</a> for metadata, thumbnail, and learner-facing course positioning.</p>
                 </div>
             </section>

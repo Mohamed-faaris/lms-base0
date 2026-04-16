@@ -24,7 +24,7 @@ test('admin can open the new course structure page', function () {
         'description' => 'Course for structure page.',
     ]);
 
-    $response = $this->actingAs($admin)->get(route('admin.courses.structure', $course));
+    $response = $this->actingAs($admin)->get(route('admin.courses.show', $course));
 
     $response->assertSuccessful();
     $response->assertSee('Course Structure');

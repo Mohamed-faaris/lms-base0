@@ -8,14 +8,6 @@
         View
     </flux:button>
     <flux:button
-        href="{{ route('admin.courses.structure', $course->id) }}"
-        wire:navigate
-        :variant="request()->routeIs('admin.courses.structure') ? 'primary' : 'outline'"
-        size="sm"
-    >
-        Structure
-    </flux:button>
-    <flux:button
         href="{{ route('admin.courses.edit', $course->id) }}"
         wire:navigate
         :variant="request()->routeIs('admin.courses.edit') ? 'primary' : 'outline'"

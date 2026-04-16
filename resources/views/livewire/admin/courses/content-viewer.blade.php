@@ -84,7 +84,7 @@
                         <flux:heading level="2" size="lg">Timestamp Quizzes</flux:heading>
                         <flux:badge color="blue">{{ $content->timestampedQuizzes->count() }}</flux:badge>
                     </div>
-                    <flux:button size="sm" href="{{ route('admin.courses.structure', $content->module->topic->course->id) }}" wire:navigate>
+                    <flux:button size="sm" href="{{ route('admin.courses.show', $content->module->topic->course->id) }}" wire:navigate>
                         Manage
                     </flux:button>
                 </div>

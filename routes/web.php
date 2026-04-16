@@ -7,7 +7,6 @@ use App\Livewire\Admin\Courses\Create as CoursesCreate;
 use App\Livewire\Admin\Courses\Edit as CoursesEdit;
 use App\Livewire\Admin\Courses\Index as CoursesIndex;
 use App\Livewire\Admin\Courses\QuizEditor;
-use App\Livewire\Admin\Courses\Show as CoursesShow;
 use App\Livewire\Admin\Courses\Structure as CoursesStructure;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Enrollments as AdminEnrollments;
@@ -56,9 +55,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::get('/datatable', \App\Http\Controllers\Admin\CoursesDataTableController::class)->name('index.datatable');
             Route::get('/create', CoursesCreate::class)->name('create');
             Route::delete('/{course}', \App\Http\Controllers\Admin\CourseDeleteController::class)->name('destroy');
-            Route::get('/{course}', CoursesShow::class)->name('show');
-            Route::get('/{course}', CoursesShow::class)->name('show');
-            Route::get('/{course}/structure', CoursesStructure::class)->name('structure');
+            Route::get('/{course}', CoursesStructure::class)->name('show');
             Route::get('/{course}/analyze', CoursesAnalyze::class)->name('analyze');
             Route::get('/{course}/analyze/datatable', \App\Http\Controllers\Admin\CourseAnalyzeEnrollmentsDataTableController::class)->name('analyze.datatable');
             Route::get('/{course}/enroll', EnrollmentBatchCreate::class)->name('enroll');

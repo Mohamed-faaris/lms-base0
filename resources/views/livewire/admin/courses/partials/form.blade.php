@@ -340,7 +340,7 @@
 
                 @if ($isEditing)
                     <div class="mt-5 flex flex-col gap-3">
-                        <flux:button href="{{ route('admin.courses.structure', $course->id) }}" wire:navigate variant="primary" class="w-full justify-center">
+                        <flux:button href="{{ route('admin.courses.show', $course->id) }}" wire:navigate variant="primary" class="w-full justify-center">
                             Manage Structure And Assessments
                         </flux:button>
                         <p class="text-xs leading-5 text-zinc-500 dark:text-zinc-400">Use the course page for topic/module/content editing and quiz creation. This form now owns course identity and catalog metadata.</p>
