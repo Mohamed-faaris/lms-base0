@@ -430,7 +430,7 @@
 
                 @if ($isEditing && $courseId)
                     <div class="mt-5 flex flex-col gap-3">
-                        <flux:button href="{{ route('admin.courses.structure', $courseId) }}" wire:navigate variant="primary" class="w-full justify-center">
+                        <flux:button href="{{ route('admin.courses.show', $courseId) }}" wire:navigate variant="primary" class="w-full justify-center">
                             Manage Structure And Assessments
                         </flux:button>
                     </div>
