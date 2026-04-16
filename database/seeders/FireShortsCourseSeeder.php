@@ -152,14 +152,15 @@ class FireShortsCourseSeeder extends Seeder
                     ]
                 );
 
-                $this->createEndVideoQuiz($content, $video['title']);
                 $contentOrder++;
             }
-
-            $this->createModuleQuiz($module, $topicData['name']);
         }
 
-        $this->createEndCourseQuiz($course);
+        $contents = Content::whereHas('module.topic', fn ($q) => $q->where('course_id', $course->id))->get();
+
+        foreach ($contents as $content) {
+            $this->createEndVideoQuiz($content, $content->title);
+        }
 
         $admin = User::query()->whereIn('role', ['admin', 'super_admin'])->first();
 
@@ -331,22 +332,8 @@ class FireShortsCourseSeeder extends Seeder
 
     private function createEndVideoQuiz(Content $content, string $videoTitle): void
     {
-        $quizContent = Content::firstOrCreate(
-            [
-                'module_id' => $content->module_id,
-                'title' => 'End of '.$videoTitle,
-            ],
-            [
-                'order' => ((int) $content->where('module_id', $content->module_id)->max('order')) + 1,
-                'body' => 'Test your understanding of this video',
-                'type' => ContentType::Quiz,
-                'content_url' => null,
-            ]
-        );
-
         $quiz = Quiz::firstOrCreate(
-            ['content_id' => $quizContent->id],
-            ['kind' => QuizKind::End]
+            ['content_id' => $content->id, 'kind' => QuizKind::End]
         );
 
         $questions = [
