@@ -11,5 +11,8 @@ test('faculty notifications page renders the sidebar notifications link', functi
 
     $response->assertSuccessful();
     $response->assertSee('Notifications');
+    $response->assertSee('Enable browser alerts');
+    $response->assertSee('Allow notifications');
+    $response->assertSee('autoRequestPermission', false);
     $response->assertSee(route('faculty.notifications'), false);
 });
