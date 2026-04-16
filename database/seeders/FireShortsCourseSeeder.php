@@ -137,7 +137,7 @@ class FireShortsCourseSeeder extends Seeder
                     continue;
                 }
 
-                $videoContent = Content::firstOrCreate(
+                $content = Content::firstOrCreate(
                     ['module_id' => $module->id, 'order' => $contentOrder],
                     [
                         'title' => $video['title'],
@@ -151,13 +151,15 @@ class FireShortsCourseSeeder extends Seeder
                         ],
                     ]
                 );
-                $contentOrder++;
 
-                $this->createVideoQuiz($videoContent, $video['title']);
+                $this->createEndVideoQuiz($content, $video['title']);
+                $contentOrder++;
             }
 
             $this->createModuleQuiz($module, $topicData['name']);
         }
+
+        $this->createEndCourseQuiz($course);
 
         $admin = User::query()->whereIn('role', ['admin', 'super_admin'])->first();
 
@@ -216,20 +218,38 @@ class FireShortsCourseSeeder extends Seeder
         }
     }
 
-    private function createVideoQuiz(Content $videoContent, string $videoTitle): void
+    private function generateTopicQuestions(string $topicName): array
     {
-        $questionText = str_replace([' #Shorts', ' #shorts'], '', $videoTitle);
-        $questionText = preg_replace('/\s*#\w+\s*$/', '', $questionText);
-        $questionText = trim($questionText);
+        return [
+            ['text' => 'Did you find this video helpful?', 'options' => ['A' => 'Yes, very helpful', 'B' => 'Somewhat helpful', 'C' => 'Not helpful', 'D' => 'Already knew this'], 'correct' => ['A']],
+            ['text' => 'Would you recommend this video to others?', 'options' => ['A' => 'Yes, definitely', 'B' => 'Maybe', 'C' => 'No', 'D' => 'Not sure'], 'correct' => ['A']],
+        ];
+    }
+
+    private function createEndCourseQuiz(Course $course): void
+    {
+        $lastTopic = Topic::where('course_id', $course->id)->orderBy('order', 'desc')->first();
+
+        if (! $lastTopic) {
+            return;
+        }
+
+        $module = Module::firstOrCreate(
+            ['topic_id' => $lastTopic->id, 'order' => 99],
+            [
+                'title' => 'Course Completion',
+                'description' => 'Final assessment for Fire Shorts',
+            ]
+        );
 
         $quizContent = Content::firstOrCreate(
             [
-                'module_id' => $videoContent->module_id,
-                'title' => 'Quiz: '.$questionText,
+                'module_id' => $module->id,
+                'title' => 'Course End Quiz',
             ],
             [
-                'order' => ((int) $videoContent->module->contents()->max('order')) + 1,
-                'body' => 'Test your understanding of '.$questionText,
+                'order' => ((int) $module->contents()->max('order') ?? 0) + 1,
+                'body' => 'Test your understanding of all the Fire Shorts content',
                 'type' => ContentType::Quiz,
                 'content_url' => null,
             ]
@@ -237,10 +257,103 @@ class FireShortsCourseSeeder extends Seeder
 
         $quiz = Quiz::firstOrCreate(
             ['content_id' => $quizContent->id],
+            ['kind' => QuizKind::Timestamped]
+        );
+
+        $timestampedQuestions = [
+            ['text' => 'What is the best way to handle async errors in JavaScript?', 'options' => ['A' => 'Use try-catch with async/await', 'B' => 'Use .catch() method', 'C' => 'Use callbacks', 'D' => 'Ignore errors'], 'correct' => ['A']],
+            ['text' => 'Which CSS property is best for centering elements?', 'options' => ['A' => 'text-align: center', 'B' => 'display: flex with justify-content and align-items', 'C' => 'margin: auto', 'D' => 'float: center'], 'correct' => ['B']],
+            ['text' => 'What is an Abstract Syntax Tree (AST)?', 'options' => ['A' => 'A JavaScript framework', 'B' => 'A tree representation of code structure', 'C' => 'A database structure', 'D' => 'A CSS selector'], 'correct' => ['B']],
+            ['text' => 'What is database sharding?', 'options' => ['A' => 'Breaking code into shards', 'B' => 'Splitting data across multiple databases', 'C' => 'A CSS technique', 'D' => 'A JavaScript pattern'], 'correct' => ['B']],
+            ['text' => 'What is the PATH environment variable used for?', 'options' => ['A' => 'A file path', 'B' => 'Environment variable for executable locations', 'C' => 'A URL', 'D' => 'A database'], 'correct' => ['B']],
+        ];
+
+        foreach ($timestampedQuestions as $questionData) {
+            Question::firstOrCreate(
+                [
+                    'quiz_id' => $quiz->id,
+                    'question_text' => $questionData['text'],
+                ],
+                [
+                    'type' => 'multiple_choice',
+                    'options' => array_values($questionData['options']),
+                    'correct_answer' => array_map(
+                        static fn (string $letter): int => ord($letter) - 65,
+                        $questionData['correct']
+                    ),
+                ]
+            );
+        }
+
+        $contentQuiz = Content::firstOrCreate(
+            [
+                'module_id' => $module->id,
+                'title' => 'Final Assessment',
+            ],
+            [
+                'order' => ((int) $module->contents()->max('order')) + 1,
+                'body' => 'Test your overall understanding of Fire Shorts',
+                'type' => ContentType::Quiz,
+                'content_url' => null,
+            ]
+        );
+
+        $contentQuizDb = Quiz::firstOrCreate(
+            ['content_id' => $contentQuiz->id],
             ['kind' => QuizKind::Content]
         );
 
-        $questions = $this->generateVideoQuestions($questionText);
+        $contentQuestions = [
+            ['text' => 'Which CSS property is best for centering elements?', 'options' => ['A' => 'text-align: center', 'B' => 'display: flex with justify-content and align-items', 'C' => 'margin: auto', 'D' => 'float: center'], 'correct' => ['B']],
+            ['text' => 'What is database sharding?', 'options' => ['A' => 'Breaking code into shards', 'B' => 'Splitting data across multiple databases', 'C' => 'A CSS technique', 'D' => 'A JavaScript pattern'], 'correct' => ['B']],
+            ['text' => 'What is the PATH environment variable used for?', 'options' => ['A' => 'A file path', 'B' => 'Environment variable for executable locations', 'C' => 'A URL', 'D' => 'A database'], 'correct' => ['B']],
+            ['text' => 'Which image format supports transparency?', 'options' => ['A' => 'JPEG', 'B' => 'PNG', 'C' => 'BMP', 'D' => 'TIFF'], 'correct' => ['B']],
+            ['text' => 'What is grep used for?', 'options' => ['A' => 'Image editing', 'B' => 'Pattern matching and searching', 'C' => 'Database queries', 'D' => 'CSS compilation'], 'correct' => ['B']],
+        ];
+
+        foreach ($contentQuestions as $questionData) {
+            Question::firstOrCreate(
+                [
+                    'quiz_id' => $contentQuizDb->id,
+                    'question_text' => $questionData['text'],
+                ],
+                [
+                    'type' => 'multiple_choice',
+                    'options' => array_values($questionData['options']),
+                    'correct_answer' => array_map(
+                        static fn (string $letter): int => ord($letter) - 65,
+                        $questionData['correct']
+                    ),
+                ]
+            );
+        }
+    }
+
+    private function createEndVideoQuiz(Content $content, string $videoTitle): void
+    {
+        $quizContent = Content::firstOrCreate(
+            [
+                'module_id' => $content->module_id,
+                'title' => 'End of '.$videoTitle,
+            ],
+            [
+                'order' => ((int) $content->where('module_id', $content->module_id)->max('order')) + 1,
+                'body' => 'Test your understanding of this video',
+                'type' => ContentType::Quiz,
+                'content_url' => null,
+            ]
+        );
+
+        $quiz = Quiz::firstOrCreate(
+            ['content_id' => $quizContent->id],
+            ['kind' => QuizKind::End]
+        );
+
+        $questions = [
+            ['text' => 'Did you find this video helpful?', 'options' => ['A' => 'Yes, very helpful', 'B' => 'Somewhat helpful', 'C' => 'Not helpful', 'D' => 'Already knew this'], 'correct' => ['A']],
+            ['text' => 'Would you recommend this video to others?', 'options' => ['A' => 'Yes, definitely', 'B' => 'Maybe', 'C' => 'No', 'D' => 'Not sure'], 'correct' => ['A']],
+        ];
+
         foreach ($questions as $questionData) {
             Question::firstOrCreate(
                 [
@@ -257,44 +370,5 @@ class FireShortsCourseSeeder extends Seeder
                 ]
             );
         }
-    }
-
-    private function generateVideoQuestions(string $topic): array
-    {
-        return [
-            ['text' => 'Did you find this short helpful?', 'options' => ['A' => 'Yes, very helpful', 'B' => 'Somewhat helpful', 'C' => 'Not helpful', 'D' => 'Already knew this'], 'correct' => ['A']],
-            ['text' => 'I learned something new from this video', 'options' => ['A' => 'True', 'B' => 'False'], 'correct' => ['A']],
-            ['text' => 'Would you recommend this to other developers?', 'options' => ['A' => 'Definitely', 'B' => 'Maybe', 'C' => 'No', 'D' => 'Not sure'], 'correct' => ['A']],
-        ];
-    }
-
-    private function generateTopicQuestions(string $topicName): array
-    {
-        $topicQuestions = [
-            'Quick Tips & Tricks' => [
-                ['text' => 'What is the best way to delete node_modules?', 'options' => ['A' => 'rm -rf node_modules', 'B' => 'Use rimraf', 'C' => 'Delete manually', 'D' => 'Use npm cache clean'], 'correct' => ['B']],
-                ['text' => 'Which CSS property is best for centering?', 'options' => ['A' => 'text-align: center', 'B' => 'margin: auto', 'C' => 'display: flex with justify-content', 'D' => 'float: center'], 'correct' => ['C']],
-                ['text' => 'What does TODO comment stand for?', 'options' => ['A' => 'To Do', 'B' => 'Temporary Order', 'C' => 'Task Oriented', 'D' => 'Type Of'], 'correct' => ['A']],
-            ],
-            'JavaScript Deep Dives' => [
-                ['text' => 'What is an Abstract Syntax Tree?', 'options' => ['A' => 'A JavaScript framework', 'B' => 'A tree representation of code structure', 'C' => 'A database structure', 'D' => 'A CSS selector'], 'correct' => ['B']],
-                ['text' => 'What is the RGB color model?', 'options' => ['A' => 'Red Green Blue', 'B' => 'Red Blue Yellow', 'C' => 'Red Gray Black', 'D' => 'Rainbow Gradient'], 'correct' => ['A']],
-                ['text' => 'What does AST stand for?', 'options' => ['A' => 'Abstract Syntax Tree', 'B' => 'Advanced System Tool', 'C' => 'Application State Tracker', 'D' => 'Array Sort Transform'], 'correct' => ['A']],
-            ],
-            'Web & Development' => [
-                ['text' => 'What is database sharding?', 'options' => ['A' => 'Breaking code into shards', 'B' => 'Splitting data across multiple databases', 'C' => 'A CSS technique', 'D' => 'A JavaScript pattern'], 'correct' => ['B']],
-                ['text' => 'Which image format supports transparency?', 'options' => ['A' => 'JPEG', 'B' => 'PNG', 'C' => 'BMP', 'D' => 'TIFF'], 'correct' => ['B']],
-                ['text' => 'What is grep used for?', 'options' => ['A' => 'Image editing', 'B' => 'Pattern matching/searching', 'C' => 'Database queries', 'D' => 'CSS compilation'], 'correct' => ['B']],
-            ],
-            'Systems & Tools' => [
-                ['text' => 'What is the PATH variable?', 'options' => ['A' => 'A file path', 'B' => 'Environment variable for executable locations', 'C' => 'A URL', 'D' => 'A database'], 'correct' => ['B']],
-                ['text' => 'What does FAT32 refer to?', 'options' => ['A' => 'A file system', 'B' => 'A programming language', 'C' => 'A color format', 'D' => 'A network protocol'], 'correct' => ['A']],
-                ['text' => 'What is a prompt engineer?', 'options' => ['A' => 'A database administrator', 'B' => 'Someone who writes AI prompts', 'C' => 'A CSS developer', 'D' => 'A system administrator'], 'correct' => ['B']],
-            ],
-        ];
-
-        return $topicQuestions[$topicName] ?? [
-            ['text' => 'What is '.$topicName.'?', 'options' => ['A' => 'A technology', 'B' => 'A framework', 'C' => 'A tool', 'D' => 'All of the above'], 'correct' => ['D']],
-        ];
     }
 }
