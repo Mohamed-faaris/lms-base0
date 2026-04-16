@@ -275,24 +275,24 @@
                                                               <label class="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                                                                  <flux:icon.bolt class="h-4 w-4" />
                                                                  <div class="relative">
-                                                                      <select class="bg-transparent outline-none appearance-none pr-2" x-model="playbackRate" @change="handlePlaybackRateChange($event)">
-                                                                          <template x-for="rate in playbackRates" :key="rate">
-                                                                              <option :value="rate" x-text="rate + 'x'"></option>
-                                                                          </template>
-                                                                      </select>
+                                                                     <select class="bg-transparent outline-none appearance-none pr-2" x-model.number="playbackRate" @change="handlePlaybackRateChange($event)">
+                                                                         <template x-for="rate in playbackRates" :key="rate">
+                                                                             <option :value="rate" x-text="rate + 'x'" :selected="playbackRate === rate"></option>
+                                                                         </template>
+                                                                     </select>
                                                                      <flux:icon.chevron-down class="absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 opacity-60 pointer-events-none" />
                                                                  </div>
                                                              </label>
                                                          </template>
 
-                                                         <template x-if="allowCaptions">
-                                                             <flux:button size="sm" variant="outline" @click="toggleCaptions" :disabled="!captionsAvailable" :class="{ 'opacity-50 cursor-not-allowed': !captionsAvailable }">
-                                                                  <span class="inline-flex items-center gap-2">
-                                                                     <flux:icon.chat-bubble-bottom-center-text class="h-4 w-4" />
-                                                                      <span x-text="captionsAvailable ? (captionsEnabled ? 'Captions on' : 'Captions off') : 'No captions'"></span>
-                                                                 </span>
-                                                             </flux:button>
-                                                         </template>
+                                                        <template x-if="allowCaptions">
+                                                            <flux:button size="sm" variant="outline" @click="toggleCaptions">
+                                                                <span class="inline-flex items-center gap-2">
+                                                                    <flux:icon.chat-bubble-bottom-center-text class="h-4 w-4" />
+                                                                    <span x-text="captionsEnabled ? 'Captions on' : 'Captions off'"></span>
+                                                                </span>
+                                                            </flux:button>
+                                                        </template>
 
                                                         <flux:button size="sm" variant="outline" @click="toggleFullscreen">
                                                             <flux:icon.arrows-pointing-out class="h-4 w-4" />
