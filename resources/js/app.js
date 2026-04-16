@@ -103,14 +103,30 @@ window.courseVideoPlayer = function (config) {
                     },
                 });
             });
+
+            // Add visibility change listener to pause video when tab is not active
+            document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
         },
 
         destroy() {
             window.clearInterval(this.pollInterval);
             window.clearTimeout(this.hideNoticeTimeout);
 
+            // Remove visibility change listener
+            document.removeEventListener('visibilitychange', () => this.handleVisibilityChange());
+
             if (hasPlayerMethod('destroy')) {
                 playerInstance.destroy();
+            }
+        },
+
+        handleVisibilityChange() {
+            if (! this.ready || ! this.isVideoLesson) {
+                return;
+            }
+
+            if (document.hidden && this.playing && hasPlayerMethod('pauseVideo')) {
+                playerInstance.pauseVideo();
             }
         },
 
