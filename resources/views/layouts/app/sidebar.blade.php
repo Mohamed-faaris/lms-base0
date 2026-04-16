@@ -11,11 +11,15 @@
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
+                <div class="px-3 py-2 in-data-flux-sidebar-collapsed-desktop:hidden">
+                    <div class="text-sm font-medium leading-none text-zinc-400">{{ __('Platform') }}</div>
+                </div>
+
+                <div class="grid space-y-[2px]">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
-                    
+
                     @if(auth()->user()->role->value === 'faculty')
                         <flux:sidebar.item icon="book-open" :href="route('faculty.courses')" :current="request()->routeIs('faculty.courses') || request()->routeIs('faculty.course-player')" wire:navigate>
                             {{ __('My Courses') }}
@@ -42,7 +46,7 @@
                             {{ __('Enrollments') }}
                         </flux:sidebar.item>
                     @endif
-                </flux:sidebar.group>
+                </div>
             </flux:sidebar.nav>
 
             <flux:spacer />
