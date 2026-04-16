@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             LmsDataSeeder::class,
             JavaCourseSeeder::class,
             HundredSecondsCourseSeeder::class,
+            FireShortsCourseSeeder::class,
         ]);
     }
 }
