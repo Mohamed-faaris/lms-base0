@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Hash;
 
 class KRCTFacultySeeder extends Seeder
 {
+    private string $preHashedPassword;
+
+    public function __construct()
+    {
+        $this->preHashedPassword = Hash::make('password');
+    }
+
     public function run(): void
     {
         $college = College::KRCT->value;
@@ -42,7 +49,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'eeefaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => Department::EEE->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -90,7 +97,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'ecefaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => Department::ECE->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -124,7 +131,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'civilfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => Department::CIVIL->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -174,7 +181,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'csefaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => Department::CSE->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -211,7 +218,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'mechfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => Department::MECH->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -235,7 +242,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'itfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => Department::IT->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -277,7 +284,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'aifaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => Department::AI->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -332,7 +339,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'shfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => Department::SH->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -356,7 +363,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $admin['name'],
                 'email' => $admin['email'],
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => null,
                 'role' => $admin['role']->value,
@@ -385,7 +392,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $hod['name'],
                 'email' => $hod['email'],
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => $hod['department'],
                 'role' => Role::Manager->value,  // Using Manager enum for HODs
@@ -411,7 +418,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $staffMember['name'],
                 'email' => $staffMember['email'],
-                'password' => Hash::make('password'),
+                'password' => $this->preHashedPassword,
                 'college' => $college,
                 'department' => $staffMember['department'],
                 'role' => Role::Staff->value,  // Using Staff enum
