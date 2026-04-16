@@ -49,7 +49,7 @@
                 <flux:heading level="2" size="lg">Authoring Workspace</flux:heading>
                 <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Everything is grouped by topic and module so authors can add content and assessments without digging through the viewer page.</p>
             </div>
-            <flux:button size="sm" wire:click="openTopicModal()" icon="plus">Add Topic</flux:button>
+            <flux:button size="sm" wire:click="openTopicModal()" wire:target="addTopic" wire:loading.attr="disabled" wire:loading.class="animate-spin" icon="plus">Add Topic</flux:button>
         </div>
 
         <div class="space-y-4">
@@ -67,10 +67,10 @@
                             <flux:badge color="zinc" size="sm">{{ $topic->modules->count() }} modules</flux:badge>
                         </button>
                         <flux:tooltip content="Edit topic" position="top">
-                            <flux:button size="sm" variant="ghost" wire:click="openTopicModal({{ $topic->id }})" icon="pencil-square" />
+                            <flux:button size="sm" variant="ghost" wire:click="openTopicModal({{ $topic->id }})" wire:target="editTopic({{ $topic->id }})" wire:loading.attr="disabled" wire:loading.class="animate-spin" icon="pencil-square" />
                         </flux:tooltip>
                         <flux:tooltip content="Add module" position="top">
-                            <flux:button size="sm" variant="ghost" wire:click="openModuleModal(null); $set('selectedTopicId', {{ $topic->id }})" icon="plus" />
+                            <flux:button size="sm" variant="ghost" wire:click="openModuleModal(null); $set('selectedTopicId', {{ $topic->id }})" wire:target="addModuleToTopic({{ $topic->id }})" wire:loading.attr="disabled" wire:loading.class="animate-spin" icon="plus" />
                         </flux:tooltip>
                     </div>
 
@@ -98,6 +98,9 @@
                                                 size="sm"
                                                 variant="ghost"
                                                 wire:click="moveModuleUp({{ $module->id }})"
+                                                wire:target="moveModuleUp({{ $module->id }})"
+                                                wire:loading.attr="disabled"
+                                                wire:loading.class="animate-spin"
                                                 icon="arrow-up"
                                                 :disabled="$isFirstModule"
                                             />
@@ -107,15 +110,18 @@
                                                 size="sm"
                                                 variant="ghost"
                                                 wire:click="moveModuleDown({{ $module->id }})"
+                                                wire:target="moveModuleDown({{ $module->id }})"
+                                                wire:loading.attr="disabled"
+                                                wire:loading.class="animate-spin"
                                                 icon="arrow-down"
                                                 :disabled="$isLastModule"
                                             />
                                         </flux:tooltip>
                                         <flux:tooltip content="Edit module" position="top">
-                                            <flux:button size="sm" variant="ghost" wire:click="openModuleModal({{ $module->id }})" icon="pencil-square" />
+                                            <flux:button size="sm" variant="ghost" wire:click="openModuleModal({{ $module->id }})" wire:target="editModule({{ $module->id }})" wire:loading.attr="disabled" wire:loading.class="animate-spin" icon="pencil-square" />
                                         </flux:tooltip>
                                         <flux:tooltip content="Add content" position="top">
-                                            <flux:button size="sm" variant="ghost" wire:click="openContentModal(null); $set('selectedModuleId', {{ $module->id }})" icon="plus" />
+                                            <flux:button size="sm" variant="ghost" wire:click="openContentModal(null); $set('selectedModuleId', {{ $module->id }})" wire:target="addContentToModule({{ $module->id }})" wire:loading.attr="disabled" wire:loading.class="animate-spin" icon="plus" />
                                         </flux:tooltip>
                                     </div>
 
@@ -146,6 +152,9 @@
                                                                         size="sm"
                                                                         variant="ghost"
                                                                         wire:click="moveContentUp({{ $content->id }})"
+                                                                        wire:target="moveContentUp({{ $content->id }})"
+                                                                        wire:loading.attr="disabled"
+                                                                        wire:loading.class="animate-spin"
                                                                         icon="arrow-up"
                                                                         :disabled="$isFirstContent"
                                                                     />
@@ -155,6 +164,9 @@
                                                                         size="sm"
                                                                         variant="ghost"
                                                                         wire:click="moveContentDown({{ $content->id }})"
+                                                                        wire:target="moveContentDown({{ $content->id }})"
+                                                                        wire:loading.attr="disabled"
+                                                                        wire:loading.class="animate-spin"
                                                                         icon="arrow-down"
                                                                         :disabled="$isLastContent"
                                                                     />
