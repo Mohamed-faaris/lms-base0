@@ -67,19 +67,40 @@
             <table class="w-full">
                 <thead class="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-700">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Module Name</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Topic</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Content</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Quizzes</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Module</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Videos</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Quizzes</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase">Progress</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
                     @forelse ($moduleData as $module)
                         <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-900">
-                            <td class="px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 font-medium">{{ $module['name'] }}</td>
-                            <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $module['topic_name'] }}</td>
-                            <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $module['content_count'] }}</td>
-                            <td class="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">{{ $module['quiz_count'] }}</td>
+                            <td class="px-4 py-3">
+                                <div class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $module['name'] }}</div>
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $module['topic_name'] }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-center text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ $module['content_count'] }}
+                            </td>
+                            <td class="px-4 py-3 text-center text-sm text-zinc-600 dark:text-zinc-400">
+                                {{ $module['quiz_count'] }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs text-green-600 dark:text-green-400">{{ $module['completed_count'] }} done</span>
+                                    <span class="text-xs text-yellow-600 dark:text-yellow-400">{{ $module['in_progress_count'] }} in progress</span>
+                                </div>
+                                <div class="w-full h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden flex">
+                                    @php
+                                        $total = $module['completed_count'] + $module['in_progress_count'] + $module['not_started_count'];
+                                        $donePct = $total > 0 ? ($module['completed_count'] / $total * 100) : 0;
+                                        $progressPct = $total > 0 ? ($module['in_progress_count'] / $total * 100) : 0;
+                                    @endphp
+                                    <div class="h-full bg-green-500" style="width: {{ $donePct }}%"></div>
+                                    <div class="h-full bg-yellow-500" style="width: {{ $progressPct }}%"></div>
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr>

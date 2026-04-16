@@ -41,28 +41,38 @@ class HundredSecondsCourseSeeder extends Seeder
             [
                 'name' => 'JavaScript & Frontend',
                 'description' => 'JavaScript, frameworks, and frontend technologies',
-                'contents' => [
-                    ['title' => 'Array Map in 100 Seconds', 'duration' => 101, 'id' => 'DC471a9qrU4'],
-                    ['title' => 'Big-O Notation in 100 Seconds', 'duration' => 100, 'id' => 'g2o22C3CRfU'],
-                    ['title' => 'Array Reduce in 100 seconds', 'duration' => 101, 'id' => 'tVCYa_bnITg'],
-                    ['title' => 'Recursion in 100 Seconds', 'duration' => 100, 'id' => 'rf60MejMz3E'],
-                    ['title' => 'JavaScript Modules in 100 Seconds', 'duration' => 104, 'id' => 'qgRUr-YUk1Q'],
-                    ['title' => 'React in 100 Seconds', 'duration' => 128, 'id' => 'Tn6-PIqc4UM'],
-                    ['title' => 'Vue.js Explained in 100 Seconds', 'duration' => 124, 'id' => 'nhBVL41-_Cw'],
-                    ['title' => 'Angular in 100 Seconds', 'duration' => 120, 'id' => 'Ata9cSC2WpM'],
-                    ['title' => 'Svelte in 100 Seconds', 'duration' => 132, 'id' => 'rv3Yq-B8qp4'],
-                    ['title' => 'Next.js in 100 Seconds', 'duration' => 712, 'id' => 'Sklc_fQBmcs'],
-                    ['title' => 'Nuxt in 100 Seconds', 'duration' => 170, 'id' => 'dCxSsr5xuL8'],
-                    ['title' => 'SvelteKit in 100 seconds', 'duration' => 166, 'id' => 'H1eEFfAkIik'],
-                    ['title' => 'Solid in 100 Seconds', 'duration' => 152, 'id' => 'hw3Bx5vxKl0'],
-                    ['title' => 'Redux in 100 Seconds', 'duration' => 153, 'id' => '_shA5Xwe8_4'],
-                    ['title' => 'React Query in 100 Seconds', 'duration' => 153, 'id' => 'novnyCaa7To'],
-                    ['title' => 'React Native in 100 Seconds', 'duration' => 137, 'id' => 'gvkqT_Uoahw'],
-                    ['title' => 'TypeScript in 100 Seconds', 'duration' => 145, 'id' => 'zQnBQ4tB3ZA'],
-                    ['title' => 'JS Destructuring in 100 Seconds', 'duration' => 211, 'id' => 'UgEaJBz3bjY'],
-                    ['title' => 'What is THIS in JavaScript? in 100 seconds', 'duration' => 398, 'id' => 'YOlr79NaAtQ'],
-                    ['title' => 'Closures Explained in 100 Seconds', 'duration' => 297, 'id' => 'vKJpN5FAeF4'],
-                    ['title' => 'jQuery in 100 Seconds', 'duration' => 131, 'id' => 'UU-GebNqdbg'],
+                'modules' => [
+                    'Fundamentals' => [
+                        ['title' => 'Array Map in 100 Seconds', 'duration' => 101, 'id' => 'DC471a9qrU4'],
+                        ['title' => 'Big-O Notation in 100 Seconds', 'duration' => 100, 'id' => 'g2o22C3CRfU'],
+                        ['title' => 'Array Reduce in 100 seconds', 'duration' => 101, 'id' => 'tVCYa_bnITg'],
+                        ['title' => 'Recursion in 100 Seconds', 'duration' => 100, 'id' => 'rf60MejMz3E'],
+                        ['title' => 'JavaScript Modules in 100 Seconds', 'duration' => 104, 'id' => 'qgRUr-YUk1Q'],
+                        ['title' => 'JS Destructuring in 100 Seconds', 'duration' => 211, 'id' => 'UgEaJBz3bjY'],
+                        ['title' => 'What is THIS in JavaScript? in 100 seconds', 'duration' => 398, 'id' => 'YOlr79NaAtQ'],
+                        ['title' => 'Closures Explained in 100 Seconds', 'duration' => 297, 'id' => 'vKJpN5FAeF4'],
+                        ['title' => 'jQuery in 100 Seconds', 'duration' => 131, 'id' => 'UU-GebNqdbg'],
+                    ],
+                    'Frameworks' => [
+                        ['title' => 'React in 100 Seconds', 'duration' => 128, 'id' => 'Tn6-PIqc4UM'],
+                        ['title' => 'Vue.js Explained in 100 Seconds', 'duration' => 124, 'id' => 'nhBVL41-_Cw'],
+                        ['title' => 'Angular in 100 Seconds', 'duration' => 120, 'id' => 'Ata9cSC2WpM'],
+                        ['title' => 'Svelte in 100 Seconds', 'duration' => 132, 'id' => 'rv3Yq-B8qp4'],
+                    ],
+                    'Meta-Frameworks' => [
+                        ['title' => 'Next.js in 100 Seconds', 'duration' => 712, 'id' => 'Sklc_fQBmcs'],
+                        ['title' => 'Nuxt in 100 Seconds', 'duration' => 170, 'id' => 'dCxSsr5xuL8'],
+                        ['title' => 'SvelteKit in 100 seconds', 'duration' => 166, 'id' => 'H1eEFfAkIik'],
+                    ],
+                    'State & Data' => [
+                        ['title' => 'Redux in 100 Seconds', 'duration' => 153, 'id' => '_shA5Xwe8_4'],
+                        ['title' => 'React Query in 100 Seconds', 'duration' => 153, 'id' => 'novnyCaa7To'],
+                    ],
+                    'Mobile & TypeScript' => [
+                        ['title' => 'React Native in 100 Seconds', 'duration' => 137, 'id' => 'gvkqT_Uoahw'],
+                        ['title' => 'TypeScript in 100 Seconds', 'duration' => 145, 'id' => 'zQnBQ4tB3ZA'],
+                        ['title' => 'Solid in 100 Seconds', 'duration' => 152, 'id' => 'hw3Bx5vxKl0'],
+                    ],
                 ],
             ],
             [
@@ -283,34 +293,69 @@ class HundredSecondsCourseSeeder extends Seeder
             );
             $topicOrder++;
 
-            $module = Module::firstOrCreate(
-                ['topic_id' => $topic->id, 'order' => 1],
-                [
-                    'title' => $topicData['name'],
-                    'description' => $topicData['description'],
-                ]
-            );
+            if (isset($topicData['modules'])) {
+                $moduleOrder = 1;
+                foreach ($topicData['modules'] as $moduleName => $contents) {
+                    $module = Module::firstOrCreate(
+                        ['topic_id' => $topic->id, 'order' => $moduleOrder],
+                        [
+                            'title' => $moduleName,
+                            'description' => $topicData['description'],
+                        ]
+                    );
 
-            $contentOrder = 1;
-            foreach ($topicData['contents'] as $video) {
-                Content::firstOrCreate(
-                    ['module_id' => $module->id, 'order' => $contentOrder],
+                    $contentOrder = 1;
+                    foreach ($contents as $video) {
+                        Content::firstOrCreate(
+                            ['module_id' => $module->id, 'order' => $contentOrder],
+                            [
+                                'title' => $video['title'],
+                                'body' => 'Learn about '.str_replace([' in 100 Seconds', ' in 01100100 Seconds', ' in 100 seconds'], '', $video['title']),
+                                'type' => ContentType::Video,
+                                'content_url' => 'https://youtu.be/'.$video['id'],
+                                'content_meta' => [
+                                    'youtube_id' => $video['id'],
+                                    'duration' => $video['duration'],
+                                    'thumbnail' => 'https://i.ytimg.com/vi/'.$video['id'].'/maxresdefault.jpg',
+                                ],
+                            ]
+                        );
+                        $contentOrder++;
+                    }
+
+                    $this->createModuleQuiz($module, $moduleName);
+                    $moduleOrder++;
+                }
+            } else {
+                $module = Module::firstOrCreate(
+                    ['topic_id' => $topic->id, 'order' => 1],
                     [
-                        'title' => $video['title'],
-                        'body' => 'Learn about '.str_replace([' in 100 Seconds', ' in 01100100 Seconds', ' in 100 seconds'], '', $video['title']),
-                        'type' => ContentType::Video,
-                        'content_url' => 'https://youtu.be/'.$video['id'],
-                        'content_meta' => [
-                            'youtube_id' => $video['id'],
-                            'duration' => $video['duration'],
-                            'thumbnail' => 'https://i.ytimg.com/vi/'.$video['id'].'/maxresdefault.jpg',
-                        ],
+                        'title' => $topicData['name'],
+                        'description' => $topicData['description'],
                     ]
                 );
-                $contentOrder++;
-            }
 
-            $this->createTopicQuiz($module, $topicData['name']);
+                $contentOrder = 1;
+                foreach ($topicData['contents'] as $video) {
+                    Content::firstOrCreate(
+                        ['module_id' => $module->id, 'order' => $contentOrder],
+                        [
+                            'title' => $video['title'],
+                            'body' => 'Learn about '.str_replace([' in 100 Seconds', ' in 01100100 Seconds', ' in 100 seconds'], '', $video['title']),
+                            'type' => ContentType::Video,
+                            'content_url' => 'https://youtu.be/'.$video['id'],
+                            'content_meta' => [
+                                'youtube_id' => $video['id'],
+                                'duration' => $video['duration'],
+                                'thumbnail' => 'https://i.ytimg.com/vi/'.$video['id'].'/maxresdefault.jpg',
+                            ],
+                        ]
+                    );
+                    $contentOrder++;
+                }
+
+                $this->createModuleQuiz($module, $topicData['name']);
+            }
         }
 
         $admin = User::query()->whereIn('role', ['admin', 'super_admin'])->first();
@@ -331,16 +376,16 @@ class HundredSecondsCourseSeeder extends Seeder
         }
     }
 
-    private function createTopicQuiz(Module $module, string $topicName): void
+    private function createModuleQuiz(Module $module, string $moduleName): void
     {
         $quizContent = Content::firstOrCreate(
             [
                 'module_id' => $module->id,
-                'title' => $topicName.' Assessment',
+                'title' => $moduleName.' Assessment',
             ],
             [
                 'order' => ((int) $module->contents()->max('order')) + 1,
-                'body' => 'Test your knowledge of '.$topicName,
+                'body' => 'Test your knowledge of '.$moduleName,
                 'type' => ContentType::Quiz,
                 'content_url' => null,
             ]
@@ -351,7 +396,7 @@ class HundredSecondsCourseSeeder extends Seeder
             ['kind' => QuizKind::Content]
         );
 
-        $questions = $this->generateTopicQuestions($topicName);
+        $questions = $this->generateTopicQuestions($moduleName);
         foreach ($questions as $questionData) {
             Question::firstOrCreate(
                 [
