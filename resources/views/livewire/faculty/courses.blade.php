@@ -33,15 +33,21 @@
                     <div class="absolute top-0 right-0 w-40 h-40 bg-blue-400/10 dark:bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-110"></div>
                 @endif
 
-                {{-- Top Section: Icon & Status --}}
+                {{-- Top Section: Thumbnail/Icon & Status --}}
                 <div class="p-6 pb-4 flex items-start justify-between gap-4 relative z-10">
-                    <div class="h-16 w-16 rounded-2xl {{ $isCompleted ? 'bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' : 'bg-blue-100/80 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' }} flex items-center justify-center shrink-0 shadow-inner ring-1 ring-white/50 dark:ring-white/5 transition-transform group-hover:scale-105 duration-300">
-                        @if($isCompleted)
-                            <flux:icon.check-badge class="h-8 w-8" />
-                        @else
-                            <flux:icon.book-open class="h-8 w-8" />
-                        @endif
-                    </div>
+                    @if($course->thumbnailUrl)
+                        <div class="h-16 w-16 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner ring-1 ring-white/50 dark:ring-white/5 transition-transform group-hover:scale-105 duration-300">
+                            <img src="{{ $course->thumbnailUrl }}" alt="{{ $course->name }}" class="h-full w-full object-cover" />
+                        </div>
+                    @else
+                        <div class="h-16 w-16 rounded-2xl {{ $isCompleted ? 'bg-emerald-100/80 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' : 'bg-blue-100/80 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' }} flex items-center justify-center shrink-0 shadow-inner ring-1 ring-white/50 dark:ring-white/5 transition-transform group-hover:scale-105 duration-300">
+                            @if($isCompleted)
+                                <flux:icon.check-badge class="h-8 w-8" />
+                            @else
+                                <flux:icon.book-open class="h-8 w-8" />
+                            @endif
+                        </div>
+                    @endif
                     
                     <div class="flex flex-col items-end gap-2">
                         @if($isCompleted)
