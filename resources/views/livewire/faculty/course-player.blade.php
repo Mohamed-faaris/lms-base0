@@ -64,12 +64,17 @@
                         <div class="mt-2 flex flex-wrap items-center gap-2 text-xs {{ $desktopMetaClasses }}">
                             <span class="inline-flex items-center gap-1 rounded-full border px-2 py-1 {{ $desktopMetaBadgeClasses }}">
                                 <flux:icon.clock class="h-3 w-3" />
-                                {{ $module->duration }}
+                                @php
+                                    $totalSeconds = (int) $module->duration;
+                                    $minutes = intdiv($totalSeconds, 60);
+                                    $seconds = $totalSeconds % 60;
+                                    echo $minutes > 0 ? "{$minutes} min {$seconds} sec" : "{$seconds} sec";
+                                @endphp
                             </span>
-                            <span class="inline-flex items-center gap-1 rounded-full border px-2 py-1 {{ $desktopMetaBadgeClasses }}">
+                            <!-- <span class="inline-flex items-center gap-1 rounded-full border px-2 py-1 {{ $desktopMetaBadgeClasses }}">
                                 <flux:icon.play class="h-3 w-3" />
                                 {{ $module->watchRequirementPercent }}% watch
-                            </span>
+                            </span> -->
                         </div>
                     </div>
                 </button>
@@ -184,7 +189,7 @@
                                                         <span x-text="formatTime(displayDuration)"></span>
                                                     </div>
                                                     <div class="rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs font-medium text-white/80 backdrop-blur">
-                                                        Watch <span x-text="watchPercent"></span>% of {{ $currentModule->watchRequirementPercent }}%
+                                                        Completed <span x-text="watchPercent"></span>% 
                                                     </div>
                                                 </div>
 
@@ -266,16 +271,19 @@
                                                             <input type="range" min="0" max="100" step="1" :value="volume" class="w-20 accent-blue-600" @input="handleVolumeChange($event)">
                                                         </label>
 
-                                                        <template x-if="allowSpeedChange">
-                                                            <label class="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-                                                                <flux:icon.bolt class="h-4 w-4" />
-                                                                <select class="bg-transparent outline-none" :value="playbackRate" @change="handlePlaybackRateChange($event)">
-                                                                    <template x-for="rate in playbackRates" :key="rate">
-                                                                        <option :value="rate" x-text="rate + 'x'"></option>
-                                                                    </template>
-                                                                </select>
-                                                            </label>
-                                                        </template>
+                                                         <template x-if="allowSpeedChange">
+                                                              <label class="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-white px-2 py-2 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                                                                 <flux:icon.bolt class="h-4 w-4" />
+                                                                 <div class="relative">
+                                                                     <select class="bg-transparent outline-none appearance-none pr-2" x-model.number="playbackRate" @change="handlePlaybackRateChange($event)">
+                                                                         <template x-for="rate in playbackRates" :key="rate">
+                                                                             <option :value="rate" x-text="rate + 'x'" :selected="playbackRate === rate"></option>
+                                                                         </template>
+                                                                     </select>
+                                                                     <flux:icon.chevron-down class="absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 opacity-60 pointer-events-none" />
+                                                                 </div>
+                                                             </label>
+                                                         </template>
 
                                                         <template x-if="allowCaptions">
                                                             <flux:button size="sm" variant="outline" @click="toggleCaptions">

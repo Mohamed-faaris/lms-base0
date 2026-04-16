@@ -61,6 +61,14 @@ window.courseVideoPlayer = function (config) {
             this.volume = Number.isFinite(this.volume) ? this.volume : 80;
             this.playbackRate = this.playbackRates.includes(this.playbackRate) ? this.playbackRate : 1;
 
+            // Debug logging
+            console.log('Playback rate initialization:', {
+                stored: window.localStorage.getItem('course-player-rate'),
+                parsed: Number.parseFloat(window.localStorage.getItem('course-player-rate') ?? '1'),
+                validated: this.playbackRate,
+                availableRates: this.playbackRates
+            });
+
             if (! this.isVideoLesson) {
                 this.maxTime = this.endTimeSeconds > this.startTimeSeconds ? this.endTimeSeconds : this.startTimeSeconds;
                 this.currentTime = this.maxTime;
@@ -141,7 +149,21 @@ window.courseVideoPlayer = function (config) {
             if (hasPlayerMethod('setVolume')) {
                 playerInstance.setVolume(this.volume);
             }
+
+            // Ensure playback rate is applied immediately and matches the stored/validated value
             this.applyPlaybackRate(this.playbackRate);
+
+            // Double-check that the YouTube player is using our rate after a short delay
+            setTimeout(() => {
+                if (hasPlayerMethod('getPlaybackRate')) {
+                    const currentRate = playerInstance.getPlaybackRate();
+                    if (Math.abs(currentRate - this.playbackRate) > 0.01) {
+                        console.log(`Correcting playback rate from ${currentRate} to ${this.playbackRate}`);
+                        this.applyPlaybackRate(this.playbackRate);
+                    }
+                }
+            }, 200);
+
             this.applyCaptions();
             this.startPolling();
         },
