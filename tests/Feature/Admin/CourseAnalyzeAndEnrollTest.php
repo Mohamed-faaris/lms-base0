@@ -49,7 +49,7 @@ test('course enroll entry opens the full page flow with the course preselected',
         ->assertSee($course->title);
 });
 
-test('enroll page can target a single staff member', function () {
+test('enroll page can target a single faculty member', function () {
     $admin = User::factory()->admin()->create();
     $course = Course::create([
         'title' => 'Course Enroll Test',

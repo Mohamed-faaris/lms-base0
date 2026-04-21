@@ -5,7 +5,7 @@ use App\Models\Enrollment;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 
-test('database seeder enrolls all faculty and staff into demo courses', function () {
+test('database seeder enrolls all faculty into demo courses', function () {
     $this->seed(DatabaseSeeder::class);
 
     $courseTitles = [
@@ -14,7 +14,7 @@ test('database seeder enrolls all faculty and staff into demo courses', function
     ];
 
     $userEmails = User::query()
-        ->whereIn('role', [\App\Enums\Role::Faculty, \App\Enums\Role::Staff])
+        ->where('role', \App\Enums\Role::Faculty)
         ->orderBy('email')
         ->pluck('email')
         ->all();

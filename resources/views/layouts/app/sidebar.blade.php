@@ -46,6 +46,15 @@
                             {{ __('Enrollments') }}
                         </flux:sidebar.item>
                     @endif
+
+                    @if(auth()->user()->isManager())
+                        <flux:sidebar.item icon="briefcase" :href="route('manager.dashboard')" :current="request()->routeIs('manager.dashboard')" wire:navigate>
+                            {{ __('Manager Dashboard') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="users" :href="route('manager.faculty.index')" :current="request()->routeIs('manager.faculty.*')" wire:navigate>
+                            {{ __('Faculty Scope') }}
+                        </flux:sidebar.item>
+                    @endif
                 </div>
             </flux:sidebar.nav>
 

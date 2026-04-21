@@ -16,9 +16,9 @@ test('admin can view the users index and open a profile', function () {
         'name' => 'Faculty Member',
         'email' => 'faculty@example.com',
     ]);
-    $staff = User::factory()->staff()->create([
-        'name' => 'Staff Member',
-        'email' => 'staff@example.com',
+    $nonAdminFaculty = User::factory()->faculty()->create([
+        'name' => 'Faculty Member 2',
+        'email' => 'faculty2@example.com',
     ]);
     $adminUser = User::factory()->admin()->create([
         'name' => 'Hidden Admin',
@@ -104,9 +104,9 @@ test('admin user profile shows enrollments progress and deadline', function () {
 });
 
 test('non admin users cannot access the admin users pages', function () {
-    $staff = User::factory()->staff()->create();
+    $nonAdminFaculty = User::factory()->faculty()->create();
     $learner = User::factory()->faculty()->create();
 
-    $this->actingAs($staff)->get(route('admin.users.index'))->assertForbidden();
-    $this->actingAs($staff)->get(route('admin.users.profile', $learner))->assertForbidden();
+    $this->actingAs($nonAdminFaculty)->get(route('admin.users.index'))->assertForbidden();
+    $this->actingAs($nonAdminFaculty)->get(route('admin.users.profile', $learner))->assertForbidden();
 });

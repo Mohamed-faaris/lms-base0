@@ -273,7 +273,7 @@ class Create extends Component
             'selectedUserIds.*' => [
                 'integer',
                 Rule::exists('users', 'id')->where(function ($query): void {
-                    $query->whereIn('role', [Role::Staff->value, Role::Faculty->value]);
+                    $query->where('role', Role::Faculty->value);
                 }),
             ],
             'deadlineDays' => ['required', 'integer', 'min:1'],
@@ -334,7 +334,7 @@ class Create extends Component
     protected function resolvedUsersQuery(): Builder
     {
         $query = User::query()
-            ->whereIn('role', [Role::Staff->value, Role::Faculty->value]);
+            ->where('role', Role::Faculty->value);
 
         return match ($this->targetMode) {
             'college' => $query->when($this->selectedColleges !== [], function (Builder $builder): void {
@@ -358,7 +358,7 @@ class Create extends Component
     protected function userOptions(): Collection
     {
         $query = User::query()
-            ->whereIn('role', [Role::Staff->value, Role::Faculty->value])
+            ->where('role', Role::Faculty->value)
             ->when($this->userSearch !== '', function (Builder $builder): void {
                 $builder->where(function (Builder $searchQuery): void {
                     $searchQuery

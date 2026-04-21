@@ -89,7 +89,7 @@
                 <div class="grid gap-3 md:grid-cols-2">
                     @php
                         $targetOptions = [
-                            'all' => ['label' => 'All Learners', 'description' => 'Every staff and faculty learner in the platform.'],
+                            'all' => ['label' => 'All Learners', 'description' => 'Every faculty learner in the platform.'],
                             'college' => ['label' => 'College Selection', 'description' => 'Choose one or more colleges and optionally narrow by departments.'],
                             'user' => ['label' => 'Selected Users', 'description' => 'Search and select one or more specific learners.'],
                         ];
@@ -118,7 +118,7 @@
                 @if ($targetMode === 'all')
                     <div class="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-900">
                         <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">All learners will be included.</p>
-                        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">This targets every eligible staff and faculty user.</p>
+                        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">This targets every eligible faculty user.</p>
                     </div>
                 @elseif ($targetMode === 'college')
                     <div class="space-y-3">

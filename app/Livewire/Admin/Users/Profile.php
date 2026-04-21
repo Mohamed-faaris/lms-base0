@@ -3,6 +3,9 @@
 namespace App\Livewire\Admin\Users;
 
 use App\Concerns\NormalizesEnrollmentDeadline;
+use App\Enums\College;
+use App\Enums\Department;
+use App\Enums\Role;
 use App\Models\Progress;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -25,6 +28,10 @@ class Profile extends Component
 
     public string $role = '';
 
+    public string $scopeCollege = '';
+
+    public string $scopeDepartment = '';
+
     public bool $showEditModal = false;
 
     public bool $showResetPasswordModal = false;
@@ -45,6 +52,7 @@ class Profile extends Component
         $this->college = $user->college?->label() ?? 'N/A';
         $this->department = $user->department?->label() ?? 'N/A';
         $this->role = $user->role?->label() ?? 'N/A';
+        $this->scopeCollege = $user->college?->value ?? '';
     }
 
     public function openEditModal(): void
@@ -102,6 +110,39 @@ class Profile extends Component
         session()->flash('success', 'Password reset successfully.');
     }
 
+    public function addManagerScope(): void
+    {
+        abort_unless($this->user->role === Role::Manager, 404);
+
+        $validated = $this->validate([
+            'scopeCollege' => ['required', 'in:'.collect(College::cases())->pluck('value')->implode(',')],
+            'scopeDepartment' => ['nullable', 'in:'.collect(Department::cases())->pluck('value')->implode(',')],
+        ]);
+
+        $this->user->managerScopes()->firstOrCreate([
+            'college' => $validated['scopeCollege'],
+            'department' => $validated['scopeDepartment'] ?: null,
+        ]);
+
+        $this->scopeDepartment = '';
+        $this->user->refresh();
+
+        session()->flash('success', 'Manager scope saved successfully.');
+    }
+
+    public function removeManagerScope(int $scopeId): void
+    {
+        abort_unless($this->user->role === Role::Manager, 404);
+
+        $this->user->managerScopes()
+            ->whereKey($scopeId)
+            ->delete();
+
+        $this->user->refresh();
+
+        session()->flash('success', 'Manager scope removed successfully.');
+    }
+
     public function render(): View
     {
         $enrollments = $this->user->enrollments()->with(['course.topics.modules.contents'])->get();
@@ -135,6 +176,9 @@ class Profile extends Component
 
         return view('livewire.admin.users.profile', [
             'enrollments' => $enrollmentData,
+            'colleges' => College::cases(),
+            'departments' => Department::cases(),
+            'managerScopes' => $this->user->managerScopes()->get(),
         ])->layout('layouts.app');
     }
 }

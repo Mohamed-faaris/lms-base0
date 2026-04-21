@@ -7,7 +7,6 @@ enum Role: string
     case SuperAdmin = 'superAdmin';
     case Admin = 'admin';
     case Manager = 'manager';
-    case Staff = 'staff';
     case Faculty = 'faculty';
 
     public function label(): string
@@ -16,7 +15,6 @@ enum Role: string
             self::SuperAdmin => 'Super Admin',
             self::Admin => 'Admin',
             self::Manager => 'Manager',
-            self::Staff => 'Staff',
             self::Faculty => 'Faculty',
         };
     }

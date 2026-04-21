@@ -87,9 +87,7 @@ class UserFactory extends Factory
 
     public function staff(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'role' => Role::Staff,
-        ]);
+        return $this->faculty();
     }
 
     public function faculty(): static

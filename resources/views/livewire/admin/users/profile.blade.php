@@ -82,6 +82,71 @@
                     <flux:button variant="primary" wire:click="openResetPasswordModal">Reset Password</flux:button>
                 </div>
             </div>
+
+            @if ($user->role?->value === 'manager')
+                <div class="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">Manager Scope</p>
+                            <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">Assign one or more colleges, or a specific department inside a college.</p>
+                        </div>
+                        <flux:badge color="blue">{{ $managerScopes->count() }} scope{{ $managerScopes->count() === 1 ? '' : 's' }}</flux:badge>
+                    </div>
+
+                    <form wire:submit="addManagerScope" class="mt-4 space-y-4">
+                        <flux:field>
+                            <flux:label>College</flux:label>
+                            <flux:select wire:model="scopeCollege">
+                                <option value="">Select college</option>
+                                @foreach ($colleges as $collegeOption)
+                                    <option value="{{ $collegeOption->value }}">{{ $collegeOption->label() }}</option>
+                                @endforeach
+                            </flux:select>
+                            <flux:error name="scopeCollege" />
+                        </flux:field>
+
+                        <flux:field>
+                            <flux:label>Department</flux:label>
+                            <flux:select wire:model="scopeDepartment">
+                                <option value="">All departments in selected college</option>
+                                @foreach ($departments as $departmentOption)
+                                    <option value="{{ $departmentOption->value }}">{{ $departmentOption->label() }}</option>
+                                @endforeach
+                            </flux:select>
+                            <flux:error name="scopeDepartment" />
+                        </flux:field>
+
+                        <div class="flex justify-end">
+                            <flux:button type="submit" variant="primary">Add Scope</flux:button>
+                        </div>
+                    </form>
+
+                    <div class="mt-5 space-y-3">
+                        @forelse ($managerScopes as $scope)
+                            <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 px-4 py-3 dark:border-zinc-700">
+                                <div>
+                                    <p class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $scope->college?->label() ?? 'N/A' }}</p>
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                                        {{ $scope->department?->label() ?? 'All departments in this college' }}
+                                    </p>
+                                </div>
+
+                                <flux:button
+                                    type="button"
+                                    variant="ghost"
+                                    wire:click="removeManagerScope({{ $scope->id }})"
+                                >
+                                    Remove
+                                </flux:button>
+                            </div>
+                        @empty
+                            <div class="rounded-xl border border-dashed border-zinc-300 p-4 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                                No manual scopes assigned yet.
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 

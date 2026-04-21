@@ -1561,7 +1561,7 @@ class LmsDataSeeder extends Seeder
     private function seedDemoCourseEnrollments(User $admin, array $courses): void
     {
         $users = User::query()
-            ->whereIn('role', [Role::Faculty, Role::Staff])
+            ->where('role', Role::Faculty)
             ->orderBy('id')
             ->get();
 

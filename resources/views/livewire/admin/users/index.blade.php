@@ -48,8 +48,6 @@
                     <select id="filter-role" class="px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">All Roles</option>
                         <option value="faculty">Faculty</option>
-                        <option value="staff">Staff</option>
-                        <option value="learner">Learner</option>
                     </select>
                     <select id="filter-college" class="px-3 py-2 text-sm border border-zinc-200 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-40">
                         <option value="">All Colleges</option>

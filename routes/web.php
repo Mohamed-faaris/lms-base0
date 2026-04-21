@@ -22,6 +22,9 @@ use App\Livewire\Faculty\Notifications;
 use App\Livewire\Faculty\Profile;
 use App\Livewire\Faculty\Streaks;
 use App\Livewire\Faculty\Suggestions;
+use App\Livewire\Manager\Dashboard as ManagerDashboard;
+use App\Livewire\Manager\Faculty\Index as ManagerFacultyIndex;
+use App\Livewire\Manager\Faculty\Profile as ManagerFacultyProfile;
 use App\Livewire\Public\Courses as PublicCourses;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +38,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         if ($user->isAdmin()) {
             return redirect()->route('admin.dashboard');
+        }
+
+        if ($user->isManager()) {
+            return redirect()->route('manager.dashboard');
         }
 
         return redirect()->route('faculty.dashboard');
@@ -86,6 +93,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('notifications', Notifications::class)->name('notifications');
         Route::get('profile', Profile::class)->name('profile');
         Route::get('suggestions', Suggestions::class)->name('suggestions');
+    });
+
+    Route::prefix('manager')->name('manager.')->group(function () {
+        Route::get('dashboard', ManagerDashboard::class)->name('dashboard');
+        Route::get('faculty', ManagerFacultyIndex::class)->name('faculty.index');
+        Route::get('faculty/{user}', ManagerFacultyProfile::class)->name('faculty.profile');
     });
 });
 

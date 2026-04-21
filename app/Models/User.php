@@ -6,7 +6,9 @@ namespace App\Models;
 use App\Enums\College;
 use App\Enums\Department;
 use App\Enums\Role;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -77,6 +79,11 @@ class User extends Authenticatable
         return $this->hasOne(UserMeta::class);
     }
 
+    public function managerScopes(): HasMany
+    {
+        return $this->hasMany(ManagerScope::class, 'manager_user_id');
+    }
+
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class);
@@ -144,5 +151,46 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return in_array($this->role, [Role::Admin, Role::SuperAdmin]);
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === Role::Manager;
+    }
+
+    public function scopedFacultyQuery(): Builder
+    {
+        $scopes = $this->managerScopes()->get();
+
+        if ($scopes->isEmpty()) {
+            return self::query()
+                ->where('role', Role::Faculty)
+                ->whereRaw('1 = 0');
+        }
+
+        return self::query()
+            ->where('role', Role::Faculty)
+            ->where(function (Builder $query) use ($scopes): void {
+                foreach ($scopes as $scope) {
+                    $query->orWhere(function (Builder $nestedQuery) use ($scope): void {
+                        $nestedQuery->where('college', $scope->college?->value ?? $scope->college);
+
+                        if ($scope->department?->value ?? $scope->department) {
+                            $nestedQuery->where('department', $scope->department?->value ?? $scope->department);
+                        }
+                    });
+                }
+            });
+    }
+
+    public function canMonitorFaculty(User $faculty): bool
+    {
+        if (! $this->isManager() || $faculty->role !== Role::Faculty) {
+            return false;
+        }
+
+        return $this->scopedFacultyQuery()
+            ->whereKey($faculty->getKey())
+            ->exists();
     }
 }
