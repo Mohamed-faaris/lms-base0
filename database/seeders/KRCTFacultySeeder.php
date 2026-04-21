@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Enums\College;
 use App\Enums\Department;
 use App\Enums\Role;
-use App\Models\ManagerScope;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -375,12 +374,6 @@ class KRCTFacultySeeder extends Seeder
             ]);
         }
 
-        ManagerScope::firstOrCreate([
-            'manager_user_id' => User::query()->where('email', 'principal@krct.ac.in')->value('id'),
-            'college' => $college,
-            'department' => null,
-        ]);
-
         // ============================================
         // HOD USERS (Department Heads)
         // ============================================
@@ -396,7 +389,7 @@ class KRCTFacultySeeder extends Seeder
         ];
 
         foreach ($hods as $hod) {
-            $hodUser = User::create([
+            User::create([
                 'name' => $hod['name'],
                 'email' => $hod['email'],
                 'password' => $this->preHashedPassword,
@@ -407,12 +400,6 @@ class KRCTFacultySeeder extends Seeder
                 'email_verified_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
-
-            ManagerScope::firstOrCreate([
-                'manager_user_id' => $hodUser->id,
-                'college' => $college,
-                'department' => $hod['department'],
             ]);
         }
 

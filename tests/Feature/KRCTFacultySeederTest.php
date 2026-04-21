@@ -5,10 +5,10 @@ use App\Enums\Department;
 use App\Enums\Role;
 use App\Models\ManagerScope;
 use App\Models\User;
-use Database\Seeders\KRCTFacultySeeder;
+use Database\Seeders\DatabaseSeeder;
 
 test('krct seeder assigns hods and principal as managers with scopes', function () {
-    $this->seed(KRCTFacultySeeder::class);
+    $this->seed(DatabaseSeeder::class);
 
     $principal = User::query()
         ->where('email', 'principal@krct.ac.in')
