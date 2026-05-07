@@ -99,51 +99,203 @@
         </div>
     </div>
 
-     {{-- Assigned Courses --}}
-     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-         <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
-             <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">My Courses</h3>
-             <flux:button variant="ghost" size="sm" href="{{ route('faculty.courses') }}" wire:navigate>
-                 View All
-                 <flux:icon.chevron-right class="ml-1 h-4 w-4" />
-             </flux:button>
-         </div>
-         <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
-             @forelse($enrolledCourses as $course)
-                 @php
-                     $daysLeft = $course->daysLeft;
-                     $isUrgent = $course->isUrgent;
-                     $isOverdue = $course->isOverdue;
-                     $isCompleted = $course->status === 'completed';
-                     $thumbnailUrl = $course->thumbnailUrl;
-                 @endphp
-                 <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer">
-                     <div class="flex items-center gap-3 mb-1">
-                         @if($thumbnailUrl)
-                             <div class="h-10 w-10 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-700 flex-shrink-0">
-                                 <img src="{{ $thumbnailUrl }}" alt="{{ $course->name }}" class="h-full w-full object-cover" />
-                             </div>
-                         @else
-                             <div class="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                                 <flux:icon.book-open class="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                             </div>
-                         @endif
-                         <div class="flex-1 min-w-0">
-                             <div class="flex items-center gap-2">
-                                 <p class="font-medium text-zinc-900 dark:text-zinc-100 truncate">{{ $course->name }}</p>
-                                 @if($isCompleted)
-                                     <flux:badge color="emerald" size="sm">Completed</flux:badge>
-                                 @endif
-                             </div>
-                             <div class="flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                                 <span>{{ $course->completedModules }}/{{ $course->modules }} modules</span>
-                                 <span class="flex items-center gap-1">
-                                     <flux:icon.bolt class="h-3 w-3" />
-                                     {{ $course->xpReward }} XP
-                                 </span>
-                             </div>
-                         </div>
-                     </div>
+    {{-- Learning Performance Section --}}
+    <div class="grid gap-4 md:grid-cols-2">
+        {{-- Average Score Card --}}
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Average Score</h3>
+                <flux:icon.chart-bar class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div class="flex items-end gap-2">
+                <span class="text-4xl font-bold text-zinc-900 dark:text-zinc-100">{{ number_format($averageScore, 1) }}%</span>
+                <span class="text-sm text-zinc-500 dark:text-zinc-400 mb-1">overall</span>
+            </div>
+            <div class="mt-4">
+                @if($averageScore >= 80)
+                    <flux:badge color="emerald" size="sm">Excellent</flux:badge>
+                @elseif($averageScore >= 60)
+                    <flux:badge color="blue" size="sm">Good</flux:badge>
+                @else
+                    <flux:badge color="amber" size="sm">Needs Improvement</flux:badge>
+                @endif
+            </div>
+        </div>
+
+        {{-- Score Trend Card --}}
+        <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Score Trend</h3>
+                <flux:icon.trending-up class="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            @if(count($scoreTrend) > 0)
+                <div class="flex items-end gap-1 h-20">
+                    @foreach($scoreTrend as $trend)
+                        <div class="flex-1 flex flex-col items-center gap-1">
+                            <div class="w-full bg-blue-500 rounded-t" style="height: {{ $trend['score'] }}%"></div>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="flex justify-between mt-2">
+                    @foreach($scoreTrend as $trend)
+                        <span class="text-xs text-zinc-400 dark:text-zinc-500">{{ $trend['date'] }}</span>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-zinc-500 dark:text-zinc-400 text-sm">No quiz data yet</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- Course-wise Progress --}}
+    <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
+        <div class="flex items-center justify-between p-3 border-b border-zinc-200 dark:border-zinc-700">
+            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Course Progress</h3>
+        </div>
+        <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
+            @forelse(collect($courseProgress)->take(3) as $course)
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <flux:icon.book-open class="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ $course['name'] }}</p>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
+                            <flux:icon.users class="h-4 w-4" />
+                            <span>{{ $course['enrolledCount'] }}/{{ $course['totalModules'] }} modules</span>
+                        </div>
+                    </div>
+
+                    @if($course['topLearner'])
+                        <div class="mb-3 p-3 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-900/20 dark:to-transparent rounded-lg border border-amber-200 dark:border-amber-800/50">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <flux:icon.trophy class="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                    <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        Top Learner: {{ $course['topLearner']['userName'] }}
+                                        @if($course['topLearner']['isCurrentUser'])
+                                            <span class="text-amber-600 dark:text-amber-400">(You)</span>
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                                        {{ $course['topLearner']['completedModules'] }}/{{ $course['totalModules'] }} modules
+                                    </span>
+                                    <span class="text-sm font-bold text-amber-600 dark:text-amber-400">
+                                        {{ $course['topLearner']['progress'] }}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mt-2 h-2 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full" style="width: {{ $course['topLearner']['progress'] }}%"></div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <div class="space-y-2">
+                        @foreach(collect($course['allFaculties'])->take(3) as $faculty)
+                            <div class="flex items-center justify-between text-sm {{ $faculty['isCurrentUser'] ? 'bg-blue-50 dark:bg-blue-900/20 -mx-2 px-2 py-1.5 rounded' : '' }}">
+                                <span class="text-zinc-700 dark:text-zinc-300 {{ $faculty['isCurrentUser'] ? 'font-medium' : '' }}">
+                                    {{ $faculty['userName'] }}
+                                    @if($faculty['isCurrentUser'])
+                                        <span class="text-blue-600 dark:text-blue-400">(You)</span>
+                                    @endif
+                                </span>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                                        {{ $faculty['completedModules'] }}/{{ $course['totalModules'] }}
+                                    </span>
+                                    <div class="w-24 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                                        <div class="h-full {{ $faculty['isCurrentUser'] ? 'bg-blue-600' : 'bg-zinc-400 dark:bg-zinc-500' }} rounded-full" style="width: {{ $faculty['progress'] }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-medium w-10 text-right {{ $faculty['isCurrentUser'] ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-600 dark:text-zinc-400' }}">
+                                        {{ $faculty['progress'] }}%
+                                    </span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-zinc-500 dark:text-zinc-400">
+                    No course progress data yet.
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    {{-- Leaderboard --}}
+    <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 overflow-hidden">
+        <div class="flex items-center justify-between p-3 border-b border-zinc-200 dark:border-zinc-700">
+            <div class="flex items-center gap-2">
+                <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Leaderboard</h3>
+                <flux:badge color="amber" variant="subtle" size="sm">#{{ $userRank }}</flux:badge>
+            </div>
+            <flux:icon.trophy class="h-4 w-4 text-amber-500" />
+        </div>
+        <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
+            @forelse($this->leaderboard->take(5) as $index => $entry)
+                @php
+                    $rank = ($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index;
+                    $initials = implode('', array_map(fn($w) => Str::substr($w, 0, 1), array_slice(explode(' ', $entry['name']), 0, 2)));
+                @endphp
+                <div class="flex items-center gap-3 p-2.5 {{ $entry['isCurrentUser'] ? 'bg-blue-50 dark:bg-blue-900/20' : '' }}">
+                    <span class="w-5 text-center text-sm font-bold text-zinc-400 dark:text-zinc-500">{{ $rank + 1 }}</span>
+                    <flux:avatar :initials="$initials" class="h-7 w-7 text-xs" />
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium text-zinc-900 dark:text-zinc-100 truncate text-sm">{{ $entry['name'] }}</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        <span class="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+                            <flux:icon.bolt class="h-3.5 w-3.5" />
+                            {{ $entry['xp'] }}
+                        </span>
+                    </div>
+                </div>
+            @empty
+                <div class="p-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                    No leaderboard data yet.
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    {{-- My Courses --}}
+    <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
+        <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
+            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">My Courses</h3>
+            <flux:button variant="ghost" size="sm" href="{{ route('faculty.courses') }}" wire:navigate>
+                View All
+                <flux:icon.chevron-right class="ml-1 h-4 w-4" />
+            </flux:button>
+        </div>
+        <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
+            @forelse($enrolledCourses as $course)
+                @php
+                    $deadlineValue = is_numeric($course->deadline) ? $course->deadline : 0;
+                    $daysLeft = $deadlineValue;
+                    $isUrgent = $daysLeft <= 3 && $daysLeft > 0;
+                    $isOverdue = $daysLeft < 0;
+                    $isCompleted = $course->status === 'completed';
+                @endphp
+                <div class="flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <flux:icon.book-open class="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <p class="font-medium text-zinc-900 dark:text-zinc-100 truncate">{{ $course->name }}</p>
+                            @if($isCompleted)
+                                <flux:badge color="emerald" size="sm">Completed</flux:badge>
+                            @endif
+                        </div>
+                        <div class="flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
+                            <span>{{ $course->completedModules }}/{{ $course->modules }} modules</span>
+                            <span class="flex items-center gap-1">
+                                <flux:icon.bolt class="h-3 w-3" />
+                                {{ $course->xpReward }} XP
+                            </span>
+                        </div>
+                    </div>
 
                     <div class="flex items-center gap-4 sm:w-[200px]">
                         <div class="flex-1 h-2 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
@@ -166,17 +318,12 @@
                         @elseif($isUrgent)
                             <flux:badge color="amber" size="sm">
                                 <flux:icon.clock class="h-3 w-3 mr-1" />
-                                {{ $course->deadlineCompactLabel }}
+                                {{ $daysLeft }}d left
                             </flux:badge>
-                        @elseif($daysLeft === null)
-                            <span class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
-                                <flux:icon.calendar class="h-3 w-3" />
-                                No deadline
-                            </span>
                         @else
                             <span class="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
                                 <flux:icon.calendar class="h-3 w-3" />
-                                {{ $course->deadlineCompactLabel }}
+                                {{ $daysLeft }}d left
                             </span>
                         @endif
                     </div>

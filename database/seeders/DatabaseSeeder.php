@@ -6,17 +6,11 @@ use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    public const SEEDED_ENROLLMENT_DEADLINE = 1798761600;
-
     public function run(): void
     {
         $this->call([
-            KRCTFacultySeeder::class,
-            KRCTManagerScopeSeeder::class,
             LmsDataSeeder::class,
-            JavaCourseSeeder::class,
-            HundredSecondsCourseSeeder::class,
-            FireShortsCourseSeeder::class,
+            KRCTFacultySeeder::class,
         ]);
     }
 }

@@ -11,13 +11,6 @@ use Illuminate\Support\Facades\Hash;
 
 class KRCTFacultySeeder extends Seeder
 {
-    private string $preHashedPassword;
-
-    public function __construct()
-    {
-        $this->preHashedPassword = Hash::make('password');
-    }
-
     public function run(): void
     {
         $college = College::KRCT->value;
@@ -49,7 +42,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'eeefaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::EEE->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -97,7 +90,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'ecefaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::ECE->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -131,7 +124,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'civilfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::CIVIL->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -181,7 +174,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'csefaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::CSE->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -218,7 +211,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'mechfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::MECH->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -242,7 +235,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'itfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::IT->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -284,7 +277,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'aifaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::AI->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -339,7 +332,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $faculty['name'],
                 'email' => 'shfaculty'.str_pad($index + 1, 2, '0', STR_PAD_LEFT).'@krct.ac.in',
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => Department::SH->value,
                 'role' => Role::Faculty->value,  // Using Faculty enum
@@ -356,14 +349,14 @@ class KRCTFacultySeeder extends Seeder
         $admins = [
             ['name' => 'Super Admin User', 'email' => 'superadmin@krct.ac.in', 'role' => Role::SuperAdmin],
             ['name' => 'Admin User', 'email' => 'admin@krct.ac.in', 'role' => Role::Admin],
-            ['name' => 'Principal', 'email' => 'principal@krct.ac.in', 'role' => Role::Manager],
+            ['name' => 'Principal', 'email' => 'principal@krct.ac.in', 'role' => Role::Admin],
         ];
 
         foreach ($admins as $admin) {
             User::create([
                 'name' => $admin['name'],
                 'email' => $admin['email'],
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => null,
                 'role' => $admin['role']->value,
@@ -392,7 +385,7 @@ class KRCTFacultySeeder extends Seeder
             User::create([
                 'name' => $hod['name'],
                 'email' => $hod['email'],
-                'password' => $this->preHashedPassword,
+                'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => $hod['department'],
                 'role' => Role::Manager->value,  // Using Manager enum for HODs
@@ -404,24 +397,24 @@ class KRCTFacultySeeder extends Seeder
         }
 
         // ============================================
-        // SUPPORT USERS (Lab Assistants, Office Support, etc.)
+        // STAFF USERS (Lab Assistants, Office Staff, etc.)
         // ============================================
-        $supportUsers = [
+        $staff = [
             ['name' => 'Lab Assistant CSE', 'email' => 'labcse@krct.ac.in', 'department' => Department::CSE->value],
             ['name' => 'Lab Assistant ECE', 'email' => 'labece@krct.ac.in', 'department' => Department::ECE->value],
             ['name' => 'Lab Assistant EEE', 'email' => 'labeee@krct.ac.in', 'department' => Department::EEE->value],
             ['name' => 'Lab Assistant MECH', 'email' => 'labmech@krct.ac.in', 'department' => Department::MECH->value],
-            ['name' => 'Office Support', 'email' => 'office@krct.ac.in', 'department' => null],
+            ['name' => 'Office Staff', 'email' => 'office@krct.ac.in', 'department' => null],
         ];
 
-        foreach ($supportUsers as $supportUser) {
+        foreach ($staff as $staffMember) {
             User::create([
-                'name' => $supportUser['name'],
-                'email' => $supportUser['email'],
-                'password' => $this->preHashedPassword,
+                'name' => $staffMember['name'],
+                'email' => $staffMember['email'],
+                'password' => Hash::make('password'),
                 'college' => $college,
-                'department' => $supportUser['department'],
-                'role' => Role::Faculty->value,
+                'department' => $staffMember['department'],
+                'role' => Role::Staff->value,  // Using Staff enum
                 'image' => null,
                 'email_verified_at' => now(),
                 'created_at' => now(),
@@ -442,9 +435,9 @@ class KRCTFacultySeeder extends Seeder
         $this->command->info('   S&H: '.count($shFaculty).' faculty');
         $this->command->info('----------------------------------------');
         $this->command->info('   TOTAL FACULTY: '.(count($eeeFaculty) + count($eceFaculty) + count($civilFaculty) + count($cseFaculty) + count($mechFaculty) + count($itFaculty) + count($aiFaculty) + count($shFaculty)).' faculty');
-        $this->command->info('   ADMIN/SUPERADMIN: 2 users');
-        $this->command->info('   HOD/MANAGER: 9 users');
-        $this->command->info('   SUPPORT/FACULTY: 5 users');
+        $this->command->info('   ADMIN/SUPERADMIN: 3 users');
+        $this->command->info('   HOD/MANAGER: 8 users');
+        $this->command->info('   STAFF: 5 users');
         $this->command->info('========================================');
         $this->command->info('🔑 DEFAULT PASSWORD: password');
         $this->command->info('========================================');

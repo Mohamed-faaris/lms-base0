@@ -2,114 +2,141 @@
 
 namespace App\Livewire\Faculty;
 
+use App\Models\Certificate;
+use App\Models\Enrollment;
+use App\Models\Progress;
+use Endroid\QrCode\ErrorCorrectionLevel;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\SvgWriter;
 use Livewire\Component;
 
 class Certificates extends Component
 {
     public array $completedCourses = [];
 
-    public array $completedCoursesIndex = [];
-
     public array $progressHistory = [];
-
-    public bool $showCertificateModal = false;
 
     public ?array $selectedCourse = null;
 
+    public bool $showModal = false;
+
     public string $recipientName = '';
+
+    public bool $isEditing = false;
 
     public string $activeTab = 'certificates';
 
-    public function mount(): void
+    public function mount()
     {
         $user = auth()->user();
         $this->recipientName = $user->name ?? '';
-
-        // Mock data matching the sample
-        $rawCompletedCourses = [
-            [
-                'id' => 1,
-                'name' => 'Teaching Methodologies',
-                'completedDate' => 'Jan 15, 2026',
-                'score' => 92,
-                'duration' => '4 hours',
-                'certificateId' => 'CERT-TM-2026-001',
-                'hasCertificate' => true,
-            ],
-            [
-                'id' => 2,
-                'name' => 'Research Ethics',
-                'completedDate' => 'Jan 10, 2026',
-                'score' => 88,
-                'duration' => '3 hours',
-                'certificateId' => 'CERT-RE-2026-002',
-                'hasCertificate' => true,
-            ],
-            [
-                'id' => 3,
-                'name' => 'Lab Safety Standards',
-                'completedDate' => 'Dec 28, 2025',
-                'score' => 95,
-                'duration' => '2 hours',
-                'certificateId' => 'CERT-LS-2025-003',
-                'hasCertificate' => true,
-            ],
-        ];
-        $this->completedCourses = $rawCompletedCourses;
-        $this->completedCoursesIndex = [];
-
-        foreach ($rawCompletedCourses as $course) {
-            $this->completedCoursesIndex[$course['id']] = $course;
-        }
-
-        $this->progressHistory = [
-            ['date' => 'Jan 29, 2026', 'action' => 'Completed Module 6', 'course' => 'Digital Pedagogy', 'xp' => 100],
-            ['date' => 'Jan 28, 2026', 'action' => 'Passed Quiz', 'course' => 'Digital Pedagogy', 'xp' => 75],
-            ['date' => 'Jan 27, 2026', 'action' => 'Started Course', 'course' => 'Assessment Design', 'xp' => 25],
-            ['date' => 'Jan 25, 2026', 'action' => 'Earned Certificate', 'course' => 'Research Ethics', 'xp' => 200],
-            ['date' => 'Jan 24, 2026', 'action' => 'Completed Module 5', 'course' => 'Research Ethics', 'xp' => 100],
-            ['date' => 'Jan 22, 2026', 'action' => 'Passed Quiz', 'course' => 'Research Ethics', 'xp' => 75],
-            ['date' => 'Jan 20, 2026', 'action' => 'Completed Module 4', 'course' => 'Research Ethics', 'xp' => 100],
-            ['date' => 'Jan 15, 2026', 'action' => 'Earned Certificate', 'course' => 'Teaching Methodologies', 'xp' => 200],
-        ];
+        $this->loadCertificates();
+        $this->loadProgressHistory();
     }
 
-    public function viewCertificate(int $courseId): void
+    protected function loadCertificates(): void
     {
-        $this->selectedCourse = $this->completedCoursesIndex[$courseId] ?? null;
-        $this->showCertificateModal = $this->selectedCourse !== null;
+        $user = auth()->user();
+
+        $certificates = Certificate::with('course')
+            ->where('user_id', $user->id)
+            ->orderBy('completed_at', 'desc')
+            ->get();
+
+        $this->completedCourses = $certificates->map(function ($cert) {
+            $course = $cert->course;
+            $moduleCount = $course
+                ? \App\Models\Content::whereHas('module.topic', fn ($q) => $q->where('course_id', $course->id))->count()
+                : 0;
+
+            $enrollment = Enrollment::where('user_id', $cert->user_id)
+                ->where('course_id', $cert->course_id)
+                ->first();
+
+            $instructor = null;
+            if ($enrollment && $enrollment->enrolled_by) {
+                $instructor = \App\Models\User::find($enrollment->enrolled_by);
+            }
+
+            return [
+                'id' => $cert->course_id,
+                'name' => $course?->title ?? 'Unknown Course',
+                'description' => $course?->description ?? '',
+                'completedDate' => $cert->completed_at->format('M d, Y'),
+                'issueDate' => $cert->issued_at ? $cert->issued_at->format('M d, Y') : $cert->completed_at->format('M d, Y'),
+                'score' => 100,
+                'duration' => $this->calculateDuration($moduleCount),
+                'durationHours' => max(1, (int) ceil($moduleCount / 2)),
+                'certificateId' => $cert->certificate_id,
+                'hasCertificate' => true,
+                'instructorName' => $instructor?->name ?? 'System',
+            ];
+        })->toArray();
+    }
+
+    protected function loadProgressHistory(): void
+    {
+        $user = auth()->user();
+
+        $progressRecords = Progress::where('user_id', $user->id)
+            ->whereNotNull('completed_at')
+            ->with('content.course')
+            ->orderBy('completed_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        $this->progressHistory = $progressRecords->map(function ($progress) {
+            return [
+                'date' => $progress->completed_at->format('M d, Y'),
+                'action' => 'Completed Module',
+                'course' => $progress->content?->course?->title ?? 'Unknown',
+                'xp' => 100,
+            ];
+        })->toArray();
+    }
+
+    protected function calculateDuration(int $moduleCount): string
+    {
+        $hours = max(1, (int) ceil($moduleCount / 2));
+
+        return $hours.' hour'.($hours > 1 ? 's' : '');
+    }
+
+    public function viewCertificate($courseId)
+    {
+        $this->selectedCourse = collect($this->completedCourses)->firstWhere('id', $courseId);
+        $this->showModal = true;
         $this->recipientName = auth()->user()->name ?? '';
+        $this->isEditing = false;
     }
 
-    public function downloadCertificate(int $courseId): void
+    public function closeCertificate()
     {
-        $course = $this->completedCoursesIndex[$courseId] ?? null;
-
-        if (! $course) {
-            return;
-        }
-
-        $this->dispatchBrowserEvent('certificate-download', [
-            'courseId' => $courseId,
-            'name' => $course['name'],
-            'certificateId' => $course['certificateId'],
-        ]);
-    }
-
-    public function closeCertificate(): void
-    {
-        $this->showCertificateModal = false;
+        $this->showModal = false;
         $this->selectedCourse = null;
     }
 
-    public function updatedShowCertificateModal(bool $isOpen): void
+    public function toggleEditName()
     {
-        if (! $isOpen) {
-            $this->selectedCourse = null;
-        }
+        $this->isEditing = ! $this->isEditing;
     }
 
-    public function setActiveTab(string $tab): void
+    public function generateQrCode(string $certificateId): string
+    {
+        $verificationUrl = route('certificates.verify', ['certificate_id' => $certificateId]);
+
+        $qrCode = QrCode::create($verificationUrl)
+            ->setSize(150)
+            ->setMargin(5)
+            ->setErrorCorrectionLevel(ErrorCorrectionLevel::Medium);
+
+        $writer = new SvgWriter;
+        $result = $writer->write($qrCode);
+
+        return $result->getString();
+    }
+
+    public function setActiveTab($tab)
     {
         $this->activeTab = $tab;
     }

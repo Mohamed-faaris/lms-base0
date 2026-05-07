@@ -6,7 +6,7 @@
             <p class="text-zinc-500 dark:text-zinc-400 mt-2 text-lg">Track your progress and continue mastering your courses.</p>
         </div>
         <div class="flex items-center gap-2">
-            <flux:badge color="blue" size="lg" class="shadow-sm">
+            <flux:badge color="blue" class="shadow-sm">
                 <flux:icon.book-open class="h-4 w-4 mr-2" />
                 {{ $enrolledCourses->count() }} Enrolled
             </flux:badge>

@@ -1,91 +1,72 @@
 <?php
 
-use App\Livewire\Admin\Courses\Analyze as CoursesAnalyze;
-use App\Livewire\Admin\Courses\ContentEditor;
-use App\Livewire\Admin\Courses\ContentViewer;
-use App\Livewire\Admin\Courses\Create as CoursesCreate;
-use App\Livewire\Admin\Courses\Edit as CoursesEdit;
-use App\Livewire\Admin\Courses\Index as CoursesIndex;
-use App\Livewire\Admin\Courses\QuizEditor;
-use App\Livewire\Admin\Courses\Structure as CoursesStructure;
-use App\Livewire\Admin\Dashboard as AdminDashboard;
-use App\Livewire\Admin\Enrollments as AdminEnrollments;
-use App\Livewire\Admin\Enrollments\Create as EnrollmentBatchCreate;
-use App\Livewire\Admin\Enrollments\Show as EnrollmentBatchShow;
-use App\Livewire\Admin\Users\Index as AdminUsersIndex;
-use App\Livewire\Admin\Users\Profile as AdminUserProfile;
 use App\Livewire\Faculty\Certificates;
 use App\Livewire\Faculty\CoursePlayer;
 use App\Livewire\Faculty\Courses;
-use App\Livewire\Faculty\Dashboard as FacultyDashboard;
+use App\Livewire\Faculty\Dashboard;
 use App\Livewire\Faculty\Notifications;
 use App\Livewire\Faculty\Profile;
 use App\Livewire\Faculty\Streaks;
 use App\Livewire\Faculty\Suggestions;
-use App\Livewire\Manager\Dashboard as ManagerDashboard;
-use App\Livewire\Manager\Faculty\Index as ManagerFacultyIndex;
-use App\Livewire\Manager\Faculty\Profile as ManagerFacultyProfile;
-use App\Livewire\Public\Courses as PublicCourses;
+use App\Livewire\Public\CertificateVerify;
+use App\Models\Certificate;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
 
-Route::get('courses', PublicCourses::class)->name('courses');
+Route::get('certificates/verify/{certificate_id}', CertificateVerify::class)->name('certificates.verify');
+
+Route::get('certificates/download/{certificate_id}', function ($certificate_id, ?string $format = 'png') {
+    $certificate = Certificate::where('certificate_id', $certificate_id)->firstOrFail();
+    $course = $certificate->course;
+    $user = $certificate->user;
+
+    $verificationUrl = route('certificates.verify', ['certificate_id' => $certificate_id]);
+
+    $qrCode = new QrCode(
+        data: $verificationUrl,
+        size: 150,
+        margin: 5
+    );
+    $writer = new SvgWriter;
+    $qrSvg = $writer->write($qrCode)->getString();
+
+    $html = view('certificates.download', [
+        'certificate' => $certificate,
+        'course' => $course,
+        'user' => $user,
+        'qrSvg' => $qrSvg,
+        'verificationUrl' => $verificationUrl,
+    ])->render();
+
+    if ($format === 'pdf') {
+        return response($html, 200, [
+            'Content-Type' => 'text/html',
+            'Content-Disposition' => 'attachment; filename="certificate-'.$certificate_id.'.html"',
+        ]);
+    }
+
+    return response($html, 200, [
+        'Content-Type' => 'text/html',
+        'Content-Disposition' => 'attachment; filename="certificate-'.$certificate_id.'.html"',
+    ]);
+})->name('certificates.download');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         $user = auth()->user();
 
-        if ($user->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        if ($user->isManager()) {
-            return redirect()->route('manager.dashboard');
+        if ($user->role->value === 'faculty') {
+            return redirect()->route('faculty.dashboard');
         }
 
         return redirect()->route('faculty.dashboard');
     })->name('dashboard');
 
-    Route::prefix('admin')->name('admin.')->group(function () {
-        Route::get('dashboard', AdminDashboard::class)->name('dashboard');
-        Route::get('users', AdminUsersIndex::class)->name('users.index');
-        Route::get('users/datatable', \App\Http\Controllers\Admin\UsersDataTableController::class)->name('users.datatable');
-        Route::get('users/{user}', AdminUserProfile::class)->name('users.profile');
-        Route::get('enrollments', AdminEnrollments::class)->name('enrollments.index');
-        Route::get('enrollments/datatable', \App\Http\Controllers\Admin\EnrollmentsDataTableController::class)->name('enrollments.datatable');
-        Route::get('enrollments/create', EnrollmentBatchCreate::class)->name('enrollments.create');
-        Route::get('enrollments/{batchKey}', EnrollmentBatchShow::class)->name('enrollments.show');
-
-        Route::prefix('courses')->name('courses.')->group(function () {
-            Route::get('/', CoursesIndex::class)->name('index');
-            Route::get('/datatable', \App\Http\Controllers\Admin\CoursesDataTableController::class)->name('index.datatable');
-            Route::get('/create', CoursesCreate::class)->name('create');
-            Route::delete('/{course}', \App\Http\Controllers\Admin\CourseDeleteController::class)->name('destroy');
-            Route::get('/{course}', CoursesStructure::class)->name('show');
-            Route::get('/{course}/analyze', CoursesAnalyze::class)->name('analyze');
-            Route::get('/{course}/analyze/datatable', \App\Http\Controllers\Admin\CourseAnalyzeEnrollmentsDataTableController::class)->name('analyze.datatable');
-            Route::get('/{course}/enroll', EnrollmentBatchCreate::class)->name('enroll');
-            Route::get('/{course}/edit', CoursesEdit::class)->name('edit');
-            Route::get('/content/{contentId}', ContentViewer::class)->name('content.show');
-            Route::get('/{course}/content/{contentId}/edit', ContentEditor::class)->name('content.edit');
-            Route::get('/{course}/content/{content}/quiz', QuizEditor::class)
-                ->defaults('placement', 'content')
-                ->name('content.quiz.edit');
-            Route::get('/{course}/content/{content}/end-quiz', QuizEditor::class)
-                ->defaults('placement', 'end')
-                ->name('content.end-quiz.edit');
-            Route::get('/{course}/content/{content}/timestamped-quiz/create', QuizEditor::class)
-                ->defaults('placement', 'timestamped')
-                ->name('content.timestamped-quiz.create');
-            Route::get('/{course}/content/{content}/timestamped-quiz/{quiz}', QuizEditor::class)
-                ->defaults('placement', 'timestamped')
-                ->name('content.timestamped-quiz.edit');
-        });
-    });
-
     Route::prefix('faculty')->name('faculty.')->group(function () {
-        Route::get('dashboard', FacultyDashboard::class)->name('dashboard');
+        Route::get('dashboard', Dashboard::class)->name('dashboard');
         Route::get('courses', Courses::class)->name('courses');
         Route::get('course-player/{course?}', CoursePlayer::class)->name('course-player');
         Route::get('streaks', Streaks::class)->name('streaks');
@@ -93,12 +74,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('notifications', Notifications::class)->name('notifications');
         Route::get('profile', Profile::class)->name('profile');
         Route::get('suggestions', Suggestions::class)->name('suggestions');
-    });
-
-    Route::prefix('manager')->name('manager.')->group(function () {
-        Route::get('dashboard', ManagerDashboard::class)->name('dashboard');
-        Route::get('faculty', ManagerFacultyIndex::class)->name('faculty.index');
-        Route::get('faculty/{user}', ManagerFacultyProfile::class)->name('faculty.profile');
     });
 });
 

@@ -3,54 +3,24 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Spatie\Sluggable\HasSlug;
-use Spatie\Sluggable\SlugOptions;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
-class Course extends Model implements HasMedia
+class Course extends Model
 {
-    use HasSlug;
-    use InteractsWithMedia;
-
     protected $fillable = [
         'title',
-        'slug',
         'description',
     ];
 
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('course-thumbnail')
-            ->singleFile()
-            ->useDisk(config('media-library.disk_name', 'public'));
-    }
-
-    public function registerMediaConversions(?Media $media = null): void
-    {
-        $this->addMediaConversion('thumb')
-            ->width(960)
-            ->height(540)
-            ->sharpen(10)
-            ->nonQueued();
-    }
-
-    public function getSlugOptions(): SlugOptions
-    {
-        return SlugOptions::create()
-            ->generateSlugsFrom('title')
-            ->saveSlugsTo('slug');
-    }
-
-    public function contents()
-    {
-        return $this->hasManyThrough(Content::class, Module::class);
-    }
-
-    public function topics()
+    public function topics(): HasMany
     {
         return $this->hasMany(Topic::class);
+    }
+
+    public function modules(): HasManyThrough
+    {
+        return $this->hasManyThrough(Module::class, Topic::class);
     }
 
     public function courseMeta()
@@ -58,7 +28,7 @@ class Course extends Model implements HasMedia
         return $this->hasOne(CourseMeta::class);
     }
 
-    public function enrollments()
+    public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
     }
@@ -70,13 +40,13 @@ class Course extends Model implements HasMedia
             ->withTimestamps();
     }
 
-    public function feedback()
+    public function feedback(): HasMany
     {
         return $this->hasMany(Feedback::class);
     }
 
-    public function quizzes()
+    public function certificates(): HasMany
     {
-        return $this->hasManyThrough(Quiz::class, [Module::class, Content::class]);
+        return $this->hasMany(Certificate::class);
     }
 }

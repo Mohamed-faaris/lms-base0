@@ -9,13 +9,9 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
+            hotFile: null,
         }),
         tailwindcss(),
     ],
-    server: {
-        cors: true,
-        watch: {
-            ignored: ['**/storage/framework/views/**'],
-        },
-    },
+    server: false,
 });
