@@ -149,11 +149,11 @@
 
     {{-- Course-wise Progress --}}
     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-        <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Course-wise Progress</h3>
+        <div class="flex items-center justify-between p-3 border-b border-zinc-200 dark:border-zinc-700">
+            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Course Progress</h3>
         </div>
         <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
-            @forelse($courseProgress as $course)
+            @forelse(collect($courseProgress)->take(3) as $course)
                 <div class="p-4">
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-2">
@@ -194,7 +194,7 @@
                     @endif
 
                     <div class="space-y-2">
-                        @foreach($course['allFaculties'] as $faculty)
+                        @foreach(collect($course['allFaculties'])->take(3) as $faculty)
                             <div class="flex items-center justify-between text-sm {{ $faculty['isCurrentUser'] ? 'bg-blue-50 dark:bg-blue-900/20 -mx-2 px-2 py-1.5 rounded' : '' }}">
                                 <span class="text-zinc-700 dark:text-zinc-300 {{ $faculty['isCurrentUser'] ? 'font-medium' : '' }}">
                                     {{ $faculty['userName'] }}
@@ -226,55 +226,39 @@
     </div>
 
     {{-- Leaderboard --}}
-    <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-        <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
+    <div class="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 overflow-hidden">
+        <div class="flex items-center justify-between p-3 border-b border-zinc-200 dark:border-zinc-700">
             <div class="flex items-center gap-2">
                 <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Leaderboard</h3>
-                <flux:badge color="amber" variant="subtle" size="sm">Rank #{{ $userRank }}</flux:badge>
+                <flux:badge color="amber" variant="subtle" size="sm">#{{ $userRank }}</flux:badge>
             </div>
-            <flux:icon.trophy class="h-5 w-5 text-amber-500" />
+            <flux:icon.trophy class="h-4 w-4 text-amber-500" />
         </div>
         <div class="divide-y divide-zinc-200 dark:divide-zinc-700">
-            @forelse($this->leaderboard as $index => $entry)
-                <div class="flex items-center gap-4 p-4 {{ $entry['isCurrentUser'] ? 'bg-blue-50 dark:bg-blue-900/20' : '' }}">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                        {{ ($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : (($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index === 1 ? 'bg-zinc-200 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300' : (($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400')) }}">
-                        {{ ($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index + 1 }}
-                    </div>
+            @forelse($this->leaderboard->take(5) as $index => $entry)
+                @php
+                    $rank = ($this->leaderboard->currentPage() - 1) * $this->leaderboard->perPage() + $index;
+                    $initials = implode('', array_map(fn($w) => Str::substr($w, 0, 1), array_slice(explode(' ', $entry['name']), 0, 2)));
+                @endphp
+                <div class="flex items-center gap-3 p-2.5 {{ $entry['isCurrentUser'] ? 'bg-blue-50 dark:bg-blue-900/20' : '' }}">
+                    <span class="w-5 text-center text-sm font-bold text-zinc-400 dark:text-zinc-500">{{ $rank + 1 }}</span>
+                    <flux:avatar :initials="$initials" class="h-7 w-7 text-xs" />
                     <div class="flex-1 min-w-0">
-                        <p class="font-medium text-zinc-900 dark:text-zinc-100 {{ $entry['isCurrentUser'] ? 'text-blue-700 dark:text-blue-300' : '' }}">
-                            {{ $entry['name'] }}
-                            @if($entry['isCurrentUser'])
-                                <span class="text-xs text-blue-600 dark:text-blue-400">(You)</span>
-                            @endif
-                        </p>
+                        <p class="font-medium text-zinc-900 dark:text-zinc-100 truncate text-sm">{{ $entry['name'] }}</p>
                     </div>
-                    <div class="flex items-center gap-6 text-sm">
-                        <div class="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                            <flux:icon.bolt class="h-4 w-4" />
-                            <span class="font-medium">{{ $entry['xp'] }}</span>
-                        </div>
-                        <div class="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                            <flux:icon.academic-cap class="h-4 w-4" />
-                            <span>{{ $entry['avgScore'] }}%</span>
-                        </div>
-                        <div class="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                            <flux:icon.check-circle class="h-4 w-4" />
-                            <span>{{ $entry['completedCourses'] }}</span>
-                        </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        <span class="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400">
+                            <flux:icon.bolt class="h-3.5 w-3.5" />
+                            {{ $entry['xp'] }}
+                        </span>
                     </div>
                 </div>
             @empty
-                <div class="p-8 text-center text-zinc-500 dark:text-zinc-400">
+                <div class="p-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
                     No leaderboard data yet.
                 </div>
             @endforelse
         </div>
-        @if($this->leaderboard->hasPages())
-            <div class="p-4 border-t border-zinc-200 dark:border-zinc-700">
-                {{ $this->leaderboard->links() }}
-            </div>
-        @endif
     </div>
 
     {{-- My Courses --}}

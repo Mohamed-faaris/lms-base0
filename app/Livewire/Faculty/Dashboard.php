@@ -325,8 +325,16 @@ class Dashboard extends Component
         // Pre-fetch all quiz attempts in one query
         $allQuizAttempts = QuizAttempt::whereIn('user_id', $facultyIds)->get()->groupBy('user_id');
 
+        // Pre-fetch all streak records for faculty in one query
+        $streakRecords = Streak::whereIn('user_id', $facultyIds)
+            ->orderBy('date', 'desc')
+            ->get()
+            ->groupBy('user_id')
+            ->map(fn ($group) => $group->first()?->count ?? 0)
+            ->toArray();
+
         // Transform faculty data for leaderboard
-        $leaderboardData = collect($faculties->items())->map(function ($faculty) use ($xpRecords, $enrollments, $allProgress, $allQuizAttempts) {
+        $leaderboardData = collect($faculties->items())->map(function ($faculty) use ($xpRecords, $enrollments, $allProgress, $allQuizAttempts, $streakRecords) {
             $xp = $xpRecords[$faculty->id]?->xp ?? 0;
 
             $userEnrollments = $enrollments[$faculty->id] ?? collect();
@@ -352,6 +360,7 @@ class Dashboard extends Component
                 'xp' => $xp,
                 'avgScore' => (int) $avgScore,
                 'completedCourses' => $completedCourses,
+                'streak' => $streakRecords[$faculty->id] ?? 0,
                 'isCurrentUser' => $faculty->id === auth()->id(),
             ];
         })->sortByDesc('xp')->values();
