@@ -36,6 +36,29 @@ test('admin can view the users index and open a profile', function () {
     $response->assertDontSee($adminUser->email);
 });
 
+test('users datatable includes manager rows when filtered by manager', function () {
+    $admin = User::factory()->admin()->create();
+    $manager = User::factory()->manager()->create([
+        'name' => 'Manager Member',
+        'email' => 'manager@example.com',
+    ]);
+
+    $response = $this
+        ->actingAs($admin)
+        ->get(route('admin.users.datatable', ['role' => 'manager']));
+
+    $response->assertSuccessful();
+    $response->assertJsonFragment([
+        'Manager Member',
+    ]);
+    $response->assertJsonFragment([
+        'manager@example.com',
+    ]);
+    $response->assertJsonFragment([
+        'Manager',
+    ]);
+});
+
 test('admin user profile shows enrollments progress and deadline', function () {
     Date::setTestNow('2026-04-08 09:00:00');
 
