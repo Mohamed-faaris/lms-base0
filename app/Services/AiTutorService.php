@@ -10,13 +10,13 @@ class AiTutorService
 {
     protected ?string $apiKey = null;
 
-    protected string $baseUrl = 'https://api.openai.com/v1';
+    protected string $baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
 
-    protected string $model = 'gpt-4o-mini';
+    protected string $model = 'gemini-2.0-flash';
 
     public function __construct()
     {
-        $this->apiKey = config('services.openai.key');
+        $this->apiKey = config('app.gemini_api_key');
     }
 
     public function getResponse(
@@ -30,7 +30,7 @@ class AiTutorService
         }
 
         try {
-            return $this->callOpenAi($message, $context, $enrollments, $history);
+            return $this->callGemini($message, $context, $enrollments, $history);
         } catch (\Throwable $e) {
             report($e);
 
@@ -38,7 +38,7 @@ class AiTutorService
         }
     }
 
-    protected function callOpenAi(
+    protected function callGemini(
         string $message,
         string $context,
         array $enrollments,
@@ -46,36 +46,44 @@ class AiTutorService
     ): string {
         $systemPrompt = $this->buildSystemPrompt($context, $enrollments);
 
-        $messages = collect($history)
-            ->filter(fn ($msg) => in_array($msg['role'], ['user', 'assistant']))
-            ->map(fn ($msg) => [
-                'role' => $msg['role'],
-                'content' => $msg['content'],
-            ])
-            ->prepend(['role' => 'system', 'content' => $systemPrompt])
-            ->push(['role' => 'user', 'content' => $message])
-            ->values()
-            ->toArray();
+        $contents = [];
+
+        foreach ($history as $msg) {
+            if (in_array($msg['role'], ['user', 'assistant'])) {
+                $contents[] = [
+                    'role' => $msg['role'] === 'assistant' ? 'model' : 'user',
+                    'parts' => [['text' => $msg['content']]],
+                ];
+            }
+        }
+
+        $contents[] = [
+            'role' => 'user',
+            'parts' => [['text' => $message]],
+        ];
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer '.$this->apiKey,
             'Content-Type' => 'application/json',
         ])
             ->timeout(30)
-            ->post($this->baseUrl.'/chat/completions', [
-                'model' => $this->model,
-                'messages' => $messages,
-                'temperature' => 0.7,
-                'max_tokens' => 1000,
+            ->post($this->baseUrl.'/models/'.$this->model.':generateContent?key='.$this->apiKey, [
+                'system_instruction' => [
+                    'parts' => [['text' => $systemPrompt]],
+                ],
+                'contents' => $contents,
+                'generationConfig' => [
+                    'temperature' => 0.7,
+                    'maxOutputTokens' => 1000,
+                ],
             ]);
 
         if ($response->failed()) {
-            throw new \Exception('OpenAI API error: '.$response->body());
+            throw new \Exception('Gemini API error: '.$response->body());
         }
 
         $data = $response->json();
 
-        return $data['choices'][0]['message']['content'] ?? 'Sorry, I could not process your request.';
+        return $data['candidates'][0]['content']['parts'][0]['text'] ?? 'Sorry, I could not process your request.';
     }
 
     protected function buildSystemPrompt(string $context, array $enrollments): string

@@ -1,3 +1,16 @@
+@php
+function md($text) {
+    $text = preg_replace('/\*\*(.*?)\*\*/s', '<strong>$1</strong>', $text);
+    $text = preg_replace('/\*(.*?)\*/s', '<em>$1</em>', $text);
+    $text = preg_replace('/`(.*?)`/', '<code class="px-1 py-0.5 bg-zinc-100 dark:bg-zinc-700 rounded text-sm">$1</code>', $text);
+    $text = preg_replace('/^(\d+\.)\s+(.*)$/m', '<li>$2</li>', $text);
+    $text = preg_replace('/^(\-)\s+(.*)$/m', '<li>$2</li>', $text);
+    $text = preg_replace('/(<li>.*<\/li>)/s', '<ul>$1</ul>', $text);
+    $text = nl2br($text);
+    return $text;
+}
+@endphp
+
 <div class="flex flex-col h-[calc(100vh-8rem)]" x-data="{
     messages: @js($messages),
     input: '',
@@ -95,7 +108,7 @@
                             </div>
                             <div class="flex-1 bg-zinc-50 dark:bg-zinc-700/50 rounded-2xl px-4 py-3 max-w-[80%]">
                                 <div class="prose prose-sm dark:prose-invert max-w-none">
-                                    @markdown($message['content'])
+                                    {!! md($message['content']) !!}
                                 </div>
                             </div>
                         @endif
@@ -165,19 +178,3 @@
 }
 </style>
 @endpush
-
-@if(!function_exists('markdown'))
-@php
-function markdown($text) {
-    $text = e($text);
-    $text = preg_replace('/\*\*(.*?)\*\*/s', '<strong>$1</strong>', $text);
-    $text = preg_replace('/\*(.*?)\*/s', '<em>$1</em>', $text);
-    $text = preg_replace('/`(.*?)`/', '<code class="px-1 py-0.5 bg-zinc-100 dark:bg-zinc-700 rounded text-sm">$1</code>', $text);
-    $text = preg_replace('/^(\d+\.)\s+(.*)$/m', '<li>$2</li>', $text);
-    $text = preg_replace('/^(\-)\s+(.*)$/m', '<li>$2</li>', $text);
-    $text = preg_replace('/(<li>.*<\/li>)/s', '<ul>$1</ul>', $text);
-    $text = nl2br($text);
-    return $text;
-}
-@endphp
-@endif
