@@ -18,7 +18,7 @@ class Show extends Component
 {
     use NormalizesEnrollmentDeadline;
 
-    public string $batchKey;
+    public ?string $batchKey = null;
 
     public string $learnerSearch = '';
 
@@ -57,13 +57,13 @@ class Show extends Component
     /** @var array<int, string> */
     public array $learnerDeadlineDays = [];
 
-    public function mount(string $batchKey): void
+    public function mount(): void
     {
         if (! auth()->user()->isAdmin()) {
             abort(403);
         }
 
-        $this->batchKey = $batchKey;
+        $this->batchKey = (string) request()->route('batchId');
         $this->syncEditableFields();
     }
 
@@ -92,6 +92,24 @@ class Show extends Component
         }
 
         $this->showGlobalDeadlineModal = true;
+    }
+
+    public function openLearnerDeadlineModal(int $learnerId): void
+    {
+        $this->selectedLearnerId = $learnerId;
+        $enrollment = $this->resolveBatchEnrollments()->firstWhere('user_id', $learnerId);
+
+        if ($enrollment) {
+            $this->learnerDeadlineDays[$learnerId] = (string) max(1, $this->normalizeDeadlineDayDifference(((int) $enrollment->deadline) - now()->timestamp));
+        }
+
+        $this->showLearnerDeadlineModal = true;
+    }
+
+    public function closeLearnerDeadlineModal(): void
+    {
+        $this->selectedLearnerId = null;
+        $this->showLearnerDeadlineModal = false;
     }
 
     public function closeGlobalDeadlineModal(): void

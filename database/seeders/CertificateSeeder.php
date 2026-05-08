@@ -52,7 +52,7 @@ class CertificateSeeder extends Seeder
         }
 
         $admin = User::where('role', 'admin')->first();
-        if ($admin && !Certificate::where('user_id', $admin->id)->exists()) {
+        if ($admin && ! Certificate::where('user_id', $admin->id)->exists()) {
             foreach ($courses->take(3) as $course) {
                 Certificate::create([
                     'user_id' => $admin->id,
