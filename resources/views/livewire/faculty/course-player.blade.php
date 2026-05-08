@@ -337,7 +337,7 @@
                                 </div>
                             </div>
 
-                            <div class="border-t border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950/70 lg:border-t-0 lg:border-l">
+                            <div class="border-t border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950/70 lg:border-t-0 lg:border-l" x-data="{ isCompleted: {{ $currentModule->status === 'completed' ? 'true' : 'false' }}, isVideoLesson: {{ $currentModule->isVideoLesson ? 'true' : 'false' }} }">
                                 <div class="space-y-4">
                                     <div class="rounded-[1.5rem] border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
                                         <button

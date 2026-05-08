@@ -31,9 +31,21 @@ class Content extends Model
         return $this->belongsTo(Module::class);
     }
 
-    public function course()
+    public function course(): ?Course
     {
-        return $this->hasOneThrough(Course::class, Module::class);
+        $module = $this->module;
+
+        if (! $module) {
+            return null;
+        }
+
+        $topic = $module->topic;
+
+        if (! $topic) {
+            return null;
+        }
+
+        return $topic->course;
     }
 
     public function comments()
