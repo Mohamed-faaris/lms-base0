@@ -1,5 +1,5 @@
 @php
-    $thumbnailUrl = $course->getFirstMediaUrl('course-thumbnail') ?: $course->courseMeta?->thumbnail;
+    $thumbnailUrl = $course->courseMeta?->thumbnail;
 @endphp
 
 <div class="space-y-6">
@@ -196,12 +196,12 @@
                                                         <flux:button size="sm" variant="ghost" wire:click="startQuickEdit('content', {{ $content->id }})" icon="pencil-square" />
                                                     </flux:tooltip>
                                                     <flux:tooltip content="Open full editor" position="top">
-                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.edit', [$course->id, $content->id]) }}" wire:navigate icon="arrow-top-right-on-square" />
+                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content', ['course' => $course->id, 'module' => $content->module_id]) }}" wire:navigate icon="arrow-top-right-on-square" />
                                                     </flux:tooltip>
                                                     @if ($content->type->value === 'quiz')
-                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.quiz.edit', [$course->id, $content->id]) }}" wire:navigate>Quiz Editor</flux:button>
+                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.quiz', ['course' => $course->id, 'quiz' => $content->quiz?->id]) }}" wire:navigate>Quiz Editor</flux:button>
                                                     @elseif ($content->endQuiz)
-                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.content.end-quiz.edit', [$course->id, $content->id]) }}" wire:navigate>End Quiz</flux:button>
+                                                        <flux:button size="sm" variant="ghost" href="{{ route('admin.courses.quiz', ['course' => $course->id, 'quiz' => $content->endQuiz?->id]) }}" wire:navigate>End Quiz</flux:button>
                                                     @endif
                                                 </div>
                                             </div>

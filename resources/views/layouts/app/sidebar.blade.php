@@ -33,6 +33,9 @@
                         <flux:sidebar.item icon="cog-6-tooth" :href="route('faculty.suggestions')" :current="request()->routeIs('faculty.suggestions')" wire:navigate>
                             {{ __('Suggestions') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="sparkles" :href="route('faculty.ai-tutor')" :current="request()->routeIs('faculty.ai-tutor')" wire:navigate>
+                            {{ __('AI Tutor') }}
+                        </flux:sidebar.item>
                     @endif
 
                     @if(auth()->user()->isAdmin())
