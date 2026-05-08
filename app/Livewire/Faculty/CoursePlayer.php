@@ -11,8 +11,10 @@ use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Services\PostHogService;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
+#[On('record-behavioral-event')]
 class CoursePlayer extends Component
 {
     public Course $course;
@@ -576,6 +578,21 @@ class CoursePlayer extends Component
     public function toggleReplyForm(int $commentId): void
     {
         $this->activeReplyCommentId = $this->activeReplyCommentId === $commentId ? null : $commentId;
+    }
+
+    public function recordBehavioralEvent(string $eventType, array $metadata = []): void
+    {
+        $user = auth()->user();
+
+        $service = app(\App\Services\BehavioralAnalyticsService::class);
+
+        $service->recordEvent(
+            $user,
+            $eventType,
+            $this->currentModule ?? null,
+            $this->course ?? null,
+            $metadata
+        );
     }
 
     public function render()

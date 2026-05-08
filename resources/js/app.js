@@ -36,13 +36,37 @@ const ensureYoutubeIframeApi = (() => {
 
 window.courseVideoPlayer = function (config) {
     let playerInstance = null;
+    let pauseCount = 0;
     const hasPlayerMethod = (methodName) => typeof playerInstance?.[methodName] === 'function';
+
+    const sendBehavioralEvent = (eventType, metadata = {}) => {
+        try {
+            const data = {
+                event_type: eventType,
+                duration_seconds: metadata.duration_seconds,
+                video_timestamp: metadata.video_timestamp,
+                pause_count: metadata.pause_count,
+                seek_position: metadata.seek_position,
+                _token: document.querySelector('meta[name="csrf-token"]')?.content
+            };
+            
+            // Send via Livewire or fetch
+            if (window.Livewire) {
+                window.Livewire.dispatch('record-behavioral-event', data);
+            }
+        } catch (e) {
+            console.log('Behavioral event error:', e);
+        }
+    };
 
     return {
         ...config,
         pollInterval: null,
         hideNoticeTimeout: null,
         visibilityChangeHandler: null,
+        windowBlurHandler: null,
+        pauseCount: 0,
+        sessionStartTime: Date.now(),
         playing: false,
         ready: false,
         currentTime: config.startTimeSeconds,
@@ -127,11 +151,24 @@ window.courseVideoPlayer = function (config) {
                 }
             };
 
+            // Add window blur listener to pause video when switching to another window
+            this.windowBlurHandler = () => {
+                if (! this.ready || ! this.isVideoLesson || ! this.playing) {
+                    return;
+                }
+
+                console.log('Window blur - pausing video');
+                if (hasPlayerMethod('pauseVideo')) {
+                    playerInstance.pauseVideo();
+                }
+            };
+
             // Add event listeners for different browser prefixes
             const visibilityEvents = ['visibilitychange', 'webkitvisibilitychange', 'mozvisibilitychange', 'msvisibilitychange'];
             visibilityEvents.forEach(event => {
                 document.addEventListener(event, this.visibilityChangeHandler);
             });
+            window.addEventListener('blur', this.windowBlurHandler);
         },
 
         destroy() {
@@ -144,6 +181,11 @@ window.courseVideoPlayer = function (config) {
                 visibilityEvents.forEach(event => {
                     document.removeEventListener(event, this.visibilityChangeHandler);
                 });
+            }
+
+            // Remove window blur listener
+            if (this.windowBlurHandler) {
+                window.removeEventListener('blur', this.windowBlurHandler);
             }
 
             if (hasPlayerMethod('destroy')) {
@@ -208,17 +250,38 @@ window.courseVideoPlayer = function (config) {
         },
 
         handlePlayerStateChange(event) {
+            const wasPlaying = this.playing;
             this.playing = event.data === window.YT.PlayerState.PLAYING;
+
+            if (event.data === window.YT.PlayerState.PLAYING) {
+                this.sendBehavioralEvent('play', {
+                    duration_seconds: this.currentTime,
+                    video_timestamp: this.currentTime,
+                });
+            }
+
+            if (event.data === window.YT.PlayerState.PAUSED) {
+                this.pauseCount++;
+                this.sendBehavioralEvent('pause', {
+                    duration_seconds: this.currentTime,
+                    video_timestamp: this.currentTime,
+                    pause_count: this.pauseCount,
+                });
+            }
 
             if (event.data === window.YT.PlayerState.ENDED) {
                 this.maxTime = this.displayDuration;
                 this.currentTime = this.displayDuration;
                 this.sliderValue = this.currentTime;
                 this.unlockWatchGate();
+                this.sendBehavioralEvent('complete', {
+                    duration_seconds: this.displayDuration,
+                    video_timestamp: this.displayDuration,
+                });
             }
         },
 
-        startPolling() {
+startPolling() {
             window.clearInterval(this.pollInterval);
 
             this.pollInterval = window.setInterval(() => {
@@ -226,38 +289,45 @@ window.courseVideoPlayer = function (config) {
                     return;
                 }
 
-                const rawTime = playerInstance.getCurrentTime();
-                const currentTime = Number.isFinite(rawTime) ? rawTime : this.startTimeSeconds;
-                const boundedTime = Math.max(this.startTimeSeconds, currentTime);
+                try {
+                    const rawTime = playerInstance.getCurrentTime();
+                    const currentTime = Number.isFinite(rawTime) ? rawTime : this.startTimeSeconds;
+                    const boundedTime = Math.max(this.startTimeSeconds, currentTime);
 
-                this.playerDuration = this.displayDurationFromPlayer();
+                    this.playerDuration = this.displayDurationFromPlayer();
 
-                if (! this.seekForwardEnabled && boundedTime > this.maxTime + 1.35) {
-                    this.seekTo(this.maxTime);
-                    this.showBlockedMessage('Forward seek is locked until you watch that segment.');
+                    if (! this.seekForwardEnabled && boundedTime > this.maxTime + 1.35) {
+                        this.seekTo(this.maxTime);
+                        this.showBlockedMessage('Forward seek is locked until you watch that segment.');
 
-                    return;
-                }
-
-                this.currentTime = Math.min(boundedTime, this.displayDuration);
-                this.sliderValue = this.currentTime;
-                this.maxTime = Math.max(this.maxTime, this.currentTime);
-
-                this.checkTimestampedQuizzes();
-
-                if (this.endTimeSeconds > this.startTimeSeconds && this.currentTime >= this.endTimeSeconds - 0.35) {
-                    if (hasPlayerMethod('pauseVideo')) {
-                        playerInstance.pauseVideo();
+                        return;
                     }
-                    this.seekTo(this.endTimeSeconds);
-                    this.maxTime = this.endTimeSeconds;
-                    this.currentTime = this.endTimeSeconds;
-                    this.sliderValue = this.currentTime;
-                    this.unlockWatchGate();
-                }
 
-                if (! this.watchUnlocked && this.watchPercent >= this.watchRequirementPercent) {
-                    this.unlockWatchGate();
+                    this.currentTime = Math.min(boundedTime, this.displayDuration);
+                    this.sliderValue = this.currentTime;
+
+                    if (this.currentTime > this.maxTime) {
+                        this.maxTime = this.currentTime;
+                    }
+
+                    this.checkTimestampedQuizzes();
+
+                    if (this.endTimeSeconds > this.startTimeSeconds && this.currentTime >= this.endTimeSeconds - 0.35) {
+                        if (hasPlayerMethod('pauseVideo')) {
+                            playerInstance.pauseVideo();
+                        }
+                        this.seekTo(this.endTimeSeconds);
+                        this.maxTime = this.endTimeSeconds;
+                        this.currentTime = this.endTimeSeconds;
+                        this.sliderValue = this.currentTime;
+                        this.unlockWatchGate();
+                    }
+
+                    if (! this.watchUnlocked && this.watchPercent >= this.watchRequirementPercent) {
+                        this.unlockWatchGate();
+                    }
+                } catch (e) {
+                    console.error('Polling error:', e);
                 }
             }, 250);
         },
@@ -294,7 +364,11 @@ window.courseVideoPlayer = function (config) {
 
             const duration = hasPlayerMethod('getDuration') ? playerInstance.getDuration() : 0;
 
-            return Number.isFinite(duration) && duration > 0 ? duration : this.startTimeSeconds + 1;
+            if (!Number.isFinite(duration) || duration <= 0) {
+                return this.startTimeSeconds + 60;
+            }
+
+            return duration;
         },
 
         handleSeekInput(event) {
@@ -328,9 +402,16 @@ window.courseVideoPlayer = function (config) {
             }
 
             const boundedTime = Math.max(this.startTimeSeconds, Math.min(nextTime, this.displayDuration));
+            const previousTime = this.currentTime;
             playerInstance.seekTo(boundedTime, true);
             this.currentTime = boundedTime;
             this.sliderValue = boundedTime;
+
+            this.sendBehavioralEvent('seek', {
+                duration_seconds: boundedTime,
+                video_timestamp: boundedTime,
+                seek_position: previousTime,
+            });
         },
 
         handlePlayPause() {
@@ -397,35 +478,38 @@ window.courseVideoPlayer = function (config) {
 
             try {
                 if (this.captionsEnabled) {
-                    // Try to enable captions by setting a track
-                    if (hasPlayerMethod('setOption')) {
-                        // Try to set to English, or get available tracks if possible
-                        try {
-                            const tracklist = playerInstance.getOption('captions', 'tracklist');
-                            if (tracklist && tracklist.length > 0) {
-                                // Use the first available track
-                                playerInstance.setOption('captions', 'track', {languageCode: tracklist[0].languageCode});
-                            } else {
-                                // Fallback to English
-                                playerInstance.setOption('captions', 'track', {languageCode: 'en'});
-                            }
-                        } catch (e) {
-                            // If getOption fails, try setting to English
-                            playerInstance.setOption('captions', 'track', {languageCode: 'en'});
-                        }
-                    } else if (hasPlayerMethod('loadModule')) {
+                    // Method 1: Use YouTube's built-in captions via playerVars
+                    if (hasPlayerMethod('loadModule')) {
                         playerInstance.loadModule('captions');
+                    }
+                    
+                    // Method 2: Try setOption for captions
+                    if (hasPlayerMethod('setOption')) {
+                        try {
+                            playerInstance.setOption('captions', 'track', {languageCode: 'en'});
+                        } catch (e1) {
+                            try {
+                                playerInstance.setOption('captions', 'track', {languageCode: 'en-US'});
+                            } catch (e2) {
+                                console.log('Caption setOption not available');
+                            }
+                        }
                     }
                 } else {
                     // Disable captions
                     if (hasPlayerMethod('setOption')) {
-                        playerInstance.setOption('captions', 'track', {});
-                    } else if (hasPlayerMethod('unloadModule')) {
+                        try {
+                            playerInstance.setOption('captions', 'track', {});
+                        } catch (e) {
+                            console.log('Caption disable not available');
+                        }
+                    }
+                    if (hasPlayerMethod('unloadModule')) {
                         playerInstance.unloadModule('captions');
                     }
                 }
             } catch (error) {
-                console.debug('Caption toggle unavailable', error);
+                console.log('Caption toggle error:', error);
             }
         },
 

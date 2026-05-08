@@ -45,6 +45,9 @@
                         <flux:sidebar.item icon="user-group" :href="route('admin.enrollments.index')" :current="request()->routeIs('admin.enrollments.*')" wire:navigate>
                             {{ __('Enrollments') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="chart-bar" :href="route('admin.behavioral-analytics')" :current="request()->routeIs('admin.behavioral-analytics')" wire:navigate>
+                            {{ __('Behavioral Analytics') }}
+                        </flux:sidebar.item>
                     @endif
 
                     @if(auth()->user()->isManager())
