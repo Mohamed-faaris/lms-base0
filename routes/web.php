@@ -20,6 +20,7 @@ use App\Livewire\Admin\Enrollments\Create as EnrollmentsCreate;
 use App\Livewire\Admin\Enrollments\Show as EnrollmentsShow;
 use App\Livewire\Admin\Users\Index as UsersIndex;
 use App\Livewire\Admin\Users\Profile as UsersProfile;
+use App\Livewire\Faculty\AiTutor;
 use App\Livewire\Faculty\Certificates;
 use App\Livewire\Faculty\CoursePlayer;
 use App\Livewire\Faculty\Courses;
@@ -94,6 +95,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('notifications', Notifications::class)->name('notifications');
         Route::get('profile', Profile::class)->name('profile');
         Route::get('suggestions', Suggestions::class)->name('suggestions');
+        Route::get('ai-tutor', AiTutor::class)->name('ai-tutor');
     });
 
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {

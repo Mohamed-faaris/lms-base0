@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BehavioralEvent extends Model
 {
+    public $timestamps = false;
+
     protected $fillable = [
         'user_id',
         'content_id',

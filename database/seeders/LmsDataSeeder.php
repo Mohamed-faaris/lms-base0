@@ -875,6 +875,8 @@ class LmsDataSeeder extends Seeder
 
         $this->seedDemoCourseEnrollments($admin, [$reactCourse, $phpCourse]);
 
+        $this->seedBehavioralEvents();
+
         // ============================================
         // PHP COURSE BADGES
         // ============================================
@@ -1592,5 +1594,295 @@ class LmsDataSeeder extends Seeder
     private function toCorrectIndex(string $correct): int
     {
         return ord(strtoupper($correct)) - 65;
+    }
+
+    private function seedBehavioralEvents(): void
+    {
+        $facultyEmails = [
+            'sarah@example.com',
+            'michael@example.com',
+            'emily@example.com',
+            'david@example.com',
+            'jennifer@example.com',
+        ];
+
+        $eventTypes = [
+            'video_play',
+            'video_pause',
+            'video_seek',
+            'video_completed',
+            'session_start',
+            'session_end',
+            'tab_switch',
+            'window_blur',
+            'content_revisit',
+            'quiz_started',
+            'quiz_completed',
+        ];
+
+        foreach ($facultyEmails as $email) {
+            $user = User::where('email', $email)->first();
+
+            if (! $user) {
+                continue;
+            }
+
+            $enrollments = Enrollment::where('user_id', $user->id)->with('course')->get();
+
+            foreach ($enrollments as $enrollment) {
+                $course = $enrollment->course;
+
+                if (! $course) {
+                    continue;
+                }
+
+                $moduleCount = $course->modules()->count();
+
+                if ($moduleCount === 0) {
+                    continue;
+                }
+
+                $sessionCount = $this->faker->numberBetween(3, 10);
+                $activeModules = $course->modules()->inRandomOrder()->take($this->faker->numberBetween(1, min(3, $moduleCount)))->get();
+
+                foreach (range(1, $sessionCount) as $sessionNum) {
+                    $sessionStart = $this->faker->dateTimeBetween("-{$sessionNum} days", "-{$sessionNum} days +2 hours");
+
+                    \App\Models\BehavioralEvent::firstOrCreate(
+                        [
+                            'user_id' => $user->id,
+                            'course_id' => $course->id,
+                            'event_type' => 'session_start',
+                            'event_timestamp' => $sessionStart,
+                        ],
+                        [
+                            'user_id' => $user->id,
+                            'content_id' => $activeModules->first()?->id,
+                            'course_id' => $course->id,
+                            'event_type' => 'session_start',
+                            'duration_seconds' => $this->faker->numberBetween(300, 3600),
+                            'video_timestamp' => 0,
+                            'pause_count' => 0,
+                            'seek_position' => null,
+                            'metadata' => ['session' => $sessionNum],
+                            'event_timestamp' => $sessionStart,
+                        ]
+                    );
+
+                    $playTimestamp = $this->faker->dateTimeBetween($sessionStart, $sessionStart->format('Y-m-d H:i:s').'+5 minutes');
+                    \App\Models\BehavioralEvent::firstOrCreate(
+                        [
+                            'user_id' => $user->id,
+                            'course_id' => $course->id,
+                            'event_type' => 'video_play',
+                            'event_timestamp' => $playTimestamp,
+                        ],
+                        [
+                            'user_id' => $user->id,
+                            'content_id' => $activeModules->first()?->id,
+                            'course_id' => $course->id,
+                            'event_type' => 'video_play',
+                            'duration_seconds' => $this->faker->numberBetween(60, 600),
+                            'video_timestamp' => 0,
+                            'pause_count' => 0,
+                            'seek_position' => null,
+                            'metadata' => ['module' => $activeModules->first()?->title],
+                            'event_timestamp' => $playTimestamp,
+                        ]
+                    );
+
+                    $pauseCount = $this->faker->numberBetween(0, 4);
+                    if ($pauseCount > 0) {
+                        $pauseTimestamp = $this->faker->dateTimeBetween($playTimestamp, $sessionStart->format('Y-m-d H:i:s').'+30 minutes');
+                        \App\Models\BehavioralEvent::firstOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'video_pause',
+                                'event_timestamp' => $pauseTimestamp,
+                            ],
+                            [
+                                'user_id' => $user->id,
+                                'content_id' => $activeModules->first()?->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'video_pause',
+                                'duration_seconds' => $this->faker->numberBetween(120, 900),
+                                'video_timestamp' => $this->faker->numberBetween(30, 300),
+                                'pause_count' => $pauseCount,
+                                'seek_position' => null,
+                                'metadata' => ['pause_number' => $pauseCount],
+                                'event_timestamp' => $pauseTimestamp,
+                            ]
+                        );
+                    }
+
+                    if ($this->faker->boolean(60)) {
+                        $seekTimestamp = $this->faker->dateTimeBetween($playTimestamp, $sessionStart->format('Y-m-d H:i:s').'+20 minutes');
+                        \App\Models\BehavioralEvent::firstOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'video_seek',
+                                'event_timestamp' => $seekTimestamp,
+                            ],
+                            [
+                                'user_id' => $user->id,
+                                'content_id' => $activeModules->first()?->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'video_seek',
+                                'duration_seconds' => $this->faker->numberBetween(180, 1200),
+                                'video_timestamp' => $this->faker->numberBetween(60, 400),
+                                'pause_count' => $pauseCount,
+                                'seek_position' => $this->faker->numberBetween(0, 100),
+                                'metadata' => [],
+                                'event_timestamp' => $seekTimestamp,
+                            ]
+                        );
+                    }
+
+                    if ($this->faker->boolean(70)) {
+                        $tabSwitchTimestamp = $this->faker->dateTimeBetween($playTimestamp, $sessionStart->format('Y-m-d H:i:s').'+40 minutes');
+                        \App\Models\BehavioralEvent::firstOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'tab_switch',
+                                'event_timestamp' => $tabSwitchTimestamp,
+                            ],
+                            [
+                                'user_id' => $user->id,
+                                'content_id' => $activeModules->first()?->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'tab_switch',
+                                'duration_seconds' => $this->faker->numberBetween(5, 30),
+                                'video_timestamp' => $this->faker->numberBetween(100, 400),
+                                'pause_count' => null,
+                                'seek_position' => null,
+                                'metadata' => ['note' => 'User switched tab'],
+                                'event_timestamp' => $tabSwitchTimestamp,
+                            ]
+                        );
+                    }
+
+                    if ($this->faker->boolean(30)) {
+                        $blurTimestamp = $this->faker->dateTimeBetween($playTimestamp, $sessionStart->format('Y-m-d H:i:s').'+35 minutes');
+                        \App\Models\BehavioralEvent::firstOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'window_blur',
+                                'event_timestamp' => $blurTimestamp,
+                            ],
+                            [
+                                'user_id' => $user->id,
+                                'content_id' => $activeModules->first()?->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'window_blur',
+                                'duration_seconds' => $this->faker->numberBetween(10, 60),
+                                'video_timestamp' => $this->faker->numberBetween(150, 400),
+                                'pause_count' => null,
+                                'seek_position' => null,
+                                'metadata' => ['note' => 'Window lost focus'],
+                                'event_timestamp' => $blurTimestamp,
+                            ]
+                        );
+                    }
+
+                    if ($this->faker->boolean(50)) {
+                        $completeTimestamp = $this->faker->dateTimeBetween($playTimestamp, $sessionStart->format('Y-m-d H:i:s').'+1 hour');
+                        \App\Models\BehavioralEvent::firstOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'video_completed',
+                                'event_timestamp' => $completeTimestamp,
+                            ],
+                            [
+                                'user_id' => $user->id,
+                                'content_id' => $activeModules->first()?->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'video_completed',
+                                'duration_seconds' => $this->faker->numberBetween(300, 1800),
+                                'video_timestamp' => $this->faker->numberBetween(300, 600),
+                                'pause_count' => $pauseCount,
+                                'seek_position' => null,
+                                'metadata' => ['module' => $activeModules->first()?->title, 'completed' => true],
+                                'event_timestamp' => $completeTimestamp,
+                            ]
+                        );
+                    }
+
+                    if ($this->faker->boolean(40)) {
+                        $quizTimestamp = $this->faker->dateTimeBetween($playTimestamp, $sessionStart->format('Y-m-d H:i:s').'+1 hour');
+                        \App\Models\BehavioralEvent::firstOrCreate(
+                            [
+                                'user_id' => $user->id,
+                                'course_id' => $course->id,
+                                'event_type' => 'quiz_started',
+                                'event_timestamp' => $quizTimestamp,
+                            ],
+                            [
+                                'user_id' => $user->id,
+                                'content_id' => null,
+                                'course_id' => $course->id,
+                                'event_type' => 'quiz_started',
+                                'duration_seconds' => $this->faker->numberBetween(60, 300),
+                                'video_timestamp' => null,
+                                'pause_count' => null,
+                                'seek_position' => null,
+                                'metadata' => ['quiz' => 'Module Quiz'],
+                                'event_timestamp' => $quizTimestamp,
+                            ]
+                        );
+
+                        if ($this->faker->boolean(80)) {
+                            $quizCompleteTimestamp = $this->faker->dateTimeBetween($quizTimestamp, $quizTimestamp->format('Y-m-d H:i:s').'+15 minutes');
+                            \App\Models\BehavioralEvent::firstOrCreate(
+                                [
+                                    'user_id' => $user->id,
+                                    'course_id' => $course->id,
+                                    'event_type' => 'quiz_completed',
+                                    'event_timestamp' => $quizCompleteTimestamp,
+                                ],
+                                [
+                                    'user_id' => $user->id,
+                                    'content_id' => null,
+                                    'course_id' => $course->id,
+                                    'event_type' => 'quiz_completed',
+                                    'duration_seconds' => $this->faker->numberBetween(120, 600),
+                                    'video_timestamp' => null,
+                                    'pause_count' => null,
+                                    'seek_position' => null,
+                                    'metadata' => ['quiz' => 'Module Quiz', 'passed' => $this->faker->boolean(70)],
+                                    'event_timestamp' => $quizCompleteTimestamp,
+                                ]
+                            );
+                        }
+                    }
+
+                    $sessionEndTimestamp = $this->faker->dateTimeBetween($sessionStart, $sessionStart->format('Y-m-d H:i:s').'+2 hours');
+                    \App\Models\BehavioralEvent::firstOrCreate(
+                        [
+                            'user_id' => $user->id,
+                            'course_id' => $course->id,
+                            'event_type' => 'session_end',
+                            'event_timestamp' => $sessionEndTimestamp,
+                        ],
+                        [
+                            'user_id' => $user->id,
+                            'content_id' => $activeModules->first()?->id,
+                            'course_id' => $course->id,
+                            'event_type' => 'session_end',
+                            'duration_seconds' => $this->faker->numberBetween(1800, 7200),
+                            'video_timestamp' => $this->faker->numberBetween(300, 600),
+                            'pause_count' => $pauseCount,
+                            'seek_position' => null,
+                            'metadata' => ['session' => $sessionNum, 'completed' => true],
+                            'event_timestamp' => $sessionEndTimestamp,
+                        ]
+                    );
+                }
+            }
+        }
     }
 }
