@@ -414,7 +414,7 @@ class KRCTFacultySeeder extends Seeder
                 'password' => Hash::make('password'),
                 'college' => $college,
                 'department' => $staffMember['department'],
-                'role' => Role::Staff->value,  // Using Staff enum
+                'role' => Role::Faculty->value,  // Using Staff enum
                 'image' => null,
                 'email_verified_at' => now(),
                 'created_at' => now(),

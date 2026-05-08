@@ -44,6 +44,13 @@ class Courses extends Component
 
             $status = $progress === 100 ? 'completed' : ($progress > 0 ? 'in-progress' : 'not-started');
 
+            $daysLeft = is_numeric($enrollment->deadline) ? (int) $enrollment->deadline : null;
+            $isUrgent = $daysLeft !== null && $daysLeft <= 7 && $daysLeft > 0;
+            $isOverdue = $daysLeft !== null && $daysLeft < 0;
+            $deadlineLabel = $daysLeft !== null
+                ? ($daysLeft > 0 ? "{$daysLeft} days" : 'Overdue')
+                : 'No deadline';
+
             return (object) [
                 'id' => $course->id,
                 'name' => $course->title ?? 'Unknown Course',
@@ -54,6 +61,11 @@ class Courses extends Component
                 'deadline' => $enrollment->deadline,
                 'xpReward' => $enrollment->xp_reward ?? 500,
                 'status' => $status,
+                'daysLeft' => $daysLeft,
+                'isUrgent' => $isUrgent,
+                'isOverdue' => $isOverdue,
+                'deadlineLabel' => $deadlineLabel,
+                'thumbnailUrl' => $course->courseMeta?->thumbnail ?? null,
             ];
         })->filter();
     }
