@@ -80,7 +80,7 @@ class Certificates extends Component
 
         $progressRecords = Progress::where('user_id', $user->id)
             ->whereNotNull('completed_at')
-            ->with('content.course')
+            ->with('content')
             ->orderBy('completed_at', 'desc')
             ->limit(20)
             ->get();
@@ -89,7 +89,7 @@ class Certificates extends Component
             return [
                 'date' => $progress->completed_at->format('M d, Y'),
                 'action' => 'Completed Module',
-                'course' => $progress->content?->course?->title ?? 'Unknown',
+                'course' => $progress->content?->course ?? 'Unknown',
                 'xp' => 100,
             ];
         })->toArray();

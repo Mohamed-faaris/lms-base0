@@ -31,21 +31,9 @@ class Content extends Model
         return $this->belongsTo(Module::class);
     }
 
-    public function course(): ?Course
+    public function getCourseAttribute(): ?Course
     {
-        $module = $this->module;
-
-        if (! $module) {
-            return null;
-        }
-
-        $topic = $module->topic;
-
-        if (! $topic) {
-            return null;
-        }
-
-        return $topic->course;
+        return $this->module?->topic?->course;
     }
 
     public function comments()
