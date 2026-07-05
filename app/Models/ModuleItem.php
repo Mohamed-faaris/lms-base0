@@ -9,6 +9,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property int $course_module_id
+ * @property int|null $content_asset_id
+ * @property \App\Enums\ModuleItemType $type
+ * @property string $title
+ * @property int $sort_order
+ * @property bool $required
+ * @property array|null $settings
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ */
 class ModuleItem extends Model
 {
     use HasFactory, SoftDeletes;

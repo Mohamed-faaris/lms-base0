@@ -8,6 +8,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $course_version_id
+ * @property int $faculty_id
+ * @property int|null $assigned_by
+ * @property \Illuminate\Support\Carbon|null $deadline
+ * @property \App\Enums\AssignmentStatus $status
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class CourseAssignment extends Model
 {
     use HasFactory;
