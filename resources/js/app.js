@@ -80,9 +80,15 @@ document.addEventListener('alpine:init', () => {
         },
 
         pollTime() {
-            if (!this.player) return;
+            if (!this.player || this.completed) return;
             this.currentTime = this.player.getCurrentTime();
             this.duration = this.player.getDuration();
+            if (this.duration > 0 && this.currentTime >= this.duration - 2) {
+                this.completed = true;
+                this.currentTime = this.duration;
+                $wire.markVideoComplete(this.itemId, this.duration);
+                return;
+            }
             if (this.player.getPlayerState() === YT.PlayerState.PLAYING) {
                 requestAnimationFrame(() => this.pollTime());
             }
