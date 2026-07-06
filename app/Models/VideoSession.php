@@ -20,6 +20,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class VideoSession extends Model
 {
+    protected $fillable = [
+        'progress_id',
+        'last_second',
+        'watched_seconds',
+        'watch_percentage',
+        'seek_attempts',
+        'pause_count',
+        'playback_speed',
+        'focus_loss_count',
+    ];
+
     protected function casts(): array
     {
         return [

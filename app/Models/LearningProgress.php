@@ -25,6 +25,17 @@ class LearningProgress extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'enrollment_id',
+        'module_item_id',
+        'status',
+        'progress',
+        'started_at',
+        'completed_at',
+        'time_spent',
+        'score',
+    ];
+
     protected function casts(): array
     {
         return [

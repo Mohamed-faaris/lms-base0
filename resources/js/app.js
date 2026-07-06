@@ -84,7 +84,7 @@ document.addEventListener('alpine:init', () => {
                             console.log('🎬 Video ENDED event fired — calling markVideoComplete', { itemId: this.itemId, duration: this.duration });
                             this.completed = true;
                             this.currentTime = this.duration;
-                            $wire.markVideoComplete(this.itemId, this.duration)
+                            this.$wire.markVideoComplete(this.itemId, this.duration)
                                 .then(() => console.log('🎬 DB save completed (ENDED path)', { itemId: this.itemId }))
                                 .catch((err) => console.error('🎬 DB save failed (ENDED path)', err));
                         }
@@ -110,7 +110,7 @@ document.addEventListener('alpine:init', () => {
                 console.log('🎬 pollTime detected near-end', { currentTime: this.currentTime, duration: this.duration, itemId: this.itemId });
                 this.completed = true;
                 this.currentTime = this.duration;
-                $wire.markVideoComplete(this.itemId, this.duration)
+                this.$wire.markVideoComplete(this.itemId, this.duration)
                     .then(() => console.log('🎬 DB save completed (pollTime path)', { itemId: this.itemId }))
                     .catch((err) => console.error('🎬 DB save failed (pollTime path)', err));
                 return;
