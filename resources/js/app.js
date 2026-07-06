@@ -1,10 +1,18 @@
 document.addEventListener('alpine:init', () => {
-    Alpine.data('youtubePlayer', (videoId, startSeconds) => ({
+    Alpine.data('youtubePlayer', (videoId, backendTime, itemId) => ({
         videoId,
-        startSeconds,
+        backendTime,
+        itemId,
         player: null,
+        completed: false,
         currentTime: 0,
         duration: 0,
+
+        get backendPercent() {
+            return this.duration > 0
+                ? Math.min(100, (this.backendTime / this.duration) * 100)
+                : 0;
+        },
 
         get progressPercent() {
             return this.duration > 0
@@ -50,7 +58,7 @@ document.addEventListener('alpine:init', () => {
                     rel: 0,
                     modestbranding: 1,
                     playsinline: 1,
-                    start: this.startSeconds,
+                    start: this.backendTime,
                 },
                 events: {
                     onReady: () => {
@@ -60,6 +68,11 @@ document.addEventListener('alpine:init', () => {
                     onStateChange: (e) => {
                         if (e.data === YT.PlayerState.PLAYING) {
                             this.pollTime();
+                        }
+                        if (e.data === YT.PlayerState.ENDED && !this.completed) {
+                            this.completed = true;
+                            this.currentTime = this.duration;
+                            $wire.markVideoComplete(this.itemId, this.duration);
                         }
                     },
                 },

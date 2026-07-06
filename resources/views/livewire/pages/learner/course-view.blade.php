@@ -98,6 +98,44 @@ new #[Layout('layouts.app')] class extends Component
 
         return $p ? (float) $p->progress : 0;
     }
+
+    public function markVideoComplete(int $itemId, int $duration): void
+    {
+        $progress = $this->progress->get($itemId);
+
+        if (! $progress) {
+            $progress = LearningProgress::create([
+                'enrollment_id' => $this->enrollment->id,
+                'module_item_id' => $itemId,
+                'status' => ProgressStatus::COMPLETED,
+                'progress' => 100,
+                'started_at' => now(),
+                'completed_at' => now(),
+                'time_spent' => $duration,
+            ]);
+        } else {
+            $progress->update([
+                'status' => ProgressStatus::COMPLETED,
+                'progress' => 100,
+                'completed_at' => now(),
+                'time_spent' => $duration,
+            ]);
+        }
+
+        $progress->videoSession()->updateOrCreate(
+            ['progress_id' => $progress->id],
+            [
+                'last_second' => $duration,
+                'watched_seconds' => $duration,
+                'watch_percentage' => 100,
+            ],
+        );
+
+        $this->progress = LearningProgress::with('videoSession')
+            ->where('enrollment_id', $this->enrollment->id)
+            ->get()
+            ->keyBy('module_item_id');
+    }
 }; ?>
 
 <div class="flex h-[calc(100vh-4rem)]">
@@ -186,7 +224,7 @@ new #[Layout('layouts.app')] class extends Component
                                     @endphp
 
                                     <div
-                                        x-data="youtubePlayer('{{ $asset->metadata['youtube_id'] }}', {{ $lastSecond }})"
+                                        x-data="youtubePlayer('{{ $asset->metadata['youtube_id'] }}', {{ $lastSecond }}, {{ $selectedItem->id }})"
                                     >
                                         <div class="aspect-video bg-black rounded-lg overflow-hidden mb-3">
                                             <div id="yt-player"></div>
@@ -194,6 +232,10 @@ new #[Layout('layouts.app')] class extends Component
 
                                         <div class="space-y-1 mb-4">
                                             <div class="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                <div
+                                                    class="absolute inset-y-0 left-0 bg-indigo-300 rounded-full"
+                                                    :style="`width: ${backendPercent}%`"
+                                                ></div>
                                                 <div
                                                     class="absolute inset-y-0 left-0 bg-indigo-500 rounded-full transition-all duration-150"
                                                     :style="`width: ${progressPercent}%`"
