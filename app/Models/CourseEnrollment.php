@@ -7,16 +7,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int $course_version_id
  * @property int $student_id
- * @property \App\Enums\EnrollmentStatus $status
- * @property \Illuminate\Support\Carbon|null $started_at
- * @property \Illuminate\Support\Carbon|null $completed_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property EnrollmentStatus $status
+ * @property Carbon|null $started_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class CourseEnrollment extends Model
 {

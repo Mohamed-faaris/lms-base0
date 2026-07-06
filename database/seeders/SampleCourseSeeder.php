@@ -191,6 +191,7 @@ class SampleCourseSeeder extends Seeder
                 'created_by' => $userId,
             ]);
         }
+
         return $assets;
     }
 

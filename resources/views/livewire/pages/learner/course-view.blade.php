@@ -1,11 +1,13 @@
 <?php
 
+use App\Enums\AttemptStatus;
 use App\Enums\ProgressStatus;
 use App\Models\Course;
 use App\Models\CourseEnrollment;
 use App\Models\CourseModule;
 use App\Models\LearningProgress;
 use App\Models\ModuleItem;
+use App\Models\QuizAttempt;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -21,6 +23,12 @@ new #[Layout('layouts.app')] class extends Component
     public Collection $progress;
 
     public ?ModuleItem $selectedItem = null;
+
+    public ?QuizAttempt $currentAttempt = null;
+
+    public array $answers = [];
+
+    public ?int $viewingAttemptId = null;
 
     public function mount(Course $course, $item = null): void
     {
@@ -139,6 +147,189 @@ new #[Layout('layouts.app')] class extends Component
             ->keyBy('module_item_id');
 
         logger('🎬 markVideoComplete DB save done', ['itemId' => $itemId, 'progressId' => $progress->id, 'status' => $progress->status->value]);
+    }
+
+    public function startQuiz(int $quizId): void
+    {
+        $quiz = \App\Models\Quiz::with('questions.options')->findOrFail($quizId);
+
+        $attemptCount = QuizAttempt::where('quiz_id', $quizId)
+            ->where('student_id', auth()->id())
+            ->count();
+
+        if ($attemptCount >= $quiz->attempt_limit) {
+            session()->flash('error', 'No attempts remaining.');
+            return;
+        }
+
+        $this->currentAttempt = QuizAttempt::create([
+            'quiz_id' => $quizId,
+            'student_id' => auth()->id(),
+            'attempt_no' => $attemptCount + 1,
+            'status' => AttemptStatus::STARTED,
+            'started_at' => now(),
+        ]);
+
+        $this->answers = [];
+        $this->viewingAttemptId = null;
+
+        $itemProgress = $this->progress->get($this->selectedItem->id);
+        if (! $itemProgress) {
+            $itemProgress = LearningProgress::create([
+                'enrollment_id' => $this->enrollment->id,
+                'module_item_id' => $this->selectedItem->id,
+                'status' => ProgressStatus::STARTED,
+                'progress' => 0,
+                'started_at' => now(),
+                'time_spent' => 0,
+            ]);
+            $this->progress->put($this->selectedItem->id, $itemProgress);
+        }
+    }
+
+    public function submitQuiz(): void
+    {
+        if (! $this->currentAttempt) {
+            return;
+        }
+
+        $quiz = \App\Models\Quiz::with('questions.options')->findOrFail($this->currentAttempt->quiz_id);
+
+        $totalMarks = 0;
+        $earnedMarks = 0;
+
+        foreach ($quiz->questions as $question) {
+            $answer = $this->answers[$question->id] ?? null;
+
+            $isCorrect = null;
+            $marks = 0;
+
+            if ($answer !== null && $answer !== '') {
+                $isCorrect = $this->gradeQuestion($question, $answer);
+
+                if ($isCorrect === true) {
+                    $marks = $question->marks;
+                } elseif ($isCorrect === false) {
+                    $marks = 0;
+                } else {
+                    $marks = 0;
+                }
+
+                if ($isCorrect === true) {
+                    $earnedMarks += $marks;
+                }
+            }
+
+            $totalMarks += $question->marks;
+
+            QuizAnswer::create([
+                'attempt_id' => $this->currentAttempt->id,
+                'question_id' => $question->id,
+                'answer' => is_array($answer) ? json_encode($answer) : (string) $answer,
+                'is_correct' => $isCorrect,
+                'marks' => $marks,
+            ]);
+        }
+
+        $score = $totalMarks > 0 ? round(($earnedMarks / $totalMarks) * 100) : 0;
+
+        $this->currentAttempt->update([
+            'score' => $score,
+            'status' => AttemptStatus::SUBMITTED,
+            'submitted_at' => now(),
+        ]);
+
+        $this->viewingAttemptId = $this->currentAttempt->id;
+        $this->currentAttempt->load('answers.question.options');
+
+        $itemProgress = $this->progress->get($this->selectedItem->id);
+        if ($itemProgress) {
+            $itemProgress->update([
+                'status' => ProgressStatus::COMPLETED,
+                'progress' => 100,
+                'completed_at' => now(),
+                'time_spent' => $quiz->duration * 60,
+                'score' => $score,
+            ]);
+        }
+
+        $this->progress = LearningProgress::with('videoSession')
+            ->where('enrollment_id', $this->enrollment->id)
+            ->get()
+            ->keyBy('module_item_id');
+
+        $this->currentAttempt = null;
+    }
+
+    private function gradeQuestion(\App\Models\Question $question, mixed $answer): ?bool
+    {
+        $type = $question->type->value;
+
+        if ($type === 'subjective') {
+            return null;
+        }
+
+        $correctOptions = $question->options->where('is_correct', true);
+
+        if ($type === 'fill_blank') {
+            $normalized = strtolower(trim((string) $answer));
+            foreach ($correctOptions as $opt) {
+                if (strtolower(trim($opt->option_text)) === $normalized) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if ($type === 'mcq' || $type === 'true_false') {
+            $selectedId = (int) $answer;
+            $selected = $question->options->firstWhere('id', $selectedId);
+            return $selected && $selected->is_correct;
+        }
+
+        if ($type === 'multiple') {
+            $selectedIds = (array) $answer;
+            $correctIds = $correctOptions->pluck('id')->sort()->values()->toArray();
+            $userIds = collect($selectedIds)->map(fn ($v) => (int) $v)->sort()->values()->toArray();
+            return $correctIds === $userIds;
+        }
+
+        return false;
+    }
+
+    public function viewAttempt(int $attemptId): void
+    {
+        $attempt = QuizAttempt::with('answers.question.options')
+            ->where('id', $attemptId)
+            ->where('student_id', auth()->id())
+            ->first();
+
+        if ($attempt) {
+            $this->viewingAttemptId = $attempt->id;
+            $this->currentAttempt = null;
+            $this->answers = [];
+        }
+    }
+
+    public function closeResults(): void
+    {
+        $this->viewingAttemptId = null;
+        $this->currentAttempt = null;
+        $this->answers = [];
+    }
+
+    public function getPastAttemptsProperty(): Collection
+    {
+        if (! $this->selectedItem || ! $this->selectedItem->quiz) {
+            return collect();
+        }
+
+        return QuizAttempt::with('answers')
+            ->where('quiz_id', $this->selectedItem->quiz->id)
+            ->where('student_id', auth()->id())
+            ->whereIn('status', [AttemptStatus::SUBMITTED, AttemptStatus::GRADED])
+            ->orderByDesc('created_at')
+            ->get();
     }
 }; ?>
 
@@ -314,12 +505,190 @@ new #[Layout('layouts.app')] class extends Component
                             @break
 
                         @case('quiz')
-                            <div class="p-6">
-                                <h1 class="text-xl font-semibold text-gray-900 mb-4">{{ $selectedItem->title }}</h1>
+                            @php $quiz = $selectedItem->quiz; @endphp
 
-                                @php $quiz = $selectedItem->quiz; @endphp
+                            @if (! $quiz)
+                                <div class="p-6">
+                                    <p class="text-gray-500">Quiz not configured.</p>
+                                </div>
+                            @elseif ($viewingAttemptId)
+                                @php
+                                    $attempt = \App\Models\QuizAttempt::with('answers.question.options')
+                                        ->where('student_id', auth()->id())->find($viewingAttemptId);
+                                @endphp
+                                <div class="p-6">
+                                    <h1 class="text-xl font-semibold text-gray-900 mb-4">{{ $selectedItem->title }}</h1>
 
-                                @if ($quiz)
+                                    <div class="mb-6 p-4 {{ ($attempt->score ?? 0) >= $quiz->passing_marks ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200' }} border rounded-lg">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-lg font-bold {{ ($attempt->score ?? 0) >= $quiz->passing_marks ? 'text-green-700' : 'text-red-700' }}">
+                                                    {{ $attempt->score ?? 0 }}%
+                                                </p>
+                                                <p class="text-sm {{ ($attempt->score ?? 0) >= $quiz->passing_marks ? 'text-green-600' : 'text-red-600' }}">
+                                                    {{ ($attempt->score ?? 0) >= $quiz->passing_marks ? 'Passed' : 'Did not pass' }}
+                                                </p>
+                                            </div>
+                                            <div class="text-sm text-gray-500">
+                                                Attempt #{{ $attempt->attempt_no }} &middot;
+                                                {{ $attempt->submitted_at?->diffForHumans() ?? 'N/A' }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-6">
+                                        @foreach ($attempt->answers as $answer)
+                                            @php $q = $answer->question; @endphp
+                                            <div class="border rounded-lg p-4 {{ $answer->is_correct === true ? 'border-green-200 bg-green-50/50' : ($answer->is_correct === false ? 'border-red-200 bg-red-50/50' : 'border-gray-200') }}">
+                                                <div class="flex items-start justify-between gap-2 mb-2">
+                                                    <p class="font-medium text-gray-900">{{ $q->question }}</p>
+                                                    <span class="text-xs font-medium px-2 py-0.5 rounded {{ $answer->is_correct === true ? 'bg-green-100 text-green-700' : ($answer->is_correct === false ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500') }}">
+                                                        {{ $answer->is_correct === true ? '+' . $q->marks : ($answer->is_correct === false ? '0' : '?') }}/{{ $q->marks }}
+                                                    </span>
+                                                </div>
+
+                                                @if ($q->type->value === 'mcq' || $q->type->value === 'true_false')
+                                                    <div class="space-y-1 text-sm">
+                                                        @foreach ($q->options as $opt)
+                                                            @php
+                                                                $wasSelected = (int) $answer->answer === $opt->id;
+                                                            @endphp
+                                                            <div class="flex items-center gap-2 px-3 py-1.5 rounded {{ $opt->is_correct ? 'bg-green-100 text-green-800' : ($wasSelected ? 'bg-red-100 text-red-800' : 'text-gray-500') }}">
+                                                                @if ($opt->is_correct)
+                                                                    <x-lucide-check-circle class="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                                @elseif ($wasSelected)
+                                                                    <x-lucide-x-circle class="w-4 h-4 text-red-600 flex-shrink-0" />
+                                                                @else
+                                                                    <span class="w-4 h-4 flex-shrink-0"></span>
+                                                                @endif
+                                                                <span>{{ $opt->option_text }}</span>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @elseif ($q->type->value === 'multiple')
+                                                    @php
+                                                        $selectedIds = json_decode($answer->answer ?? '[]', true);
+                                                    @endphp
+                                                    <div class="space-y-1 text-sm">
+                                                        @foreach ($q->options as $opt)
+                                                            @php
+                                                                $wasSelected = in_array((int) $opt->id, $selectedIds);
+                                                            @endphp
+                                                            <div class="flex items-center gap-2 px-3 py-1.5 rounded {{ $opt->is_correct ? 'bg-green-100 text-green-800' : ($wasSelected ? 'bg-red-100 text-red-800' : 'text-gray-500') }}">
+                                                                @if ($opt->is_correct)
+                                                                    <x-lucide-check-circle class="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                                @elseif ($wasSelected)
+                                                                    <x-lucide-x-circle class="w-4 h-4 text-red-600 flex-shrink-0" />
+                                                                @else
+                                                                    <span class="w-4 h-4 flex-shrink-0"></span>
+                                                                @endif
+                                                                <span>{{ $opt->option_text }}</span>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @elseif ($q->type->value === 'fill_blank' || $q->type->value === 'subjective')
+                                                    <div class="text-sm space-y-1">
+                                                        <p class="text-gray-500">Your answer: <span class="font-medium text-gray-900">{{ $answer->answer }}</span></p>
+                                                        @if ($q->type->value === 'fill_blank' && $q->options->count())
+                                                            <p class="text-gray-500">Correct: <span class="font-medium text-green-700">{{ $q->options->firstWhere('is_correct', true)?->option_text ?? 'N/A' }}</span></p>
+                                                        @endif
+                                                    </div>
+                                                @endif
+
+                                                @if ($q->explanation)
+                                                    <p class="mt-2 text-xs text-gray-500 italic">{{ $q->explanation }}</p>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+
+                                    <div class="mt-6 flex gap-3">
+                                        @php
+                                            $pastAttemptsCount = \App\Models\QuizAttempt::where('quiz_id', $quiz->id)
+                                                ->where('student_id', auth()->id())
+                                                ->whereIn('status', [\App\Enums\AttemptStatus::SUBMITTED, \App\Enums\AttemptStatus::GRADED])
+                                                ->count();
+                                        @endphp
+                                        @if ($pastAttemptsCount < $quiz->attempt_limit)
+                                            <button wire:click="closeResults" class="px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition">
+                                                Retry Quiz
+                                            </button>
+                                        @endif
+                                        <a href="{{ route('learner.my-learning.course', $course->slug) }}" wire:navigate
+                                           class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                                            Back to Overview
+                                        </a>
+                                    </div>
+                                </div>
+                            @elseif ($currentAttempt && $currentAttempt->quiz_id === $quiz->id)
+                                <div class="p-6">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h1 class="text-xl font-semibold text-gray-900">{{ $selectedItem->title }}</h1>
+                                        <span class="text-sm text-gray-500">Attempt #{{ $currentAttempt->attempt_no }}</span>
+                                    </div>
+
+                                    <div class="space-y-6">
+                                        @foreach ($quiz->questions as $question)
+                                            <div class="border border-gray-200 rounded-lg p-4">
+                                                <p class="font-medium text-gray-900 mb-3">{{ $question->question }}
+                                                    <span class="text-xs text-gray-400 font-normal">({{ $question->marks }} mark{{ $question->marks !== 1 ? 's' : '' }})</span>
+                                                </p>
+
+                                                @if ($question->type->value === 'mcq' || $question->type->value === 'true_false')
+                                                    <div class="space-y-2">
+                                                        @foreach ($question->options as $opt)
+                                                            <label class="flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer transition {{ isset($answers[$question->id]) && (int) $answers[$question->id] === $opt->id ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:border-gray-300' }}">
+                                                                <input type="radio" name="q_{{ $question->id }}" value="{{ $opt->id }}"
+                                                                    wire:model.live="answers.{{ $question->id }}"
+                                                                    class="text-indigo-600 focus:ring-indigo-500">
+                                                                <span class="text-sm text-gray-700">{{ $opt->option_text }}</span>
+                                                            </label>
+                                                        @endforeach
+                                                    </div>
+                                                @elseif ($question->type->value === 'multiple')
+                                                    <div class="space-y-2">
+                                                        @foreach ($question->options as $opt)
+                                                            <label class="flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer transition {{ isset($answers[$question->id]) && in_array((string) $opt->id, (array) $answers[$question->id]) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:border-gray-300' }}">
+                                                                <input type="checkbox" value="{{ $opt->id }}"
+                                                                    wire:model.live="answers.{{ $question->id }}"
+                                                                    class="text-indigo-600 focus:ring-indigo-500 rounded">
+                                                                <span class="text-sm text-gray-700">{{ $opt->option_text }}</span>
+                                                            </label>
+                                                        @endforeach
+                                                    </div>
+                                                @elseif ($question->type->value === 'fill_blank')
+                                                    <input type="text"
+                                                        wire:model.live="answers.{{ $question->id }}"
+                                                        placeholder="Type your answer..."
+                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                                                @elseif ($question->type->value === 'subjective')
+                                                    <textarea
+                                                        wire:model.live="answers.{{ $question->id }}"
+                                                        rows="4"
+                                                        placeholder="Write your answer..."
+                                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                                    ></textarea>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+
+                                    <div class="mt-6 flex gap-3">
+                                        <button wire:click="submitQuiz" wire:loading.attr="disabled"
+                                            class="px-6 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50">
+                                            <span wire:loading.remove wire:target="submitQuiz">Submit Answers</span>
+                                            <span wire:loading wire:target="submitQuiz">Submitting...</span>
+                                        </button>
+                                        <button wire:click="closeResults"
+                                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="p-6">
+                                    <h1 class="text-xl font-semibold text-gray-900 mb-4">{{ $selectedItem->title }}</h1>
+
                                     <div class="space-y-4">
                                         <div class="flex items-center gap-4 text-sm text-gray-600">
                                             <span class="flex items-center gap-1">
@@ -336,18 +705,54 @@ new #[Layout('layouts.app')] class extends Component
                                             </span>
                                         </div>
 
-                                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                                            <div class="flex items-start gap-3">
-                                                <x-lucide-alert-triangle class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                                                <div class="text-sm text-amber-800">
-                                                    <p class="font-medium">Quiz not yet attempted</p>
-                                                    <p class="mt-1">You have {{ $quiz->attempt_limit }} attempt(s) remaining. Duration: {{ $quiz->duration }} minutes. You need at least {{ $quiz->passing_marks }} points to pass.</p>
+                                        @php
+                                            $pastAttempts = $this->getPastAttemptsProperty();
+                                            $remaining = $quiz->attempt_limit - $pastAttempts->count();
+                                        @endphp
+
+                                        @if ($pastAttempts->isNotEmpty())
+                                            <div class="space-y-2">
+                                                <p class="text-sm font-medium text-gray-700">Previous Attempts</p>
+                                                @foreach ($pastAttempts as $pa)
+                                                    <button wire:click="viewAttempt({{ $pa->id }})"
+                                                        class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition text-sm">
+                                                        <span class="font-medium">{{ $pa->score ?? '?' }}%</span>
+                                                        <span class="text-gray-500">Attempt #{{ $pa->attempt_no }} &middot; {{ $pa->submitted_at?->diffForHumans() }}</span>
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        @endif
+
+                                        @if ($remaining > 0)
+                                            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                                                <div class="flex items-start gap-3">
+                                                    <x-lucide-play-circle class="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
+                                                    <div class="text-sm text-indigo-800">
+                                                        <p class="font-medium">Ready to start?</p>
+                                                        <p class="mt-1">You have {{ $remaining }} attempt{{ $remaining !== 1 ? 's' : '' }} remaining. Duration: {{ $quiz->duration }} minutes. You need at least {{ $quiz->passing_marks }} points to pass.</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+
+                                            <button wire:click="startQuiz({{ $quiz->id }})" wire:loading.attr="disabled"
+                                                class="w-full px-4 py-3 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50">
+                                                <span wire:loading.remove wire:target="startQuiz({{ $quiz->id }})">Start Quiz</span>
+                                                <span wire:loading wire:target="startQuiz({{ $quiz->id }})">Starting...</span>
+                                            </button>
+                                        @else
+                                            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                                <div class="flex items-start gap-3">
+                                                    <x-lucide-alert-triangle class="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                                                    <div class="text-sm text-gray-600">
+                                                        <p class="font-medium">No attempts remaining</p>
+                                                        <p class="mt-1">You have used all {{ $quiz->attempt_limit }} attempt(s).</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
-                                @endif
-                            </div>
+                                </div>
+                            @endif
                             @break
 
                         @case('survey')

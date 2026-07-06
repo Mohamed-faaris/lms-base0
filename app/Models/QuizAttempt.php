@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -14,15 +15,25 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $student_id
  * @property int $attempt_no
  * @property int|null $score
- * @property \App\Enums\AttemptStatus $status
- * @property \Illuminate\Support\Carbon $started_at
- * @property \Illuminate\Support\Carbon|null $submitted_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property AttemptStatus $status
+ * @property Carbon $started_at
+ * @property Carbon|null $submitted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class QuizAttempt extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'quiz_id',
+        'student_id',
+        'attempt_no',
+        'score',
+        'status',
+        'started_at',
+        'submitted_at',
+    ];
 
     protected function casts(): array
     {

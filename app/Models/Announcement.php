@@ -5,18 +5,19 @@ namespace App\Models;
 use App\Enums\ScopeType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property string $title
  * @property string $content
- * @property \App\Enums\ScopeType $scope_type
+ * @property ScopeType $scope_type
  * @property int|null $organization_id
  * @property int|null $department_id
  * @property int|null $created_by
- * @property \Illuminate\Support\Carbon|null $published_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $published_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class Announcement extends Model
 {

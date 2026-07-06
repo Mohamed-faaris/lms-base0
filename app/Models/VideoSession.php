@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -15,8 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $pause_count
  * @property float $playback_speed
  * @property int $focus_loss_count
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class VideoSession extends Model
 {

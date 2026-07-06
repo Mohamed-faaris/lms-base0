@@ -7,19 +7,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int $enrollment_id
  * @property int $module_item_id
- * @property \App\Enums\ProgressStatus $status
+ * @property ProgressStatus $status
  * @property float $progress
- * @property \Illuminate\Support\Carbon|null $started_at
- * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property Carbon|null $started_at
+ * @property Carbon|null $completed_at
  * @property int $time_spent
  * @property int|null $score
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class LearningProgress extends Model
 {

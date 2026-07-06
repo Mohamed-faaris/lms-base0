@@ -17,6 +17,14 @@ class QuizAnswer extends Model
 {
     public $timestamps = false;
 
+    protected $fillable = [
+        'attempt_id',
+        'question_id',
+        'answer',
+        'is_correct',
+        'marks',
+    ];
+
     public function attempt(): BelongsTo
     {
         return $this->belongsTo(QuizAttempt::class, 'attempt_id');
