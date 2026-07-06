@@ -39,7 +39,8 @@ new #[Layout('layouts.app')] class extends Component
             ->orderBy('sort_order')
             ->get();
 
-        $this->progress = LearningProgress::where('enrollment_id', $this->enrollment->id)
+        $this->progress = LearningProgress::with('videoSession')
+            ->where('enrollment_id', $this->enrollment->id)
             ->get()
             ->keyBy('module_item_id');
 
@@ -177,17 +178,39 @@ new #[Layout('layouts.app')] class extends Component
                                 <h1 class="text-xl font-semibold text-gray-900 mb-4">{{ $selectedItem->title }}</h1>
 
                                 @if ($asset && $asset->storage->value === 'youtube' && data_get($asset, 'metadata.youtube_id'))
-                                    <div class="aspect-video bg-black rounded-lg overflow-hidden mb-4">
-                                        <iframe
-                                            src="https://www.youtube-nocookie.com/embed/{{ $asset->metadata['youtube_id'] }}"
-                                            class="w-full h-full"
-                                            allowfullscreen
-                                        ></iframe>
-                                    </div>
+                                    @php
+                                        $vidProgress = $this->progress->get($selectedItem->id);
+                                        $lastSecond = $vidProgress && $vidProgress->videoSession
+                                            ? $vidProgress->videoSession->last_second
+                                            : 0;
+                                    @endphp
 
-                                    @if ($duration = data_get($asset, 'metadata.duration'))
-                                        <p class="text-sm text-gray-500">Duration: {{ gmdate('i:s', $duration) }}</p>
-                                    @endif
+                                    <div
+                                        x-data="youtubePlayer('{{ $asset->metadata['youtube_id'] }}', {{ $lastSecond }})"
+                                    >
+                                        <div class="aspect-video bg-black rounded-lg overflow-hidden mb-3">
+                                            <div id="yt-player"></div>
+                                        </div>
+
+                                        <div class="space-y-1 mb-4">
+                                            <div class="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                <div
+                                                    class="absolute inset-y-0 left-0 bg-indigo-500 rounded-full transition-all duration-150"
+                                                    :style="`width: ${progressPercent}%`"
+                                                ></div>
+                                                <template x-if="currentTime > 0">
+                                                    <div
+                                                        class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-indigo-600 border-2 border-white rounded-full shadow-md"
+                                                        :style="`left: calc(${progressPercent}% - 7px)`"
+                                                    ></div>
+                                                </template>
+                                            </div>
+                                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                                <span x-text="formattedTime"></span>
+                                                <span x-text="formattedDuration"></span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 @elseif ($asset)
                                     <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg mb-4">
                                         <x-lucide-video class="w-8 h-8 text-indigo-500" />
