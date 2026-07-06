@@ -494,18 +494,20 @@ class SampleCourseSeeder extends Seeder
         $firstItems = ModuleItem::where('course_module_id', $firstModule->id)->orderBy('sort_order')->get();
 
         foreach ($firstItems as $item) {
+            $isCompleted = $item->sort_order <= 3;
+
             $progress = LearningProgress::create([
                 'enrollment_id' => $enrollment->id,
                 'module_item_id' => $item->id,
-                'status' => $item->sort_order === 1 ? ProgressStatus::COMPLETED : ProgressStatus::STARTED,
-                'progress' => $item->sort_order === 1 ? 100.00 : 35.00,
+                'status' => $isCompleted ? ProgressStatus::COMPLETED : ProgressStatus::STARTED,
+                'progress' => $isCompleted ? 100.00 : 37.00,
                 'started_at' => now()->subDays(2),
-                'completed_at' => $item->sort_order === 1 ? now()->subDay() : null,
-                'time_spent' => $item->sort_order === 1 ? 147 : 52,
+                'completed_at' => $isCompleted ? now()->subDay() : null,
+                'time_spent' => $isCompleted ? 147 : 52,
                 'score' => null,
             ]);
 
-            if ($item->sort_order === 1) {
+            if ($isCompleted) {
                 VideoSession::create([
                     'progress_id' => $progress->id,
                     'last_second' => 147,

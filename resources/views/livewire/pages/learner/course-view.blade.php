@@ -101,6 +101,8 @@ new #[Layout('layouts.app')] class extends Component
 
     public function markVideoComplete(int $itemId, int $duration): void
     {
+        logger('🎬 markVideoComplete called', ['itemId' => $itemId, 'duration' => $duration, 'user' => auth()->id()]);
+
         $progress = $this->progress->get($itemId);
 
         if (! $progress) {
@@ -135,6 +137,8 @@ new #[Layout('layouts.app')] class extends Component
             ->where('enrollment_id', $this->enrollment->id)
             ->get()
             ->keyBy('module_item_id');
+
+        logger('🎬 markVideoComplete DB save done', ['itemId' => $itemId, 'progressId' => $progress->id, 'status' => $progress->status->value]);
     }
 }; ?>
 
@@ -231,18 +235,24 @@ new #[Layout('layouts.app')] class extends Component
                                         </div>
 
                                         <div class="space-y-1 mb-4">
-                                            <div class="relative h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div
+                                                class="relative h-2 bg-gray-100 rounded-full overflow-hidden group cursor-pointer"
+                                                @click="seekFromEvent($event)"
+                                            >
                                                 <div
                                                     class="absolute inset-y-0 left-0 bg-indigo-300 rounded-full"
                                                     :style="`width: ${backendPercent}%`"
                                                 ></div>
                                                 <div
-                                                    class="absolute inset-y-0 left-0 bg-indigo-500 rounded-full transition-all duration-150"
+                                                    class="absolute inset-y-0 left-0 bg-blue-500 rounded-full transition-all duration-150"
                                                     :style="`width: ${progressPercent}%`"
+                                                ></div>
+                                                <div
+                                                    class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-white/20 rounded-full transition-opacity"
                                                 ></div>
                                                 <template x-if="currentTime > 0">
                                                     <div
-                                                        class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-indigo-600 border-2 border-white rounded-full shadow-md"
+                                                        class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-blue-600 border-2 border-white rounded-full shadow-md"
                                                         :style="`left: calc(${progressPercent}% - 7px)`"
                                                     ></div>
                                                 </template>
