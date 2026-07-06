@@ -11,14 +11,14 @@ return new class extends Migration
     {
         Schema::create('course_enrollments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('course_assignment_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('course_version_id')->constrained()->cascadeOnDelete();
             $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
             $table->string('status')->default(EnrollmentStatus::ENROLLED->value);
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['course_assignment_id', 'student_id']);
+            $table->unique(['course_version_id', 'student_id']);
             $table->index(['student_id', 'status']);
         });
     }

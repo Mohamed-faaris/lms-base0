@@ -42,9 +42,9 @@ class CourseVersion extends Model
         return $this->hasMany(CourseModule::class);
     }
 
-    public function assignments(): HasMany
+    public function enrollments(): HasMany
     {
-        return $this->hasMany(CourseAssignment::class);
+        return $this->hasMany(CourseEnrollment::class);
     }
 
     public function createdBy(): BelongsTo

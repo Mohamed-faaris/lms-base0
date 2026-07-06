@@ -55,11 +55,6 @@ class User extends Authenticatable
         return $this->hasMany(ContentAsset::class, 'created_by');
     }
 
-    public function courseAssignments(): HasMany
-    {
-        return $this->hasMany(CourseAssignment::class, 'faculty_id');
-    }
-
     public function courseEnrollments(): HasMany
     {
         return $this->hasMany(CourseEnrollment::class, 'student_id');

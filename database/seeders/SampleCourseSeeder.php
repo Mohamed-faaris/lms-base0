@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\AssignmentStatus;
 use App\Enums\CourseStatus;
 use App\Enums\EnrollmentStatus;
 use App\Enums\ModuleItemType;
@@ -17,7 +16,6 @@ use App\Models\Badge;
 use App\Models\Certificate;
 use App\Models\ContentAsset;
 use App\Models\Course;
-use App\Models\CourseAssignment;
 use App\Models\CourseEnrollment;
 use App\Models\CourseModule;
 use App\Models\CourseVersion;
@@ -87,8 +85,7 @@ class SampleCourseSeeder extends Seeder
     public function run(): void
     {
         $admin = $this->makeUser('admin@campus.edu', 'Dr. Alan Turing', 'admin');
-        $faculty = $this->makeUser('faculty@campus.edu', 'Prof. Grace Hopper', 'faculty');
-        $student = $this->makeUser('student@campus.edu', 'Student User', 'student');
+        $learner = $this->makeUser('learner@campus.edu', 'Learner User', 'learner');
 
         $org = Organization::create([
             'name' => 'University of Computing',
@@ -103,7 +100,7 @@ class SampleCourseSeeder extends Seeder
             'status' => 'active',
         ]);
 
-        foreach ([$admin, $faculty, $student] as $u) {
+        foreach ([$admin, $learner] as $u) {
             UserScope::create([
                 'user_id' => $u->id,
                 'role_id' => 1,
@@ -160,8 +157,9 @@ class SampleCourseSeeder extends Seeder
         $this->createDigitalFoundationsQuiz($version->id, $admin->id);
         $this->createArchitectureQuiz($version->id, $admin->id);
         $this->createDataAlgorithmsQuiz($version->id, $admin->id);
-        $this->createSampleEnrollment($course->id, $version->id, $faculty->id, $student->id, $admin->id);
-        $this->createProgressAndGamification($student->id);
+
+        $this->createEnrollment($version->id, $learner->id);
+        $this->createProgressAndGamification($learner->id);
         $this->createAnnouncementsAndCertificates($org->id, $dept->id, $admin->id);
     }
 
@@ -483,19 +481,11 @@ class SampleCourseSeeder extends Seeder
         );
     }
 
-    private function createSampleEnrollment(int $courseId, int $versionId, int $facultyId, int $studentId, int $adminId): void
+    private function createEnrollment(int $versionId, int $learnerId): void
     {
-        $assignment = CourseAssignment::create([
-            'course_version_id' => $versionId,
-            'faculty_id' => $facultyId,
-            'assigned_by' => $adminId,
-            'deadline' => now()->addMonths(3),
-            'status' => AssignmentStatus::ACTIVE,
-        ]);
-
         $enrollment = CourseEnrollment::create([
-            'course_assignment_id' => $assignment->id,
-            'student_id' => $studentId,
+            'course_version_id' => $versionId,
+            'student_id' => $learnerId,
             'status' => EnrollmentStatus::IN_PROGRESS,
             'started_at' => now()->subDays(2),
         ]);
@@ -528,7 +518,7 @@ class SampleCourseSeeder extends Seeder
                 ]);
 
                 XpTransaction::create([
-                    'user_id' => $studentId,
+                    'user_id' => $learnerId,
                     'action' => XPAction::COURSE_COMPLETED,
                     'points' => 50,
                     'reference_type' => ModuleItem::class,

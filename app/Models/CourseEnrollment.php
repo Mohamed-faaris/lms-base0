@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
- * @property int $course_assignment_id
+ * @property int $course_version_id
  * @property int $student_id
  * @property \App\Enums\EnrollmentStatus $status
  * @property \Illuminate\Support\Carbon|null $started_at
@@ -31,9 +31,9 @@ class CourseEnrollment extends Model
         ];
     }
 
-    public function courseAssignment(): BelongsTo
+    public function courseVersion(): BelongsTo
     {
-        return $this->belongsTo(CourseAssignment::class);
+        return $this->belongsTo(CourseVersion::class);
     }
 
     public function student(): BelongsTo
