@@ -30,6 +30,6 @@ class CourseModule extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(ModuleItem::class);
+        return $this->hasMany(ModuleItem::class)->orderBy('sort_order');
     }
 }

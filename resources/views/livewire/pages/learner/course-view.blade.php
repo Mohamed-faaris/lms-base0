@@ -7,6 +7,9 @@ use App\Models\CourseEnrollment;
 use App\Models\CourseModule;
 use App\Models\LearningProgress;
 use App\Models\ModuleItem;
+use App\Models\Question;
+use App\Models\Quiz;
+use App\Models\QuizAnswer;
 use App\Models\QuizAttempt;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
@@ -40,6 +43,7 @@ new #[Layout('layouts.app')] class extends Component
             ->firstOrFail();
 
         $this->modules = CourseModule::with([
+            'items' => fn ($q) => $q->orderBy('sort_order'),
             'items.contentAsset',
             'items.quiz.questions.options',
         ])
@@ -151,7 +155,7 @@ new #[Layout('layouts.app')] class extends Component
 
     public function startQuiz(int $quizId): void
     {
-        $quiz = \App\Models\Quiz::with('questions.options')->findOrFail($quizId);
+        $quiz = Quiz::with('questions.options')->findOrFail($quizId);
 
         $attemptCount = QuizAttempt::where('quiz_id', $quizId)
             ->where('student_id', auth()->id())
@@ -173,6 +177,11 @@ new #[Layout('layouts.app')] class extends Component
         $this->answers = [];
         $this->viewingAttemptId = null;
 
+        $quiz->load('questions');
+        foreach ($quiz->questions as $q) {
+            $this->answers[$q->id] = $q->type->value === 'multiple' ? [] : null;
+        }
+
         $itemProgress = $this->progress->get($this->selectedItem->id);
         if (! $itemProgress) {
             $itemProgress = LearningProgress::create([
@@ -193,7 +202,7 @@ new #[Layout('layouts.app')] class extends Component
             return;
         }
 
-        $quiz = \App\Models\Quiz::with('questions.options')->findOrFail($this->currentAttempt->quiz_id);
+        $quiz = Quiz::with('questions.options')->findOrFail($this->currentAttempt->quiz_id);
 
         $totalMarks = 0;
         $earnedMarks = 0;
@@ -261,7 +270,7 @@ new #[Layout('layouts.app')] class extends Component
         $this->currentAttempt = null;
     }
 
-    private function gradeQuestion(\App\Models\Question $question, mixed $answer): ?bool
+    private function gradeQuestion(Question $question, mixed $answer): ?bool
     {
         $type = $question->type->value;
 
@@ -316,6 +325,41 @@ new #[Layout('layouts.app')] class extends Component
         $this->viewingAttemptId = null;
         $this->currentAttempt = null;
         $this->answers = [];
+    }
+
+    public function getPreviousItem(): ?ModuleItem
+    {
+        $items = $this->allItems();
+        $ids = $items->pluck('id')->values()->toArray();
+        $idx = array_search($this->selectedItem?->id, $ids);
+
+        if ($idx === false || $idx === 0) {
+            return null;
+        }
+
+        $prev = $items[$idx - 1];
+
+        return $this->isLocked($prev) ? null : $prev;
+    }
+
+    public function getNextItem(): ?ModuleItem
+    {
+        $items = $this->allItems();
+        $ids = $items->pluck('id')->values()->toArray();
+        $idx = array_search($this->selectedItem?->id, $ids);
+
+        if ($idx === false) {
+            return null;
+        }
+
+        for ($i = $idx + 1; $i < count($ids); $i++) {
+            $candidate = $items[$i];
+            if (! $this->isLocked($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     public function getPastAttemptsProperty(): Collection
@@ -407,27 +451,28 @@ new #[Layout('layouts.app')] class extends Component
                     @switch($selectedItem->type->value)
                         @case('video')
                             @php $asset = $selectedItem->contentAsset; @endphp
-                            <div class="p-6">
-                                <h1 class="text-xl font-semibold text-gray-900 mb-4">{{ $selectedItem->title }}</h1>
 
-                                @if ($asset && $asset->storage->value === 'youtube' && data_get($asset, 'metadata.youtube_id'))
-                                    @php
-                                        $vidProgress = $this->progress->get($selectedItem->id);
-                                        $lastSecond = $vidProgress && $vidProgress->videoSession
-                                            ? $vidProgress->videoSession->last_second
-                                            : 0;
-                                    @endphp
+                            @if ($asset && $asset->storage->value === 'youtube' && data_get($asset, 'metadata.youtube_id'))
+                                @php
+                                    $vidProgress = $this->progress->get($selectedItem->id);
+                                    $lastSecond = $vidProgress && $vidProgress->videoSession
+                                        ? $vidProgress->videoSession->last_second
+                                        : 0;
+                                @endphp
 
-                                    <div
-                                        x-data="youtubePlayer('{{ $asset->metadata['youtube_id'] }}', {{ $lastSecond }}, {{ $selectedItem->id }})"
-                                    >
-                                        <div class="aspect-video bg-black rounded-lg overflow-hidden mb-3">
-                                            <div id="yt-player"></div>
-                                        </div>
+                                <div
+                                    x-data="youtubePlayer('{{ $asset->metadata['youtube_id'] }}', {{ $lastSecond }}, {{ $selectedItem->id }})"
+                                >
+                                    <div class="aspect-video bg-black max-h-[55vh]">
+                                        <div id="yt-player" class="w-full h-full"></div>
+                                    </div>
 
-                                        <div class="space-y-1 mb-4">
+                                    <div class="p-4 sm:p-6">
+                                        <h1 class="text-lg font-semibold text-gray-900 mb-3">{{ $selectedItem->title }}</h1>
+
+                                        <div class="space-y-1">
                                             <div
-                                                class="relative h-2 bg-gray-100 rounded-full overflow-hidden group cursor-pointer"
+                                                class="relative h-1.5 bg-gray-100 rounded-full overflow-hidden group cursor-pointer"
                                                 @click="seekFromEvent($event)"
                                             >
                                                 <div
@@ -439,12 +484,17 @@ new #[Layout('layouts.app')] class extends Component
                                                     :style="`width: ${progressPercent}%`"
                                                 ></div>
                                                 <div
+                                                    class="absolute top-0 bottom-0 w-0.5 bg-gray-400/60 z-10"
+                                                    :style="`left: ${maxSeekPercent}%`"
+                                                    x-show="!completed && maxSeek < duration"
+                                                ></div>
+                                                <div
                                                     class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-white/20 rounded-full transition-opacity"
                                                 ></div>
                                                 <template x-if="currentTime > 0">
                                                     <div
-                                                        class="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-blue-600 border-2 border-white rounded-full shadow-md"
-                                                        :style="`left: calc(${progressPercent}% - 7px)`"
+                                                        class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-blue-600 border-2 border-white rounded-full shadow-md"
+                                                        :style="`left: calc(${progressPercent}% - 6px)`"
                                                     ></div>
                                                 </template>
                                             </div>
@@ -454,7 +504,8 @@ new #[Layout('layouts.app')] class extends Component
                                             </div>
                                         </div>
                                     </div>
-                                @elseif ($asset)
+                                </div>
+                            @elseif ($asset)
                                     <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg mb-4">
                                         <x-lucide-video class="w-8 h-8 text-indigo-500" />
                                         <div>
@@ -513,7 +564,7 @@ new #[Layout('layouts.app')] class extends Component
                                 </div>
                             @elseif ($viewingAttemptId)
                                 @php
-                                    $attempt = \App\Models\QuizAttempt::with('answers.question.options')
+                                    $attempt = QuizAttempt::with('answers.question.options')
                                         ->where('student_id', auth()->id())->find($viewingAttemptId);
                                 @endphp
                                 <div class="p-6">
@@ -604,9 +655,9 @@ new #[Layout('layouts.app')] class extends Component
 
                                     <div class="mt-6 flex gap-3">
                                         @php
-                                            $pastAttemptsCount = \App\Models\QuizAttempt::where('quiz_id', $quiz->id)
+                                            $pastAttemptsCount = QuizAttempt::where('quiz_id', $quiz->id)
                                                 ->where('student_id', auth()->id())
-                                                ->whereIn('status', [\App\Enums\AttemptStatus::SUBMITTED, \App\Enums\AttemptStatus::GRADED])
+                                                ->whereIn('status', [AttemptStatus::SUBMITTED, AttemptStatus::GRADED])
                                                 ->count();
                                         @endphp
                                         @if ($pastAttemptsCount < $quiz->attempt_limit)
@@ -809,6 +860,33 @@ new #[Layout('layouts.app')] class extends Component
                                 <p class="text-gray-500">Content type not supported yet.</p>
                             </div>
                     @endswitch
+                </div>
+
+                @php
+                    $prevItem = $this->getPreviousItem();
+                    $nextItem = $this->getNextItem();
+                @endphp
+
+                <div class="flex items-center justify-between mt-4">
+                    @if ($prevItem)
+                        <a href="{{ route('learner.my-learning.course', [$course->slug, 'item' => $prevItem->id]) }}"
+                           wire:navigate
+                           class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                            <x-lucide-chevron-left class="w-4 h-4" />
+                            {{ $prevItem->title }}
+                        </a>
+                    @else
+                        <div></div>
+                    @endif
+
+                    @if ($nextItem)
+                        <a href="{{ route('learner.my-learning.course', [$course->slug, 'item' => $nextItem->id]) }}"
+                           wire:navigate
+                           class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                            {{ $nextItem->title }}
+                            <x-lucide-chevron-right class="w-4 h-4" />
+                        </a>
+                    @endif
                 </div>
             </div>
         @else

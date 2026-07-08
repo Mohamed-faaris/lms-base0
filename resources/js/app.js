@@ -7,6 +7,11 @@ document.addEventListener('alpine:init', () => {
         completed: false,
         currentTime: 0,
         duration: 0,
+        maxSeek: 0,
+
+        get lsKey() {
+            return `yt_maxseek_${this.videoId}`;
+        },
 
         get backendPercent() {
             return this.duration > 0
@@ -17,6 +22,12 @@ document.addEventListener('alpine:init', () => {
         get progressPercent() {
             return this.duration > 0
                 ? Math.min(100, (this.currentTime / this.duration) * 100)
+                : 0;
+        },
+
+        get maxSeekPercent() {
+            return this.duration > 0
+                ? Math.min(100, (this.maxSeek / this.duration) * 100)
                 : 0;
         },
 
@@ -34,6 +45,8 @@ document.addEventListener('alpine:init', () => {
 
         init() {
             console.log('🎬 ytPlayer.init', { videoId: this.videoId, backendTime: this.backendTime, itemId: this.itemId });
+            const stored = parseFloat(localStorage.getItem(this.lsKey)) || 0;
+            this.maxSeek = Math.max(this.backendTime, stored);
             if (window.YT && window.YT.Player) {
                 console.log('🎬 YT API already loaded, creating player');
                 this.createPlayer();
@@ -85,7 +98,10 @@ document.addEventListener('alpine:init', () => {
                             this.completed = true;
                             this.currentTime = this.duration;
                             this.$wire.markVideoComplete(this.itemId, this.duration)
-                                .then(() => console.log('🎬 DB save completed (ENDED path)', { itemId: this.itemId }))
+                                .then(() => {
+                                    console.log('🎬 DB save completed (ENDED path)', { itemId: this.itemId });
+                                    localStorage.removeItem(this.lsKey);
+                                })
                                 .catch((err) => console.error('🎬 DB save failed (ENDED path)', err));
                         }
                     },
@@ -106,10 +122,15 @@ document.addEventListener('alpine:init', () => {
             if (!this.player) return;
             this.currentTime = this.player.getCurrentTime();
             this.duration = this.player.getDuration();
+            if (this.currentTime > this.maxSeek) {
+                this.maxSeek = this.currentTime;
+                localStorage.setItem(this.lsKey, String(this.maxSeek));
+            }
             if (!this.completed && this.duration > 0 && this.currentTime >= this.duration - 2) {
                 console.log('🎬 pollTime detected near-end', { currentTime: this.currentTime, duration: this.duration, itemId: this.itemId });
                 this.completed = true;
                 this.currentTime = this.duration;
+                localStorage.removeItem(this.lsKey);
                 this.$wire.markVideoComplete(this.itemId, this.duration)
                     .then(() => console.log('🎬 DB save completed (pollTime path)', { itemId: this.itemId }))
                     .catch((err) => console.error('🎬 DB save failed (pollTime path)', err));
@@ -121,6 +142,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         destroy() {
+            localStorage.setItem(this.lsKey, String(this.maxSeek));
             if (this.player && this.player.destroy) {
                 this.player.destroy();
                 this.player = null;
@@ -131,7 +153,9 @@ document.addEventListener('alpine:init', () => {
             if (!this.player || !this.duration) return;
             const rect = e.currentTarget.getBoundingClientRect();
             const pct = (e.clientX - rect.left) / rect.width;
-            const seekTo = pct * this.duration;
+            const rawSeekTo = pct * this.duration;
+            const seekBoundary = this.completed ? this.duration : (this.maxSeek + 2);
+            const seekTo = Math.min(rawSeekTo, seekBoundary);
             this.player.seekTo(seekTo, true);
             this.currentTime = seekTo;
         },
