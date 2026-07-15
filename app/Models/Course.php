@@ -26,6 +26,15 @@ class Course extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $fillable = [
+        'title',
+        'slug',
+        'description',
+        'thumbnail',
+        'status',
+        'created_by',
+    ];
+
     public function getRouteKeyName(): string
     {
         return 'slug';

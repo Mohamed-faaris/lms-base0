@@ -27,6 +27,16 @@ class ModuleItem extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $fillable = [
+        'course_module_id',
+        'content_asset_id',
+        'type',
+        'title',
+        'sort_order',
+        'required',
+        'settings',
+    ];
+
     protected function casts(): array
     {
         return [

@@ -23,6 +23,13 @@ class CourseModule extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $fillable = [
+        'course_version_id',
+        'title',
+        'description',
+        'sort_order',
+    ];
+
     public function courseVersion(): BelongsTo
     {
         return $this->belongsTo(CourseVersion::class);

@@ -25,6 +25,14 @@ class CourseVersion extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $fillable = [
+        'course_id',
+        'version',
+        'status',
+        'published_at',
+        'created_by',
+    ];
+
     protected function casts(): array
     {
         return [
