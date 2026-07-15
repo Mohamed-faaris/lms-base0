@@ -9,6 +9,9 @@ document.addEventListener('alpine:init', () => {
         duration: 0,
         maxSeek: 0,
 
+        dragging: false,
+        seekTimeline: null,
+
         get lsKey() {
             return `yt_maxseek_${this.videoId}`;
         },
@@ -149,23 +152,38 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        isLockedPosition(e) {
-            if (!this.duration) return true;
-            const rect = e.currentTarget.getBoundingClientRect();
-            const pct = (e.clientX - rect.left) / rect.width;
-            const rawSeekTo = pct * this.duration;
-            const seekBoundary = this.completed ? this.duration : (this.maxSeek + 2);
-            return rawSeekTo > seekBoundary;
-        },
-
-        seekFromEvent(e) {
+        seekFromEvent(e, timeline) {
             if (!this.player || !this.duration) return;
-            if (this.isLockedPosition(e)) return;
-            const rect = e.currentTarget.getBoundingClientRect();
-            const pct = (e.clientX - rect.left) / rect.width;
+            timeline = timeline || e.currentTarget.closest('[data-timeline]');
+            if (!timeline) return;
+            const rect = timeline.getBoundingClientRect();
+            const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
             const seekTo = pct * this.duration;
+            if (!this.completed && seekTo > this.maxSeek + 2) return;
             this.player.seekTo(seekTo, true);
             this.currentTime = seekTo;
+        },
+
+        seekStart(e) {
+            if (!this.player || !this.duration) return;
+            if (e.button !== 0) return;
+            const timeline = e.currentTarget.closest('[data-timeline]');
+            if (!timeline) return;
+            this.seekTimeline = timeline;
+            this.dragging = true;
+            this.seekFromEvent(e, timeline);
+            const onMove = (ev) => {
+                if (!this.dragging) return;
+                this.seekFromEvent(ev, this.seekTimeline);
+            };
+            const onEnd = () => {
+                this.dragging = false;
+                this.seekTimeline = null;
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onEnd);
+            };
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onEnd);
         },
     }));
 });

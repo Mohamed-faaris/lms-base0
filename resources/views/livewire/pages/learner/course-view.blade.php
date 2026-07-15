@@ -472,8 +472,7 @@ new #[Layout('layouts.app')] class extends Component
 
                                         <div class="space-y-1">
                                             <div
-                                                class="relative h-1.5 bg-gray-100 rounded-full overflow-hidden group cursor-pointer"
-                                                @click="seekFromEvent($event)"
+                                                class="relative h-1.5 bg-gray-100 rounded-full overflow-hidden group" data-timeline
                                             >
                                                 <div
                                                     class="absolute inset-y-0 left-0 bg-indigo-300 rounded-full"
@@ -489,11 +488,29 @@ new #[Layout('layouts.app')] class extends Component
                                                     x-show="!completed && maxSeek < duration"
                                                 ></div>
                                                 <div
-                                                    class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-white/20 rounded-full transition-opacity"
+                                                    class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-white/20 rounded-full transition-opacity pointer-events-none"
+                                                ></div>
+                                                <div
+                                                    class="absolute inset-y-0 left-0 z-20"
+                                                    :style="`right: ${100 - maxSeekPercent}%`"
+                                                    x-show="!completed"
+                                                    @mousedown="seekStart($event)"
+                                                ></div>
+                                                <div
+                                                    class="absolute inset-y-0 right-0 z-20 cursor-not-allowed rounded-r-full"
+                                                    :style="`left: ${maxSeekPercent}%`"
+                                                    x-show="!completed && maxSeek < duration"
+                                                >
+                                                    <div class="absolute inset-0 bg-gray-300/40 rounded-r-full"></div>
+                                                </div>
+                                                <div
+                                                    class="absolute inset-0 z-20 cursor-pointer"
+                                                    x-show="completed"
+                                                    @mousedown="seekStart($event)"
                                                 ></div>
                                                 <template x-if="currentTime > 0">
                                                     <div
-                                                        class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-blue-600 border-2 border-white rounded-full shadow-md"
+                                                        class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-blue-600 border-2 border-white rounded-full shadow-md pointer-events-none"
                                                         :style="`left: calc(${progressPercent}% - 6px)`"
                                                     ></div>
                                                 </template>
