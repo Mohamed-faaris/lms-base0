@@ -149,13 +149,21 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        seekFromEvent(e) {
-            if (!this.player || !this.duration) return;
+        isLockedPosition(e) {
+            if (!this.duration) return true;
             const rect = e.currentTarget.getBoundingClientRect();
             const pct = (e.clientX - rect.left) / rect.width;
             const rawSeekTo = pct * this.duration;
             const seekBoundary = this.completed ? this.duration : (this.maxSeek + 2);
-            const seekTo = Math.min(rawSeekTo, seekBoundary);
+            return rawSeekTo > seekBoundary;
+        },
+
+        seekFromEvent(e) {
+            if (!this.player || !this.duration) return;
+            if (this.isLockedPosition(e)) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            const seekTo = pct * this.duration;
             this.player.seekTo(seekTo, true);
             this.currentTime = seekTo;
         },
