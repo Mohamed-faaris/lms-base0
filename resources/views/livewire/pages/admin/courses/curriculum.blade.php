@@ -94,20 +94,9 @@ new #[Layout('layouts.app')] class extends Component
                             <div class="flex items-center gap-3 flex-wrap">
                                 <h3 class="text-lg font-semibold text-gray-900 truncate">{{ $course->title }}</h3>
                                 <span class="text-xs text-gray-400 font-mono whitespace-nowrap">/{{ $course->slug }}</span>
-                                <span @class([
-                                    'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                                    'bg-yellow-100 text-yellow-700' => $course->status === CourseStatus::DRAFT,
-                                    'bg-green-100 text-green-700' => $course->status === CourseStatus::PUBLISHED,
-                                    'bg-gray-100 text-gray-700' => $course->status === CourseStatus::ARCHIVED,
-                                ])>
-                                    {{ ucfirst($course->status->value) }}
-                                </span>
+                                
                             </div>
-                            @if ($course->description)
-                                <p class="mt-3 text-sm text-gray-600 line-clamp-3">{{ $course->description }}</p>
-                            @else
-                                <p class="mt-3 text-sm text-gray-400 italic">No description provided.</p>
-                            @endif
+                           
                         </div>
 
                         {{-- Compact Stats Row --}}
@@ -140,6 +129,19 @@ new #[Layout('layouts.app')] class extends Component
                             @endif
                         </dl>
                     </div>
+                    @if ($course->description)
+                                <p class="mt-3 text-sm text-gray-600 line-clamp-3">{{ $course->description }}</p>
+                            @else
+                                <p class="mt-3 text-sm text-gray-400 italic">No description provided.</p>
+                            @endif
+                            <span @class([
+                                    'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                                    'bg-yellow-100 text-yellow-700' => $course->status === CourseStatus::DRAFT,
+                                    'bg-green-100 text-green-700' => $course->status === CourseStatus::PUBLISHED,
+                                    'bg-gray-100 text-gray-700' => $course->status === CourseStatus::ARCHIVED,
+                                ])>
+                                    {{ ucfirst($course->status->value) }}
+                                </span>
                 </div>
             </div>
 

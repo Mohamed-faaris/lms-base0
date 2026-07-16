@@ -1,3 +1,7 @@
+import Sortable from 'sortablejs';
+
+window.Sortable = Sortable;
+
 document.addEventListener('alpine:init', () => {
     Alpine.data('youtubePlayer', (videoId, backendTime, itemId) => ({
         videoId,

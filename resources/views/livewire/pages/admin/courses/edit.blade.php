@@ -7,10 +7,47 @@ use App\Models\CourseModule;
 use App\Models\ModuleItem;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Computed;
 use Livewire\Volt\Component;
 
 new #[Layout('layouts.app')] class extends Component {
     public Course $course;
+
+    #[Computed]
+    public function version(): mixed
+    {
+        return $this->course->versions()->with(['modules' => fn ($q) => $q->orderBy('sort_order'), 'createdBy'])->first();
+    }
+
+    #[Computed]
+    public function modules(): Collection
+    {
+        $version = $this->version;
+
+        if (! $version) {
+            return collect();
+        }
+
+        return $version->modules()->with(['items' => fn ($q) => $q->orderBy('sort_order')])->orderBy('sort_order')->get();
+    }
+
+    #[Computed]
+    public function itemCount(): int
+    {
+        return $this->modules->sum(fn ($module) => $module->items->count());
+    }
+
+    #[Computed]
+    public function requiredItemCount(): int
+    {
+        return $this->modules->sum(fn ($module) => $module->items->where('required', true)->count());
+    }
+
+    #[Computed]
+    public function moduleCount(): int
+    {
+        return $this->modules->count();
+    }
 
     public bool $showModuleForm = false;
     public bool $showItemForm = false;
@@ -75,16 +112,6 @@ public function test()
     logger('clicked');
     $this->showCourseForm = ! $this->showCourseForm;
 }
-    public function modules(): Collection
-    {
-        $version = $this->course->versions->first();
-        if (!$version) {
-            return collect();
-        }
-
-        return $version->modules()->with('items')->orderBy('sort_order')->get();
-    }
-
     public function startAddModule(): void
     {
         $this->showModuleForm = true;
@@ -270,6 +297,21 @@ public function test()
         }
     }
 
+    public function reorderModules(array $moduleIds): void
+    {
+        foreach ($moduleIds as $index => $moduleId) {
+            CourseModule::where('id', $moduleId)->update(['sort_order' => $index + 1]);
+        }
+    }
+
+    public function reorderItems(int $moduleId, array $itemIds): void
+    {
+        foreach ($itemIds as $index => $itemId) {
+            ModuleItem::where('id', $itemId)->where('course_module_id', $moduleId)
+                ->update(['sort_order' => $index + 1]);
+        }
+    }
+
     public function cancelEdit(): void
     {
         $this->showModuleForm = false;
@@ -296,7 +338,10 @@ public function test()
             </div>
             <div class="flex items-center gap-3">
                 <a href="{{ route('admin.courses.curriculum', $course->slug) }}" wire:navigate
-                    class="text-sm text-gray-600 hover:text-gray-900">View Curriculum</a>
+                   class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                    <x-dynamic-component :component="'lucide-eye'" class="w-4 h-4" />
+                    View Curriculum
+                </a>
                 <span @class([
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                     'bg-yellow-100 text-yellow-800' => $course->status === \App\Enums\CourseStatus::DRAFT,
@@ -322,7 +367,85 @@ public function test()
                     {{ $showCourseForm ? 'Hide Form' : 'Edit Course' }}
                 </button>
             </div>
+<div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-gray-100">
+                <div class="p-6">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <h3 class="text-lg font-semibold text-gray-900 truncate">{{ $course->title }}</h3>
+                                <span class="text-xs text-gray-400 font-mono whitespace-nowrap">/{{ $course->slug }}</span>
+                                
+                            </div>
+                           
+                        </div>
 
+                        {{-- Compact Stats Row --}}
+                        <dl class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm w-full sm:w-auto border-t sm:border-t-0 sm:border-l sm:pl-6 pt-4 sm:pt-0">
+                            <div class="flex items-center gap-2">
+                                <x-dynamic-component :component="'lucide-layers'" class="w-4 h-4 text-gray-400" />
+                                <span class="text-gray-500">Modules</span>
+                                <span class="font-semibold text-gray-900">{{ $this->moduleCount }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <x-dynamic-component :component="'lucide-list'" class="w-4 h-4 text-gray-400" />
+                                <span class="text-gray-500">Items</span>
+                                <span class="font-semibold text-gray-900">{{ $this->itemCount }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <x-dynamic-component :component="'lucide-check-circle-2'" class="w-4 h-4 text-indigo-500" />
+                                <span class="text-gray-500">Required</span>
+                                <span class="font-semibold text-indigo-600">{{ $this->requiredItemCount }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <x-dynamic-component :component="'lucide-flag'" class="w-4 h-4 text-gray-400" />
+                                <span class="text-gray-500">Optional</span>
+                                <span class="font-semibold text-gray-500">{{ $this->itemCount - $this->requiredItemCount }}</span>
+                            </div>
+                            @if ($this->version)
+                                <div class="flex items-center gap-2 sm:hidden">
+                                    <x-dynamic-component :component="'lucide-git-branch'" class="w-4 h-4 text-gray-400" />
+                                    <span class="text-gray-500">v{{ $this->version->version }}</span>
+                                </div>
+                            @endif
+                        </dl>
+                    </div>
+                    @if ($course->description)
+                                <p class="mt-3 text-sm text-gray-600 line-clamp-3">{{ $course->description }}</p>
+                            @else
+                                <p class="mt-3 text-sm text-gray-400 italic">No description provided.</p>
+                            @endif
+                            <span @class([
+                                    'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                                    'bg-yellow-100 text-yellow-700' => $course->status === CourseStatus::DRAFT,
+                                    'bg-green-100 text-green-700' => $course->status === CourseStatus::PUBLISHED,
+                                    'bg-gray-100 text-gray-700' => $course->status === CourseStatus::ARCHIVED,
+                                ])>
+                                    {{ ucfirst($course->status->value) }}
+                                </span>
+                </div>
+            </div>
+
+            {{-- Version Info Bar --}}
+            @if ($this->version)
+                <div class="bg-gray-50 border border-gray-100 rounded-lg px-4 py-2 sm:px-6">
+                    <div class="flex flex-wrap items-center gap-4 text-sm">
+                        <div class="flex items-center gap-2 text-gray-500">
+                            <x-dynamic-component :component="'lucide-git-branch'" class="w-4 h-4" />
+                            <span>Version <span class="font-mono font-medium text-gray-900">{{ $this->version->version }}</span></span>
+                        </div>
+                        @if ($this->version->published_at)
+                            <div class="flex items-center gap-2 text-gray-500">
+                                <x-dynamic-component :component="'lucide-calendar'" class="w-4 h-4" />
+                                <span>Published <span class="font-medium text-gray-900">{{ $this->version->published_at->format('M j, Y') }}</span></span>
+                                @if ($this->version->createdBy)
+                                    <span class="text-gray-400">by</span>
+                                    <span class="font-medium text-gray-900">{{ $this->version->createdBy->name }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
             {{-- Course Edit Form --}}
             @if ($showCourseForm)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border-l-4 border-blue-400">
@@ -415,104 +538,160 @@ public function test()
             @endif
 
             {{-- Module List --}}
-            @foreach ($this->modules() as $module)
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg" wire:key="module-{{ $module->id }}">
-                    <div class="p-4 flex items-center justify-between border-b border-gray-100">
-                        <div class="flex items-center gap-3">
-                            <span class="text-sm font-medium text-gray-400">{{ $module->sort_order }}.</span>
-                            <div>
-                                <h3 class="font-medium text-gray-900">{{ $module->title }}</h3>
-                                @if ($module->description)
-                                    <p class="text-sm text-gray-500">{{ $module->description }}</p>
-                                @endif
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            @if (!$showModuleForm && !$showItemForm)
-                                <button wire:click="moveModuleUp({{ $module->id }})" title="Move Up"
-                                    class="p-1 text-gray-400 hover:text-gray-600">
-                                    <x-dynamic-component :component="'lucide-chevron-up'" class="w-4 h-4" />
-                                </button>
-                                <button wire:click="moveModuleDown({{ $module->id }})" title="Move Down"
-                                    class="p-1 text-gray-400 hover:text-gray-600">
-                                    <x-dynamic-component :component="'lucide-chevron-down'" class="w-4 h-4" />
-                                </button>
-                                <button wire:click="startEditModule({{ $module->id }})" title="Edit"
-                                    class="p-1 text-indigo-400 hover:text-indigo-600">
-                                    <x-dynamic-component :component="'lucide-pencil'" class="w-4 h-4" />
-                                </button>
-                                <button wire:click="deleteModule({{ $module->id }})"
-                                    wire:confirm="Delete this module and all its items?" title="Delete"
-                                    class="p-1 text-red-400 hover:text-red-600">
-                                    <x-dynamic-component :component="'lucide-trash-2'" class="w-4 h-4" />
-                                </button>
-                            @endif
-                        </div>
-                    </div>
+            <div
+                x-data
+                x-init="
+                    new Sortable($el, {
+                        animation: 150,
+                        handle: '.drag-handle',
+                        ghostClass: 'bg-gray-100',
+                        dragClass: 'shadow-lg',
+                        chosenClass: 'bg-indigo-50',
+                        onEnd: (event) => {
+                            const ids = [...event.to.children]
+                                .map(el => el.dataset.moduleId);
 
-                    <div class="divide-y divide-gray-50">
-                        @foreach ($module->items as $item)
-                            <div class="px-4 py-3 flex items-center justify-between hover:bg-gray-50"
-                                wire:key="item-{{ $item->id }}">
-                                <div class="flex items-center gap-3 text-sm">
-                                    <span class="text-xs text-gray-400">{{ $item->sort_order }}.</span>
-                                    @php
-                                        $icon = match ($item->type->value) {
-                                            'video' => 'play-circle',
-                                            'pdf' => 'file-text',
-                                            'quiz' => 'clipboard-check',
-                                            'assignment' => 'scroll-text',
-                                            'survey' => 'clipboard-list',
-                                            'external_link' => 'external-link',
-                                            'custom_page' => 'file',
-                                            'article' => 'file-text',
-                                            default => 'file',
-                                        };
-                                    @endphp
-                                    <x-dynamic-component :component="'lucide-' . $icon" class="w-4 h-4 text-gray-400" />
-                                    <span>{{ $item->title }}</span>
-                                    <span
-                                        class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{{ $item->type->value }}</span>
-                                    @if (!$item->required)
-                                        <span class="text-xs text-gray-400">optional</span>
+                            $wire.reorderModules(ids);
+                        }
+                    })
+                "
+                class="space-y-4">
+                @foreach ($this->modules() as $module)
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-gray-100"
+                        wire:key="module-{{ $module->id }}"
+                        data-module-id="{{ $module->id }}">
+                        <div class="p-4 flex items-center justify-between border-b border-gray-100 bg-gray-50">
+                            <div class="flex items-center gap-3">
+                                <button type="button"
+                                    class="drag-handle p-2 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing transition-colors"
+                                    title="Drag to reorder"
+                                    aria-label="Drag to reorder module">
+                                    <x-dynamic-component :component="'lucide-grip-vertical'" class="w-5 h-5" />
+                                </button>
+                                <span class="text-sm font-medium text-gray-400 w-6 text-right">{{ $module->sort_order }}.</span>
+                                <div>
+                                    <h3 class="font-medium text-gray-900">{{ $module->title }}</h3>
+                                    @if ($module->description)
+                                        <p class="text-sm text-gray-500">{{ $module->description }}</p>
                                     @endif
                                 </div>
+                            </div>
+                            <div class="flex items-center gap-2">
                                 @if (!$showModuleForm && !$showItemForm)
-                                    <div class="flex items-center gap-1">
-                                        <button wire:click="moveItemUp({{ $item->id }})" title="Move Up"
-                                            class="p-0.5 text-gray-400 hover:text-gray-600">
-                                            <x-dynamic-component :component="'lucide-chevron-up'" class="w-3 h-3" />
-                                        </button>
-                                        <button wire:click="moveItemDown({{ $item->id }})" title="Move Down"
-                                            class="p-0.5 text-gray-400 hover:text-gray-600">
-                                            <x-dynamic-component :component="'lucide-chevron-down'" class="w-3 h-3" />
-                                        </button>
-                                        <button wire:click="startEditItem({{ $item->id }})" title="Edit"
-                                            class="p-0.5 text-indigo-400 hover:text-indigo-600">
-                                            <x-dynamic-component :component="'lucide-pencil'" class="w-3 h-3" />
-                                        </button>
-                                        <button wire:click="deleteItem({{ $item->id }})" wire:confirm="Delete this item?"
-                                            title="Delete" class="p-0.5 text-red-400 hover:text-red-600">
-                                            <x-dynamic-component :component="'lucide-trash-2'" class="w-3 h-3" />
-                                        </button>
-                                    </div>
+                                    <button wire:click="startEditModule({{ $module->id }})" title="Edit"
+                                        class="p-1 text-indigo-400 hover:text-indigo-600">
+                                        <x-dynamic-component :component="'lucide-pencil'" class="w-4 h-4" />
+                                    </button>
+                                    <button wire:click="deleteModule({{ $module->id }})"
+                                        wire:confirm="Delete this module and all its items?" title="Delete"
+                                        class="p-1 text-red-400 hover:text-red-600">
+                                        <x-dynamic-component :component="'lucide-trash-2'" class="w-4 h-4" />
+                                    </button>
                                 @endif
                             </div>
-                        @endforeach
-                    </div>
-
-                    {{-- Add Item Button --}}
-                    @if (!$showModuleForm && !$showItemForm)
-                        <div class="px-4 py-2 border-t border-dashed border-gray-200">
-                            <button wire:click="startAddItem({{ $module->id }})"
-                                class="flex items-center gap-1.5 text-sm text-indigo-500 hover:text-indigo-700">
-                                <x-dynamic-component :component="'lucide-plus'" class="w-4 h-4" />
-                                Add Item
-                            </button>
                         </div>
-                    @endif
-                </div>
-            @endforeach
+
+<div class="divide-y divide-gray-100"
+                            x-data
+                            x-init="
+                                new Sortable($el, {
+                                    animation: 150,
+                                    handle: '.drag-handle',
+                                    ghostClass: 'bg-gray-100',
+                                    dragClass: 'shadow-lg',
+                                    chosenClass: 'bg-indigo-50',
+                                    onEnd: (event) => {
+                                        const ids = [...event.to.children]
+                                            .map(el => el.dataset.itemId);
+
+                                        $wire.reorderItems({{ $module->id }}, ids);
+                                    }
+                                })
+                            ">
+                            @foreach ($module->items as $item)
+                                <div class="px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                                    wire:key="item-{{ $item->id }}"
+                                    data-item-id="{{ $item->id }}">
+                                    <div class="flex items-center gap-3 text-sm">
+                                        <button type="button"
+                                            class="drag-handle p-2 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing transition-colors"
+                                            title="Drag to reorder"
+                                            aria-label="Drag to reorder item">
+                                            <x-dynamic-component :component="'lucide-grip-vertical'" class="w-4 h-4" />
+                                        </button>
+                                        <span class="text-xs text-gray-400 w-6 text-right">{{ $item->sort_order }}.</span>
+                                        @php
+                                            $icon = match ($item->type->value) {
+                                                'video' => 'play-circle',
+                                                'pdf' => 'file-text',
+                                                'quiz' => 'clipboard-check',
+                                                'assignment' => 'scroll-text',
+                                                'survey' => 'clipboard-list',
+                                                'external_link' => 'external-link',
+                                                'custom_page' => 'file',
+                                                'article' => 'file-text',
+                                                default => 'file',
+                                            };
+                                            $iconColors = match($item->type->value) {
+                                                'video' => 'text-red-500 bg-red-50',
+                                                'pdf' => 'text-red-500 bg-red-50',
+                                                'quiz' => 'text-purple-500 bg-purple-50',
+                                                'assignment' => 'text-orange-500 bg-orange-50',
+                                                'survey' => 'text-teal-500 bg-teal-50',
+                                                'external_link' => 'text-blue-500 bg-blue-50',
+                                                'article' => 'text-green-500 bg-green-50',
+                                                'custom_page' => 'text-indigo-500 bg-indigo-50',
+                                                default => 'text-gray-400 bg-gray-100',
+                                            };
+                                        @endphp
+                                        <div class="flex items-center justify-center w-8 h-8 rounded-lg {{ $iconColors }}">
+                                            <x-dynamic-component :component="'lucide-' . $icon" class="w-4 h-4" />
+                                        </div>
+                                        <span>{{ $item->title }}</span>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-600 bg-gray-100">
+                                            {{ ucfirst($item->type->value) }}
+                                        </span>
+                                        @if (!$item->required)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-gray-500 bg-gray-50">
+                                                <x-dynamic-component :component="'lucide-flag'" class="w-3 h-3" />
+                                                Optional
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-indigo-600 bg-indigo-50">
+                                                <x-dynamic-component :component="'lucide-check-circle-2'" class="w-3 h-3" />
+                                                Required
+                                            </span>
+                                        @endif
+                                    </div>
+                                    @if (!$showModuleForm && !$showItemForm)
+                                        <div class="flex items-center gap-1">
+                                            <button wire:click="startEditItem({{ $item->id }})" title="Edit"
+                                                class="p-1.5 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                                                <x-dynamic-component :component="'lucide-pencil'" class="w-4 h-4" />
+                                            </button>
+                                            <button wire:click="deleteItem({{ $item->id }})" wire:confirm="Delete this item?"
+                                                title="Delete" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                                <x-dynamic-component :component="'lucide-trash-2'" class="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- Add Item Button --}}
+                        @if (!$showModuleForm && !$showItemForm)
+                            <div class="px-4 py-2 border-t border-dashed border-gray-200">
+                                <button wire:click="startAddItem({{ $module->id }})"
+                                    class="flex items-center gap-1.5 text-sm text-indigo-500 hover:text-indigo-700">
+                                    <x-dynamic-component :component="'lucide-plus'" class="w-4 h-4" />
+                                    Add Item
+                                </button>
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
 
             {{-- Item Form --}}
             @if ($showItemForm)
