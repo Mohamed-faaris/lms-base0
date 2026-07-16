@@ -18,6 +18,19 @@ new #[Layout('layouts.app')] class extends Component
             ->orderBy('created_at', 'desc')
             ->paginate(20);
     }
+
+    public function deleteCourse(int $courseId): void
+    {
+        $course = Course::findOrFail($courseId);
+
+        $title = $course->title;
+
+        $course->delete();
+
+        $this->resetPage();
+
+        session()->flash('status', "Course \"{$title}\" was deleted.");
+    }
 }; ?>
 
 <div>
@@ -25,14 +38,22 @@ new #[Layout('layouts.app')] class extends Component
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Courses</h2>
             <a href="{{ route('admin.courses.create') }}" wire:navigate
-               class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                + New Course
+               class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <x-dynamic-component :component="'lucide-plus'" class="w-4 h-4" />
+                New Course
             </a>
         </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
+            @if (session('status'))
+                <div class="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                    {{ session('status') }}
+                </div>
+            @endif
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -46,11 +67,14 @@ new #[Layout('layouts.app')] class extends Component
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach ($this->courses as $course)
-                                <tr class="hover:bg-gray-50">
+                            @forelse ($this->courses as $course)
+                                <tr wire:key="course-{{ $course->id }}" class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900">{{ $course->title }}</div>
-                                        <div class="text-sm text-gray-500">{{ $course->slug }}</div>
+                                        <a href="{{ route('admin.courses.curriculum', $course->slug) }}" wire:navigate
+                                           class="block text-sm font-medium text-gray-900 hover:text-indigo-600">
+                                            {{ $course->title }}
+                                            <span class="block text-sm text-gray-500 font-normal">{{ $course->slug }}</span>
+                                        </a>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span @class([
@@ -66,14 +90,33 @@ new #[Layout('layouts.app')] class extends Component
                                         {{ $course->versions_count }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {{ $course->createdBy?->name ?? '—' }}
+                                        {{ $course->createdBy?->name ?? '&mdash;' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="{{ route('admin.courses.curriculum', $course->slug) }}" wire:navigate
-                                           class="text-indigo-600 hover:text-indigo-900 mr-3">Curriculum</a>
+                                        <div class="inline-flex items-center gap-3">
+                                            <a href="{{ route('admin.courses.edit', $course->slug) }}" wire:navigate
+                                               class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-900">
+                                                <x-dynamic-component :component="'lucide-pencil'" class="w-4 h-4" />
+                                                <!-- <span>Edit</span> -->
+                                            </a>
+                                            <button type="button"
+                                                wire:click="deleteCourse({{ $course->id }})"
+                                                wire:confirm="Delete '{{ $course->title }}'? This action cannot be undone."
+                                                class="inline-flex items-center gap-1 text-red-600 hover:text-red-900">
+                                                <x-dynamic-component :component="'lucide-trash-2'" class="w-4 h-4" />
+                                                <!-- <span>Delete</span> -->
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-500">
+                                        No courses yet.
+                                        <a href="{{ route('admin.courses.create') }}" wire:navigate class="text-indigo-600 hover:text-indigo-800 ml-1">Create the first one.</a>
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>

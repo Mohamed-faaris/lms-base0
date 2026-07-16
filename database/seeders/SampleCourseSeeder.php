@@ -31,6 +31,7 @@ use App\Models\UserScope;
 use App\Models\VideoSession;
 use App\Models\XpTransaction;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
 
 class SampleCourseSeeder extends Seeder
 {
@@ -84,8 +85,15 @@ class SampleCourseSeeder extends Seeder
 
     public function run(): void
     {
+        $this->seedRoles();
+
         $admin = $this->makeUser('admin@campus.edu', 'Dr. Alan Turing', 'admin');
+        $manager = $this->makeUser('manager@campus.edu', 'Maya Manager', 'manager');
         $learner = $this->makeUser('learner@campus.edu', 'Learner User', 'learner');
+
+        $admin->assignRole('admin');
+        $manager->assignRole('manager');
+        $learner->assignRole('learner');
 
         $org = Organization::create([
             'name' => 'University of Computing',
@@ -100,7 +108,7 @@ class SampleCourseSeeder extends Seeder
             'status' => 'active',
         ]);
 
-        foreach ([$admin, $learner] as $u) {
+        foreach ([$admin, $manager, $learner] as $u) {
             UserScope::create([
                 'user_id' => $u->id,
                 'role_id' => 1,
@@ -172,6 +180,13 @@ class SampleCourseSeeder extends Seeder
             'phone' => fake()->phoneNumber(),
             'status' => UserStatus::ACTIVE,
         ]);
+    }
+
+    private function seedRoles(): void
+    {
+        foreach (['admin', 'manager', 'learner'] as $name) {
+            Role::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
+        }
     }
 
     private function createContentAssets(int $userId): array

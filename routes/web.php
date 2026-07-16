@@ -21,12 +21,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('learner.my-learning.course');
 });
 
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Volt::route('courses', 'pages.admin.courses.index')
         ->name('courses.index');
 
     Volt::route('courses/create', 'pages.admin.courses.create')
         ->name('courses.create');
+
+    Volt::route('courses/{course}/edit', 'pages.admin.courses.edit')
+        ->name('courses.edit');
 
     Volt::route('courses/{course}/curriculum', 'pages.admin.courses.curriculum')
         ->name('courses.curriculum');
